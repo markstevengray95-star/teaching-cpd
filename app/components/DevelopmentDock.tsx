@@ -26,6 +26,9 @@ export default function DevelopmentDock() {
   const links: [string,string][] = [
     ["/", "Home"],
     ["/training", "My training"],
+    ["/needs-audit", "Needs audit"],
+    ["/coach", "CPD Coach"],
+    ["/coaching", "Coaching"],
     ["/pathways", "Pathways"],
     ["/portfolio", "Portfolio"],
     ["/actions", "Action plans"],
