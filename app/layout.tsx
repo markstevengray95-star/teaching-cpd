@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./mobile.css";
 import "./phase2.css";
+import "./phase2-live.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
