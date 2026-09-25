@@ -11,6 +11,7 @@ export default function DevelopmentDock() {
     ["/pathways", "Pathways"],
     ["/portfolio", "Portfolio"],
     ["/actions", "Action plans"],
+    ["/leadership", "Leadership"],
   ] as const;
 
   return <nav className="developmentDock" aria-label="Professional development navigation">
