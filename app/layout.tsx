@@ -6,6 +6,7 @@ import "./phase2.css";
 import "./phase2-live.css";
 import "./phase4.css";
 import "./phase56.css";
+import "./phase789.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
