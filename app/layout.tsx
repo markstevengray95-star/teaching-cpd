@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import DevelopmentDock from "./components/DevelopmentDock";
 import "./globals.css";
 import "./mobile.css";
 import "./phase2.css";
 import "./phase2-live.css";
+import "./phase4.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
@@ -12,7 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{children}<DevelopmentDock /></body>
     </html>
   );
 }
