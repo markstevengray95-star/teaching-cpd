@@ -1,0 +1,9 @@
+@media(max-width:760px){
+  .appShell{display:block;padding-bottom:74px}
+  .sidebar{display:block;position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;height:70px;z-index:80;padding:8px 10px;background:#102a2d;border-top:1px solid #24494b}
+  .sidebar .brand,.sidebarFoot{display:none}
+  .sidebar nav{margin:0;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;height:100%}
+  .navButton{justify-content:center;flex-direction:column;gap:2px;padding:5px 2px;border-radius:8px;text-align:center;font-size:9px;font-weight:700}
+  .navButton span{width:auto;font-size:16px}
+  .navButton.active{box-shadow:none;background:#193d40;color:#fff}
+}
