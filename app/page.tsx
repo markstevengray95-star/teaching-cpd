@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { categoryOrder, courses, type Course, type Module, type Role } from "@/lib/data";
+import { categoryOrder, courses, type Course, type Module, type Role } from "@/lib/catalogue";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type Profile = { id: string; name: string; email: string; role: Role; department: string };
