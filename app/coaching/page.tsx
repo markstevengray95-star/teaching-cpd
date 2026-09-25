@@ -39,9 +39,9 @@ export default function CoachingPage() {
   const dueTargets = useMemo(() => targets.filter(t => t.status === "active" && t.review_date && new Date(t.review_date).getTime() <= Date.now()).length,[targets]);
 
   async function createTarget(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); const form=new FormData(e.currentTarget); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
+    e.preventDefault(); const formEl=e.currentTarget; const form=new FormData(formEl); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
     const {data,error}=await client.from("development_targets").insert({ user_id:userId, title:String(form.get("title")||""), description:String(form.get("description")||""), success_criteria:String(form.get("success_criteria")||""), linked_course_id:String(form.get("linked_course_id")||"")||null, linked_pathway_id:String(form.get("linked_pathway_id")||"")||null, review_date:String(form.get("review_date")||"")||null }).select("id,title,description,success_criteria,linked_course_id,linked_pathway_id,review_date,status").single();
-    if(error){setMessage(error.message);return;} setTargets(prev=>[data as Target,...prev]); setMessage("Development target created."); e.currentTarget.reset();
+    if(error){setMessage(error.message);return;} setTargets(prev=>[data as Target,...prev]); setMessage("Development target created."); formEl.reset();
   }
 
   async function setTargetStatus(id:string,status:Target["status"]) {
@@ -50,16 +50,16 @@ export default function CoachingPage() {
   }
 
   async function createCycle(e:FormEvent<HTMLFormElement>) {
-    e.preventDefault(); const form=new FormData(e.currentTarget); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
+    e.preventDefault(); const formEl=e.currentTarget; const form=new FormData(formEl); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
     const {data,error}=await client.from("coaching_cycles").insert({ user_id:userId, title:String(form.get("title")||""), focus:String(form.get("focus")||""), coach_name:String(form.get("coach_name")||""), start_date:String(form.get("start_date")||"")||new Date().toISOString().slice(0,10), review_date:String(form.get("review_date")||"")||null }).select("id,title,focus,coach_name,start_date,review_date,status").single();
-    if(error){setMessage(error.message);return;} setCycles(prev=>[data as Cycle,...prev]); setOpenCycle((data as Cycle).id); setMessage("Coaching cycle started."); e.currentTarget.reset();
+    if(error){setMessage(error.message);return;} setCycles(prev=>[data as Cycle,...prev]); setOpenCycle((data as Cycle).id); setMessage("Coaching cycle started."); formEl.reset();
   }
 
   async function createCheckin(e:FormEvent<HTMLFormElement>,cycleId:string) {
-    e.preventDefault(); const form=new FormData(e.currentTarget); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
+    e.preventDefault(); const formEl=e.currentTarget; const form=new FormData(formEl); const client=getSupabaseBrowserClient(); if(!client||!userId)return;
     const confidence=Number(form.get("confidence")||0)||null;
     const {data,error}=await client.from("coaching_checkins").insert({ cycle_id:cycleId,user_id:userId,checkin_date:String(form.get("checkin_date")||"")||new Date().toISOString().slice(0,10), evidence:String(form.get("evidence")||""), reflection:String(form.get("reflection")||""), next_step:String(form.get("next_step")||""), confidence }).select("id,cycle_id,checkin_date,evidence,reflection,next_step,confidence").single();
-    if(error){setMessage(error.message);return;} setCheckins(prev=>[data as Checkin,...prev]); setMessage("Coaching check-in saved."); e.currentTarget.reset();
+    if(error){setMessage(error.message);return;} setCheckins(prev=>[data as Checkin,...prev]); setMessage("Coaching check-in saved."); formEl.reset();
   }
 
   async function completeCycle(id:string) {
