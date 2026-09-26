@@ -8,6 +8,9 @@ export { categoryOrder };
 export type { Course, Module, Role, CourseCategory } from "./data";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
-const replacements = [...expandedCourses, ...expandedCoursesBatch2, ...additionalCourses];
-const replacementIds = new Set(replacements.map(course => course.id));
+const replacementMap = new Map(
+  [...expandedCourses, ...expandedCoursesBatch2, ...additionalCourses].map(course => [course.id, course] as const),
+);
+const replacementIds = new Set(replacementMap.keys());
+const replacements = [...replacementMap.values()];
 export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements];
