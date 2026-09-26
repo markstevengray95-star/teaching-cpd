@@ -2,9 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
+import { claimSchoolAccess, safeNextPath } from "@/lib/schoolAccess";
+
+type PasswordMode = "signin" | "signup";
 
 export default function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
+  const [showFallback, setShowFallback] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -14,35 +18,70 @@ export default function AuthPage() {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
+    let active = true;
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.href = nextPath();
+      if (active && data.session) finishSchoolAccess();
     });
+    return () => { active = false; };
   }, []);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function finishSchoolAccess() {
     const supabase = getSupabaseBrowserClient();
-    if (!supabase) {
-      setMessage("The production database is not connected yet. Phase 2 code is ready and will activate once Supabase environment variables are added.");
-      return;
+    try {
+      const access = await claimSchoolAccess(supabase);
+      if (access.allowed) {
+        window.location.replace(nextPath());
+        return;
+      }
+      window.location.replace(`/access?reason=${encodeURIComponent(access.reason)}&next=${encodeURIComponent(nextPath())}`);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Access check failed.";
+      window.location.replace(`/access?reason=access_check_failed&detail=${encodeURIComponent(detail)}&next=${encodeURIComponent(nextPath())}`);
     }
+  }
+
+  async function schoolOAuth(provider: "google" | "azure") {
+    const supabase = getSupabaseBrowserClient();
     setBusy(true);
     setMessage("");
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const redirectTo = `${window.location.origin}/auth?next=${encodeURIComponent(nextPath())}`;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+          ...(provider === "azure" ? { scopes: "email" } : {}),
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "Unable to start school sign-in.";
+      setMessage(raw.toLowerCase().includes("provider") && raw.toLowerCase().includes("enabled")
+        ? "That school sign-in provider is not enabled on this installation yet. A platform administrator needs to finish the Google/Microsoft OAuth provider setup."
+        : raw);
+      setBusy(false);
+    }
+  }
+
+  async function passwordSubmit(e: FormEvent) {
+    e.preventDefault();
+    const supabase = getSupabaseBrowserClient();
+    setBusy(true);
+    setMessage("");
+    try {
+      if (passwordMode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        window.location.href = nextPath();
+        await finishSchoolAccess();
       } else {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
-          options: { data: { full_name: name, department } },
+          options: { data: { full_name: name.trim(), department: department.trim() } },
         });
         if (error) throw error;
-        if (data.session) window.location.href = nextPath();
-        else setMessage("Account created. Check your email to confirm the account, then sign in.");
+        if (data.session) await finishSchoolAccess();
+        else setMessage("Account created. Confirm your school email, then return here to sign in. School access is granted only when the email domain belongs to a verified active subscription.");
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to authenticate.");
@@ -51,32 +90,44 @@ export default function AuthPage() {
     }
   }
 
-  return <main className="phasePage authPhasePage">
-    <section className="phaseHero compactHero">
-      <a className="phaseBack" href="/">← Teaching CPD</a>
-      <span className="eyebrow">SECURE STAFF ACCESS</span>
-      <h1>{mode === "signin" ? "Sign in to your CPD account" : "Create your staff CPD account"}</h1>
-      <p>Production accounts use Supabase authentication. New accounts start with the Staff role; leadership permissions are assigned separately.</p>
+  return <main className="phasePage authPhasePage schoolAuthPage">
+    <section className="phaseHero compactHero schoolAuthHero">
+      <span className="eyebrow">TEACHING CPD · SCHOOL ACCESS</span>
+      <h1>Use your school account.</h1>
+      <p>If your school has an active subscription, staff using its verified email domain are connected to the correct school automatically. No invitation code is required for normal staff onboarding.</p>
+      <div className="schoolAccessFlow" aria-label="School access process">
+        <span><b>1</b> School subscription</span><i>→</i><span><b>2</b> Verified domain</span><i>→</i><span><b>3</b> Staff school login</span><i>→</i><span><b>4</b> Automatic access</span>
+      </div>
+      <div className="schoolAuthTrust"><span>✓ School-scoped data</span><span>✓ Existing CPD records retained</span><span>✓ Subscription checked automatically</span></div>
     </section>
-    <form className="phaseCard authCard" onSubmit={submit}>
-      {!hasSupabaseConfig() && <div className="phaseNotice">Backend connection pending. This screen is already wired and will become live once the new CPD Supabase project is connected.</div>}
-      {mode === "signup" && <>
-        <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
-        <label>Department<input required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Science" /></label>
-      </>}
-      <label>Email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>
-      <label>Password<input required minLength={8} type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
-      {message && <div className="feedback">{message}</div>}
-      <button className="primary full" disabled={busy}>{busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}</button>
-      <button className="textButton" type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setMessage(""); }}>
-        {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
-      </button>
-    </form>
+
+    <section className="phaseCard authCard schoolAuthCard">
+      {!hasSupabaseConfig() && <div className="phaseNotice">The authentication service is not connected.</div>}
+      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN</span><h2>Continue with your school identity</h2><p>Choose the provider your school uses for staff email.</p></div>
+      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
+      <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={() => schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
+
+      <div className="schoolDomainRule"><strong>How access works</strong><p>Signing in proves who you are. The app then checks your email domain against a verified school subscription before allowing access to school CPD data.</p></div>
+
+      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); setMessage(""); }}>{showFallback ? "Hide email/password fallback" : "Use email/password fallback"}</button>
+      {showFallback && <form className="schoolFallbackForm" onSubmit={passwordSubmit}>
+        {passwordMode === "signup" && <>
+          <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
+          <label>Department<input required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Science" /></label>
+        </>}
+        <label>School email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@school.org" /></label>
+        <label>Password<input required minLength={8} type="password" autoComplete={passwordMode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
+        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in with email" : "Create email fallback account"}</button>
+        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "First time using email/password?" : "Already have a password account?"}</button>
+      </form>}
+
+      {message && <div className="feedback" role="status">{message}</div>}
+      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school unless an authorised administrator has explicitly provisioned that account through another supported route.</p>
+    </section>
   </main>;
 }
 
 function nextPath() {
   if (typeof window === "undefined") return "/";
-  const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") ? next : "/";
+  return safeNextPath(new URLSearchParams(window.location.search).get("next"));
 }
