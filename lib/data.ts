@@ -5,7 +5,10 @@ export type Module =
   | { id: string; type: "content"; title: string; body: string; keyPoints?: string[] }
   | { id: string; type: "quiz"; title: string; question: string; options: string[]; answer: number; feedback: string }
   | { id: string; type: "scenario"; title: string; prompt: string; options: { label: string; feedback: string }[] }
-  | { id: string; type: "reflection"; title: string; prompt: string };
+  | { id: string; type: "reflection"; title: string; prompt: string }
+  | { id: string; type: "visual"; title: string; caption?: string; layout: "flow" | "cycle" | "ladder" | "pyramid" | "compare" | "timeline"; items: { heading: string; text: string; icon?: string }[] }
+  | { id: string; type: "checklist"; title: string; prompt: string; items: string[]; completionText?: string }
+  | { id: string; type: "activity"; title: string; prompt: string; instructions: string[]; placeholder?: string; minimumCharacters?: number };
 
 export type Course = {
   id: string;
