@@ -8,6 +8,7 @@ import { schoolCoursesBatch2 } from "./schoolCoursesBatch2";
 import { schoolCoursesBatch3 } from "./schoolCoursesBatch3";
 import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
 import { deepTeachingCourses } from "./deepTeachingCourses";
+import { deepTeachingCourses2 } from "./deepTeachingCourses2";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -24,6 +25,7 @@ const replacementMap = new Map(
     ...schoolCoursesBatch3,
     ...schoolCoursesBatch4,
     ...deepTeachingCourses,
+    ...deepTeachingCourses2,
   ].map(course => [course.id, course] as const),
 );
 const replacementIds = new Set(replacementMap.keys());
