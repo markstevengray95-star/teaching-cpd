@@ -82,8 +82,8 @@ export default function LiveCPDPage(){
     const payload={join_code:makeCode(),exit_code:makeCode(),title:String(form.get("title")||"Untitled CPD"),presenter_id:profile.id,presenter_name:profile.full_name,location:String(form.get("location")||""),description:String(form.get("description")||""),objectives:String(form.get("objectives")||"").split("\n").map(s=>s.trim()).filter(Boolean),starts_at:new Date(starts).toISOString(),status:"draft" as const};
     const {data,error}=await supabase.from("live_sessions").insert(payload).select().single();if(error){setMessage(error.message);return;}
     const session=data as LiveSession;
-    const presetQuiz=coursePreset?.modules.find((m):m is Extract<Module,{type:"quiz"}=>m.type==="quiz");
-    const presetScenario=coursePreset?.modules.find((m):m is Extract<Module,{type:"scenario"}=>m.type==="scenario");
+    const presetQuiz=coursePreset?.modules.find((m):m is Extract<Module,{type:"quiz"}>=>m.type==="quiz");
+    const presetScenario=coursePreset?.modules.find((m):m is Extract<Module,{type:"scenario"}>=>m.type==="scenario");
     const seeded:Array<Record<string,unknown>>=[];let sortOrder=1;
     seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"rating",title:"Starting confidence",prompt:"How confident do you currently feel about this CPD topic?",options:["1","2","3","4","5"],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"pre"});
     if(presetQuiz)seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"multiple_choice",title:presetQuiz.title,prompt:presetQuiz.question,options:presetQuiz.options,required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"});
