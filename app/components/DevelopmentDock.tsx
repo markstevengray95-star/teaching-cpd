@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 export default function DevelopmentDock() {
   const pathname = usePathname();
   const [role, setRole] = useState("");
+  const [platformAdmin, setPlatformAdmin] = useState(false);
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
@@ -14,8 +15,13 @@ export default function DevelopmentDock() {
     (async () => {
       const { data: auth } = await client.auth.getUser();
       if (!auth.user) return;
-      const { data } = await client.from("staff_profiles").select("role").eq("id", auth.user.id).maybeSingle();
-      if (active && data?.role) setRole(data.role);
+      const [{ data: profile }, { data: platform }] = await Promise.all([
+        client.from("staff_profiles").select("role").eq("id", auth.user.id).maybeSingle(),
+        client.from("platform_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle(),
+      ]);
+      if (!active) return;
+      if (profile?.role) setRole(profile.role);
+      setPlatformAdmin(Boolean(platform));
     })();
     return () => { active = false; };
   }, []);
@@ -24,6 +30,7 @@ export default function DevelopmentDock() {
 
   const links: [string,string][] = [
     ["/", "Home"],
+    ["/school-hub", "School hub"],
     ["/course-studio", "Course Studio"],
     ["/training", "My training"],
     ["/needs-audit", "Needs audit"],
@@ -44,6 +51,7 @@ export default function DevelopmentDock() {
     links.push(["/admin", "CPD admin"]);
     links.push(["/builder", "Course creator"]);
   }
+  if (platformAdmin) links.push(["/platform", "Platform"]);
 
   return <nav className="developmentDock" aria-label="Professional development navigation">
     {links.map(([href, label]) => <a key={href} href={href} className={pathname === href || (href !== "/" && pathname.startsWith(href)) ? "active" : ""}>{label}</a>)}
