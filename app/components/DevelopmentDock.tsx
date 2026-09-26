@@ -10,7 +10,6 @@ export default function DevelopmentDock() {
 
   useEffect(() => {
     const client = getSupabaseBrowserClient();
-    if (!client) return;
     let active = true;
     (async () => {
       const { data: auth } = await client.auth.getUser();
@@ -21,7 +20,7 @@ export default function DevelopmentDock() {
     return () => { active = false; };
   }, []);
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/join")) return null;
+  if (pathname.startsWith("/auth") || pathname.startsWith("/access") || pathname.startsWith("/join")) return null;
 
   const links: [string,string][] = [
     ["/", "Home"],
@@ -40,6 +39,7 @@ export default function DevelopmentDock() {
   ];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
   if (["CPD Lead", "Admin"].includes(role)) {
+    links.push(["/school-access", "School access"]);
     links.push(["/quality", "Annual CPD & QA"]);
     links.push(["/admin", "CPD admin"]);
     links.push(["/builder", "Course creator"]);
