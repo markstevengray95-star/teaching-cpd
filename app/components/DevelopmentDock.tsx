@@ -46,6 +46,7 @@ export default function DevelopmentDock() {
   ];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
   if (["CPD Lead", "Admin"].includes(role)) {
+    links.push(["/staff-sync", "Staff sync"]);
     links.push(["/school-access", "School access"]);
     links.push(["/quality", "Annual CPD & QA"]);
     links.push(["/admin", "CPD admin"]);
