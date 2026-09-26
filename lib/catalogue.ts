@@ -5,13 +5,23 @@ import { expandedCoursesBatch2 } from "./courseExpansionBatch2";
 import { additionalCourses } from "./additionalCourses";
 import { schoolCoursesBatch1 } from "./schoolCoursesBatch1";
 import { schoolCoursesBatch2 } from "./schoolCoursesBatch2";
+import { schoolCoursesBatch3 } from "./schoolCoursesBatch3";
+import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
 
 export { categoryOrder };
 export type { Course, Module, Role, CourseCategory } from "./data";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
-  [...expandedCourses, ...expandedCoursesBatch2, ...additionalCourses, ...schoolCoursesBatch1, ...schoolCoursesBatch2].map(course => [course.id, course] as const),
+  [
+    ...expandedCourses,
+    ...expandedCoursesBatch2,
+    ...additionalCourses,
+    ...schoolCoursesBatch1,
+    ...schoolCoursesBatch2,
+    ...schoolCoursesBatch3,
+    ...schoolCoursesBatch4,
+  ].map(course => [course.id, course] as const),
 );
 const replacementIds = new Set(replacementMap.keys());
 const replacements = [...replacementMap.values()];
