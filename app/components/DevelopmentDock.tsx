@@ -31,7 +31,9 @@ export default function DevelopmentDock() {
     ["/coaching", "Coaching"],
     ["/pathways", "Pathways"],
     ["/portfolio", "Portfolio"],
+    ["/external-cpd", "External CPD"],
     ["/actions", "Action plans"],
+    ["/accessibility", "App settings"],
   ];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
   if (["CPD Lead", "Admin"].includes(role)) {
