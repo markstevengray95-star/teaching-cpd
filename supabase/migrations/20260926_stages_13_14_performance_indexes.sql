@@ -1,0 +1,10 @@
+create index if not exists annual_cpd_plans_created_by_idx on public.annual_cpd_plans(created_by);
+create index if not exists course_quality_reviews_reviewed_by_idx on public.course_quality_reviews(reviewed_by);
+create index if not exists cpd_audit_log_actor_idx on public.cpd_audit_log(actor_id);
+create index if not exists cpd_calendar_events_site_idx on public.cpd_calendar_events(site_id);
+create index if not exists custom_courses_site_idx on public.custom_courses(site_id);
+create index if not exists live_sessions_site_idx on public.live_sessions(site_id);
+create index if not exists organisation_memberships_site_idx on public.organisation_memberships(site_id);
+create index if not exists organisations_created_by_idx on public.organisations(created_by);
+create index if not exists school_sites_created_by_idx on public.school_sites(created_by);
+create index if not exists training_requirements_site_idx on public.training_requirements(site_id);
