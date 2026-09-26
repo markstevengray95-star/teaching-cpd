@@ -5,8 +5,8 @@ import { courses } from "@/lib/catalogue";
 import { pathways } from "@/lib/pathways";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-type Profile = { id:string; full_name:string; role:string; department:string; school_id:string|null };
-type Priority = { id:string; title:string; description:string; academic_year:string; scope:"school"|"department"; department:string|null; active:boolean; review_date:string|null; school_id:string|null };
+type Profile = { id:string; full_name:string; role:string; department:string; organisation_id:string|null; site_id:string|null };
+type Priority = { id:string; title:string; description:string; academic_year:string; scope:"school"|"department"; department:string|null; active:boolean; review_date:string|null; organisation_id:string|null; site_id:string|null };
 type Observation = { id:string; observed_on:string; source_type:string; focus:string; strength:string; development_area:string; notes:string; priority_id:string|null; linked_course_id:string|null; linked_pathway_id:string|null; shared_with_leadership:boolean };
 type Target = { id:string; title:string; description:string; success_criteria:string; review_date:string|null; status:string; priority_id:string|null };
 type SummaryRow = { id:string; title:string; scope:string; department:string|null; active:boolean; linked_targets:number; shared_observations:number };
@@ -25,19 +25,20 @@ export default function ImprovementPage(){
     (async()=>{
       const {data:auth}=await supabase.auth.getUser();
       if(!auth.user){window.location.href="/auth?next=/improvement";return;}
-      const {data:p,error:pe}=await supabase.from("staff_profiles").select("id,full_name,role,department,school_id").eq("id",auth.user.id).single();
+      const {data:p,error:pe}=await supabase.from("staff_profiles").select("id,full_name,role,department,organisation_id,site_id").eq("id",auth.user.id).single();
       if(!alive)return;
       if(pe||!p){setMessage(pe?.message||"Unable to load your staff profile.");setLoading(false);return;}
       const me=p as Profile;setProfile(me);
+      if(!me.organisation_id){setLoading(false);return;}
       const [pr,ob,tg]=await Promise.all([
-        supabase.from("improvement_priorities").select("id,title,description,academic_year,scope,department,active,review_date,school_id").order("active",{ascending:false}).order("title"),
+        supabase.from("improvement_priorities").select("id,title,description,academic_year,scope,department,active,review_date,organisation_id,site_id").order("active",{ascending:false}).order("title"),
         supabase.from("professional_observation_links").select("id,observed_on,source_type,focus,strength,development_area,notes,priority_id,linked_course_id,linked_pathway_id,shared_with_leadership").eq("user_id",auth.user.id).order("observed_on",{ascending:false}),
         supabase.from("development_targets").select("id,title,description,success_criteria,review_date,status,priority_id").eq("user_id",auth.user.id).order("created_at",{ascending:false}),
       ]);
       const errs=[pr.error,ob.error,tg.error].filter(Boolean);if(errs.length)setMessage(errs.map(e=>e?.message).join(" · "));
       setPriorities((pr.data||[]) as Priority[]);setObservations((ob.data||[]) as Observation[]);setTargets((tg.data||[]) as Target[]);
       if(["Department Lead","CPD Lead","Admin"].includes(me.role)){
-        const {data}=await supabase.rpc("priority_engagement_summary"); if(alive&&Array.isArray(data))setSummary(data as SummaryRow[]);
+        const {data,error}=await supabase.rpc("priority_engagement_summary");if(error)setMessage(error.message);else if(alive&&Array.isArray(data))setSummary(data as SummaryRow[]);
       }
       setLoading(false);
     })();return()=>{alive=false;};
@@ -45,21 +46,21 @@ export default function ImprovementPage(){
 
   const activePriorities=priorities.filter(p=>p.active);
   const relevantPriorities=useMemo(()=>activePriorities.filter(p=>p.scope==="school"||!p.department||p.department===profile?.department),[activePriorities,profile?.department]);
-  const canManage=profile&&["CPD Lead","Admin"].includes(profile.role);
+  const canManage=Boolean(profile&&["CPD Lead","Admin"].includes(profile.role));
 
   async function createPriority(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();const formEl=e.currentTarget;const form=new FormData(formEl);const supabase=getSupabaseBrowserClient();if(!profile)return;
+    e.preventDefault();const formEl=e.currentTarget;const form=new FormData(formEl);const supabase=getSupabaseBrowserClient();if(!profile?.organisation_id)return;
     const scope=String(form.get("scope")||"school");
     const {data,error}=await supabase.from("improvement_priorities").insert({
-      title:String(form.get("title")||"").trim(),description:String(form.get("description")||""),academic_year:String(form.get("academic_year")||""),scope,department:scope==="department"?String(form.get("department")||"")||profile.department:null,review_date:String(form.get("review_date")||"")||null,created_by:profile.id,school_id:profile.school_id
-    }).select("id,title,description,academic_year,scope,department,active,review_date,school_id").single();
+      title:String(form.get("title")||"").trim(),description:String(form.get("description")||""),academic_year:String(form.get("academic_year")||""),scope,department:scope==="department"?String(form.get("department")||"")||profile.department:null,review_date:String(form.get("review_date")||"")||null,created_by:profile.id,organisation_id:profile.organisation_id,site_id:scope==="school"?profile.site_id:null
+    }).select("id,title,description,academic_year,scope,department,active,review_date,organisation_id,site_id").single();
     if(error){setMessage(error.message);return;}setPriorities(prev=>[data as Priority,...prev]);setMessage("Improvement priority added.");formEl.reset();
   }
 
   async function createObservation(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();const formEl=e.currentTarget;const form=new FormData(formEl);const supabase=getSupabaseBrowserClient();if(!profile)return;
+    e.preventDefault();const formEl=e.currentTarget;const form=new FormData(formEl);const supabase=getSupabaseBrowserClient();if(!profile?.organisation_id)return;
     const {data,error}=await supabase.from("professional_observation_links").insert({
-      user_id:profile.id,school_id:profile.school_id,observed_on:String(form.get("observed_on")||"")||new Date().toISOString().slice(0,10),source_type:String(form.get("source_type")||"self_review"),focus:String(form.get("focus")||"").trim(),strength:String(form.get("strength")||""),development_area:String(form.get("development_area")||""),notes:String(form.get("notes")||""),priority_id:String(form.get("priority_id")||"")||null,linked_course_id:String(form.get("linked_course_id")||"")||null,linked_pathway_id:String(form.get("linked_pathway_id")||"")||null,shared_with_leadership:Boolean(form.get("shared_with_leadership"))
+      user_id:profile.id,organisation_id:profile.organisation_id,site_id:profile.site_id,observed_on:String(form.get("observed_on")||"")||new Date().toISOString().slice(0,10),source_type:String(form.get("source_type")||"self_review"),focus:String(form.get("focus")||"").trim(),strength:String(form.get("strength")||""),development_area:String(form.get("development_area")||""),notes:String(form.get("notes")||""),priority_id:String(form.get("priority_id")||"")||null,linked_course_id:String(form.get("linked_course_id")||"")||null,linked_pathway_id:String(form.get("linked_pathway_id")||"")||null,shared_with_leadership:Boolean(form.get("shared_with_leadership"))
     }).select("id,observed_on,source_type,focus,strength,development_area,notes,priority_id,linked_course_id,linked_pathway_id,shared_with_leadership").single();
     if(error){setMessage(error.message);return;}setObservations(prev=>[data as Observation,...prev]);setMessage("Professional learning note saved privately to your account.");formEl.reset();
   }
@@ -76,8 +77,10 @@ export default function ImprovementPage(){
   }
 
   if(loading)return <main className="stagePage"><div className="stageCard">Loading school development links…</div></main>;
+  if(profile&&!profile.organisation_id)return <main className="stagePage"><section className="stageCard"><span className="eyebrow">SCHOOL IMPROVEMENT</span><h1>Organisation setup required</h1><p>Join or create your school/trust organisation before linking CPD to school priorities.</p><a className="primary phaseLinkButton" href="/organisation">Open organisation setup</a></section></main>;
+
   return <main className="stagePage">
-    <section className="stageHero"><span className="eyebrow">STAGE 13 · SCHOOL IMPROVEMENT LINKS</span><h1>Connect CPD to real development priorities.</h1><p>Link professional learning to school or department priorities, convert observation/self-review into a focused development target, and choose explicitly whether any observation note is shared with CPD leadership.</p></section>
+    <section className="stageHero"><span className="eyebrow">SCHOOL IMPROVEMENT & OBSERVATION LINKS</span><h1>Connect CPD to real development priorities.</h1><p>Link professional learning to school or department priorities, convert observation/self-review into a focused development target, and choose explicitly whether any observation note is shared with CPD leadership.</p><div className="stageHeroActions"><a className="secondary phaseLinkButton" href="/quality">Annual CPD & QA</a><a className="secondary phaseLinkButton" href="/organisation">Organisation</a></div></section>
     {message&&<div className="phaseNotice">{message}</div>}
     <section className="stageStatGrid"><div className="stageStat"><strong>{relevantPriorities.length}</strong><span>active relevant priorities</span></div><div className="stageStat"><strong>{targets.filter(t=>t.status==="active").length}</strong><span>active targets</span></div><div className="stageStat"><strong>{observations.length}</strong><span>professional learning notes</span></div><div className="stageStat"><strong>{observations.filter(o=>o.shared_with_leadership).length}</strong><span>explicitly shared</span></div></section>
 
