@@ -1,0 +1,11 @@
+revoke all on public.organisations from anon;
+revoke all on public.school_sites from anon;
+revoke all on public.organisation_memberships from anon;
+revoke all on public.annual_cpd_plans from anon;
+revoke all on public.annual_cpd_actions from anon;
+revoke all on public.course_quality_reviews from anon;
+revoke all on public.cpd_audit_log from anon;
+revoke all on public.schools from anon;
+revoke all on public.improvement_priorities from anon;
+revoke all on public.professional_observation_links from anon;
+revoke all on public.course_governance_reviews from anon;
