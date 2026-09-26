@@ -1,0 +1,48 @@
+-- Reconcile parallel organisation/school scoping. Shared CPD/admin records use organisation RLS as the tenant boundary;
+-- school-specific improvement/governance tables retain their own narrower school policies.
+drop policy if exists "staff or school manager view assignments" on public.cpd_assignments;
+drop policy if exists "school managers insert assignments" on public.cpd_assignments;
+drop policy if exists "school managers update assignments" on public.cpd_assignments;
+drop policy if exists "school managers delete assignments" on public.cpd_assignments;
+drop policy if exists "staff view school cpd calendar" on public.cpd_calendar_events;
+drop policy if exists "school managers insert calendar" on public.cpd_calendar_events;
+drop policy if exists "school managers update calendar" on public.cpd_calendar_events;
+drop policy if exists "school managers delete calendar" on public.cpd_calendar_events;
+drop policy if exists "staff view school published custom courses" on public.custom_courses;
+drop policy if exists "school managers insert custom courses" on public.custom_courses;
+drop policy if exists "school managers update custom courses" on public.custom_courses;
+drop policy if exists "school managers delete custom courses" on public.custom_courses;
+drop policy if exists "staff view school published course versions" on public.custom_course_versions;
+drop policy if exists "school managers insert course versions" on public.custom_course_versions;
+drop policy if exists "school managers update course versions" on public.custom_course_versions;
+drop policy if exists "school managers delete course versions" on public.custom_course_versions;
+drop policy if exists "staff view school published blocks" on public.custom_course_blocks;
+drop policy if exists "school managers insert course blocks" on public.custom_course_blocks;
+drop policy if exists "school managers update course blocks" on public.custom_course_blocks;
+drop policy if exists "school managers delete course blocks" on public.custom_course_blocks;
+drop policy if exists "staff or school manager view training records" on public.training_records;
+drop policy if exists "school managers insert training records" on public.training_records;
+drop policy if exists "school managers update training records" on public.training_records;
+drop policy if exists "school managers delete training records" on public.training_records;
+drop policy if exists "staff view school requirements" on public.training_requirements;
+drop policy if exists "school managers insert requirements" on public.training_requirements;
+drop policy if exists "school managers update requirements" on public.training_requirements;
+drop policy if exists "school managers delete requirements" on public.training_requirements;
+drop policy if exists "school cpd leads view staff directory" on public.staff_profiles;
+drop policy if exists "global admins update school assignment" on public.staff_profiles;
+
+drop policy if exists "authenticated view active schools" on public.schools;
+create policy "staff view current school" on public.schools for select to authenticated using(id=private.current_school_id() or private.is_global_admin());
+
+create index if not exists course_governance_reviews_created_by_idx on public.course_governance_reviews(created_by);
+create index if not exists course_governance_reviews_reviewed_by_idx on public.course_governance_reviews(reviewed_by);
+create index if not exists cpd_assignments_school_idx on public.cpd_assignments(school_id);
+create index if not exists cpd_calendar_events_school_idx on public.cpd_calendar_events(school_id);
+create index if not exists custom_courses_school_idx on public.custom_courses(school_id);
+create index if not exists improvement_priorities_created_by_idx on public.improvement_priorities(created_by);
+create index if not exists improvement_priorities_school_idx on public.improvement_priorities(school_id);
+create index if not exists live_sessions_school_idx on public.live_sessions(school_id);
+create index if not exists professional_observation_links_school_idx on public.professional_observation_links(school_id);
+create index if not exists schools_created_by_idx on public.schools(created_by);
+create index if not exists staff_profiles_school_idx on public.staff_profiles(school_id);
+create index if not exists training_requirements_school_idx on public.training_requirements(school_id);
