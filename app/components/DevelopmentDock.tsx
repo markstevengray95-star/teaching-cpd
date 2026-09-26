@@ -33,10 +33,12 @@ export default function DevelopmentDock() {
     ["/portfolio", "Portfolio"],
     ["/external-cpd", "External CPD"],
     ["/actions", "Action plans"],
+    ["/organisation", "Organisation"],
     ["/accessibility", "App settings"],
   ];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
   if (["CPD Lead", "Admin"].includes(role)) {
+    links.push(["/quality", "Annual CPD & QA"]);
     links.push(["/admin", "CPD admin"]);
     links.push(["/builder", "Course creator"]);
   }
