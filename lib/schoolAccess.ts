@@ -3,10 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type SchoolAccessReason =
   | "existing_membership"
   | "domain_matched"
+  | "legacy_standalone"
   | "school_not_licensed"
   | "subscription_inactive"
   | "seat_limit_reached"
   | "missing_email"
+  | "email_not_verified"
   | "access_check_failed";
 
 export type SchoolAccessResult = {
@@ -44,6 +46,8 @@ export function accessReasonMessage(reason: string) {
       return "Your school's current licence has reached its staff limit. Ask your CPD lead or school administrator to update the subscription.";
     case "missing_email":
       return "Your sign-in provider did not return a usable school email address. Try a different school sign-in method or contact your school administrator.";
+    case "email_not_verified":
+      return "Your school email has not been verified yet. Complete the verification step from your email provider, then return and check access again.";
     default:
       return "We could not confirm school access for this account. Retry the check, or ask your school CPD lead to verify the school's subscription and email domain.";
   }
