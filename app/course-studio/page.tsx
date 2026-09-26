@@ -20,6 +20,7 @@ type ActionPlan = {
   evidence_plan: string;
   status: string;
   review_date: string | null;
+  course_id: string | null;
 };
 
 type PortfolioEntry = {
@@ -28,6 +29,7 @@ type PortfolioEntry = {
   description: string;
   evidence_type: string;
   occurred_on: string;
+  course_id: string | null;
 };
 
 type StudioView = "micro" | "notes" | "search" | "present" | "evidence";
@@ -89,6 +91,8 @@ export default function CourseStudioPage() {
   const bookmarks = useMemo(() => new Set(safeJsonArray(reflections.__studio_bookmarks)), [reflections.__studio_bookmarks]);
   const chunks = useMemo(() => course ? chunkModules(course) : [], [course]);
   const experience = useMemo(() => course ? buildCourseExperience(course, courses) : null, [course]);
+  const courseActions = useMemo(() => course ? actions.filter(a => a.course_id === course.id) : [], [actions, course]);
+  const coursePortfolio = useMemo(() => course ? portfolio.filter(p => p.course_id === course.id) : [], [portfolio, course]);
   const completedCount = row?.completed_modules?.length || 0;
   const progress = course?.modules.length ? Math.round(completedCount / course.modules.length * 100) : 0;
   const diagnostic = Number(reflections.__diagnostic_score ?? -1);
@@ -113,8 +117,8 @@ export default function CourseStudioPage() {
       const map: Record<string, ProgressRow> = {};
       for (const item of progressRows || []) map[item.course_id] = { course_id: item.course_id, completed_modules: item.completed_modules || [], reflections: (item.reflections || {}) as Record<string,string>, completed_at: item.completed_at || null };
       setRows(map);
-      setActions((actionRows || []).map(a => ({ id:a.id,title:a.title,action:a.action,intended_outcome:a.intended_outcome,evidence_plan:a.evidence_plan,status:a.status,review_date:a.review_date })) as ActionPlan[]);
-      setPortfolio((portfolioRows || []).map(p => ({ id:p.id,title:p.title,description:p.description,evidence_type:p.evidence_type,occurred_on:p.occurred_on })) as PortfolioEntry[]);
+      setActions((actionRows || []).map(a => ({ id:a.id,title:a.title,action:a.action,intended_outcome:a.intended_outcome,evidence_plan:a.evidence_plan,status:a.status,review_date:a.review_date,course_id:a.course_id || null })) as ActionPlan[]);
+      setPortfolio((portfolioRows || []).map(p => ({ id:p.id,title:p.title,description:p.description,evidence_type:p.evidence_type,occurred_on:p.occurred_on,course_id:p.course_id || null })) as PortfolioEntry[]);
       setLoading(false);
     })();
     return () => { active = false; };
@@ -176,14 +180,16 @@ export default function CourseStudioPage() {
     if (progress < 100) guidance.push(`Complete the remaining ${course.modules.length - completedCount} core module${course.modules.length - completedCount === 1 ? "" : "s"}.`);
     if (mastery >= 0 && mastery < 80) guidance.push("Retry the mastery check after a spaced retrieval interval; prioritise missed concepts rather than rereading everything.");
     if (mastery >= 80) guidance.push("Knowledge evidence is secure enough to move the emphasis towards implementation and impact review.");
-    if (!actions.length) guidance.push("Create one small implementation action and set a review date so the course leads to a testable change in practice.");
+    if (!courseActions.length) guidance.push("Create one small implementation action and set a review date so the course leads to a testable change in practice.");
     return guidance;
-  }, [course, diagnostic, mastery, progress, completedCount, actions.length]);
+  }, [course, diagnostic, mastery, progress, completedCount, courseActions.length]);
 
   function exportEvidencePack() {
     if (!course || !experience) return;
     const notes = course.modules.map(m => ({ title:m.title, note:reflections[`__studio_note:${m.id}`] || reflections[m.id] || "" })).filter(n => n.note);
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(course.title)} CPD evidence pack</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 24px;line-height:1.55;color:#17212b}h1{font-size:30px}h2{margin-top:30px;border-bottom:1px solid #ddd;padding-bottom:6px}.meta{color:#667085}.card{border:1px solid #ddd;border-radius:10px;padding:14px;margin:10px 0}.score{font-size:22px;font-weight:700}li{margin:6px 0}@media print{button{display:none}}</style></head><body><p class="meta">Teaching CPD Hub · Personal evidence pack</p><h1>${esc(course.title)}</h1><p>${esc(course.summary)}</p><p class="meta">${course.duration} minutes · ${esc(course.category)} · progress ${progress}%</p><h2>Learning objectives</h2><ul>${course.objectives.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><h2>Learning evidence</h2><div class="card"><div class="score">Diagnostic: ${diagnostic >= 0 ? `${diagnostic}%` : "not completed"}</div><div class="score">Mastery: ${mastery >= 0 ? `${mastery}%` : "not completed"}</div><p>Recommended route: ${esc(recommendedMode)}</p></div><h2>Completed modules</h2><ul>${course.modules.map(m=>`<li>${row?.completed_modules?.includes(m.id) ? "✓" : "○"} ${esc(m.title)}</li>`).join("")}</ul><h2>Private reflections and notes</h2>${notes.length ? notes.map(n=>`<div class="card"><strong>${esc(n.title)}</strong><p>${esc(n.note)}</p></div>`).join("") : "<p>No saved course notes yet.</p>"}<h2>Implementation guidance</h2><ul>${nextGuidance.map(g=>`<li>${esc(g)}</li>`).join("")}</ul><h2>Course toolkit</h2><ul>${experience.implementationChecklist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="meta">Generated ${new Date().toLocaleString("en-GB")}. Keep this document secure if it contains professional reflections.</p></body></html>`;
+    const actionHtml = courseActions.length ? courseActions.map(a => `<div class="card"><strong>${esc(a.title)}</strong><p>${esc(a.action)}</p><p><b>Status:</b> ${esc(a.status)}${a.review_date ? ` · review ${esc(a.review_date)}` : ""}</p>${a.intended_outcome ? `<p><b>Intended outcome:</b> ${esc(a.intended_outcome)}</p>` : ""}</div>`).join("") : "<p>No linked implementation action plans yet.</p>";
+    const portfolioHtml = coursePortfolio.length ? coursePortfolio.map(p => `<div class="card"><strong>${esc(p.title)}</strong><p>${esc(p.description || "No summary added.")}</p><p><b>${esc(p.evidence_type.replaceAll("_"," "))}</b> · ${esc(p.occurred_on)}</p></div>`).join("") : "<p>No linked portfolio evidence yet.</p>";
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(course.title)} CPD evidence pack</title><style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 24px;line-height:1.55;color:#17212b}h1{font-size:30px}h2{margin-top:30px;border-bottom:1px solid #ddd;padding-bottom:6px}.meta{color:#667085}.card{border:1px solid #ddd;border-radius:10px;padding:14px;margin:10px 0}.score{font-size:22px;font-weight:700}li{margin:6px 0}@media print{button{display:none}}</style></head><body><p class="meta">Teaching CPD Hub · Personal evidence pack</p><h1>${esc(course.title)}</h1><p>${esc(course.summary)}</p><p class="meta">${course.duration} minutes · ${esc(course.category)} · progress ${progress}%</p><h2>Learning objectives</h2><ul>${course.objectives.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><h2>Learning evidence</h2><div class="card"><div class="score">Diagnostic: ${diagnostic >= 0 ? `${diagnostic}%` : "not completed"}</div><div class="score">Mastery: ${mastery >= 0 ? `${mastery}%` : "not completed"}</div><p>Recommended route: ${esc(recommendedMode)}</p></div><h2>Completed modules</h2><ul>${course.modules.map(m=>`<li>${row?.completed_modules?.includes(m.id) ? "✓" : "○"} ${esc(m.title)}</li>`).join("")}</ul><h2>Private reflections and notes</h2>${notes.length ? notes.map(n=>`<div class="card"><strong>${esc(n.title)}</strong><p>${esc(n.note)}</p></div>`).join("") : "<p>No saved course notes yet.</p>"}<h2>Implementation guidance</h2><ul>${nextGuidance.map(g=>`<li>${esc(g)}</li>`).join("")}</ul><h2>Linked action plans</h2>${actionHtml}<h2>Linked portfolio evidence</h2>${portfolioHtml}<h2>Course toolkit</h2><ul>${experience.implementationChecklist.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p class="meta">Generated ${new Date().toLocaleString("en-GB")}. Keep this document secure if it contains professional reflections.</p></body></html>`;
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = `${course.id}-cpd-evidence-pack.html`; a.click(); URL.revokeObjectURL(url);
@@ -245,8 +251,8 @@ export default function CourseStudioPage() {
     </section>}
 
     {view === "evidence" && <section className="studioGrid two">
-      <div className="studioCard"><span className="eyebrow">PERSONAL CPD EVIDENCE PACK</span><h2>Export your learning record</h2><p>The evidence pack combines the course overview, objectives, progress, diagnostic/mastery results, saved course notes and implementation guidance into a portable HTML document that can be opened or printed to PDF.</p><div className="evidenceSummary"><div><strong>{progress}%</strong><span>core progress</span></div><div><strong>{diagnostic>=0?`${diagnostic}%`:"—"}</strong><span>diagnostic</span></div><div><strong>{mastery>=0?`${mastery}%`:"—"}</strong><span>mastery</span></div><div><strong>{Object.keys(noteDrafts).filter(k=>(noteDrafts[k]||"").trim()).length}</strong><span>course notes</span></div></div><button className="primary" onClick={exportEvidencePack}>Download evidence pack</button></div>
-      <div className="studioCard"><span className="eyebrow">IMPLEMENTATION EVIDENCE</span><h2>Linked records</h2><h3>Action plans</h3>{actions.length?<div className="linkedList">{actions.slice(0,5).map(a=><div key={a.id}><strong>{a.title}</strong><span>{a.status}{a.review_date?` · review ${new Date(`${a.review_date}T12:00:00`).toLocaleDateString("en-GB")}`:""}</span></div>)}</div>:<p className="muted">No action plans loaded for this account.</p>}<h3>Recent portfolio evidence</h3>{portfolio.length?<div className="linkedList">{portfolio.slice(0,5).map(p=><div key={p.id}><strong>{p.title}</strong><span>{p.evidence_type.replaceAll("_"," ")} · {new Date(`${p.occurred_on}T12:00:00`).toLocaleDateString("en-GB")}</span></div>)}</div>:<p className="muted">No portfolio entries yet.</p>}</div>
+      <div className="studioCard"><span className="eyebrow">PERSONAL CPD EVIDENCE PACK</span><h2>Export your learning record</h2><p>The evidence pack combines the course overview, objectives, progress, diagnostic/mastery results, saved course notes, linked implementation plans and linked portfolio evidence into a portable HTML document that can be opened or printed to PDF.</p><div className="evidenceSummary"><div><strong>{progress}%</strong><span>core progress</span></div><div><strong>{diagnostic>=0?`${diagnostic}%`:"—"}</strong><span>diagnostic</span></div><div><strong>{mastery>=0?`${mastery}%`:"—"}</strong><span>mastery</span></div><div><strong>{Object.keys(noteDrafts).filter(k=>(noteDrafts[k]||"").trim()).length}</strong><span>course notes</span></div></div><button className="primary" onClick={exportEvidencePack}>Download evidence pack</button></div>
+      <div className="studioCard"><span className="eyebrow">IMPLEMENTATION EVIDENCE</span><h2>Linked to this course</h2><h3>Action plans</h3>{courseActions.length?<div className="linkedList">{courseActions.slice(0,5).map(a=><div key={a.id}><strong>{a.title}</strong><span>{a.status}{a.review_date?` · review ${new Date(`${a.review_date}T12:00:00`).toLocaleDateString("en-GB")}`:""}</span></div>)}</div>:<p className="muted">No action plans linked to this course yet.</p>}<h3>Portfolio evidence</h3>{coursePortfolio.length?<div className="linkedList">{coursePortfolio.slice(0,5).map(p=><div key={p.id}><strong>{p.title}</strong><span>{p.evidence_type.replaceAll("_"," ")} · {new Date(`${p.occurred_on}T12:00:00`).toLocaleDateString("en-GB")}</span></div>)}</div>:<p className="muted">No portfolio evidence linked to this course yet.</p>}</div>
     </section>}
   </main>;
 }
