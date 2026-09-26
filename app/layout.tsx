@@ -11,6 +11,7 @@ import "./phase789.css";
 import "./stage1012.css";
 import "./phase1314.css";
 import "./course-enhancements.css";
+import "./course-lab.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
