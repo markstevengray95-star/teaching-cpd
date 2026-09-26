@@ -1,0 +1,17 @@
+revoke all on public.school_policies from anon;
+revoke all on public.policy_acknowledgements from anon;
+revoke all on public.professional_standards from anon;
+revoke all on public.course_standard_links from anon;
+revoke all on public.appraisal_objectives from anon;
+revoke all on public.appraisal_evidence from anon;
+revoke all on public.inset_days from anon;
+revoke all on public.inset_sessions from anon;
+revoke all on public.inset_bookings from anon;
+revoke all on public.cpd_budgets from anon;
+revoke all on public.cpd_expenses from anon;
+revoke all on public.onboarding_programmes from anon;
+revoke all on public.onboarding_assignments from anon;
+revoke all on public.system_guidance_sources from anon;
+revoke all on public.school_resource_library from anon;
+revoke all on public.platform_admins from anon;
+revoke all on public.organisation_initial_admins from anon;
