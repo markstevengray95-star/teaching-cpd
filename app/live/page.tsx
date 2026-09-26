@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import QRCode from "react-qr-code";
+import { courses, type Course, type Module } from "@/lib/catalogue";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type Profile = { id:string; full_name:string; role:"Staff"|"Department Lead"|"CPD Lead"|"Admin"; department:string };
@@ -21,6 +22,7 @@ export default function LiveCPDPage(){
   const [message,setMessage]=useState("");
   const [showCreate,setShowCreate]=useState(false);
   const [showAddActivity,setShowAddActivity]=useState(false);
+  const [coursePreset,setCoursePreset]=useState<Course|null>(null);
 
   useEffect(()=>{
     const supabase=getSupabaseBrowserClient(); let alive=true;
@@ -29,7 +31,15 @@ export default function LiveCPDPage(){
       if(!auth.user){window.location.href="/auth?next=/live";return;}
       const {data:p,error:profileError}=await supabase.from("staff_profiles").select("id,full_name,role,department").eq("id",auth.user.id).single();
       if(profileError||!p){if(alive){setMessage(profileError?.message||"Unable to load profile.");setLoading(false);}return;}
-      if(alive)setProfile(p as Profile);
+      if(alive){
+        setProfile(p as Profile);
+        const requestedCourseId=new URLSearchParams(window.location.search).get("course");
+        const preset=requestedCourseId?courses.find(c=>c.id===requestedCourseId)||null:null;
+        if(preset){
+          setCoursePreset(preset);
+          if(["Department Lead","CPD Lead","Admin"].includes((p as Profile).role))setShowCreate(true);
+        }
+      }
       const {data,error}=await supabase.from("live_sessions").select("*").eq("presenter_id",auth.user.id).order("starts_at",{ascending:false});
       if(alive){if(error)setMessage(error.message); else {const rows=(data||[]) as LiveSession[];setSessions(rows);if(rows.length)setSelected(rows[0]);}setLoading(false);}
     })();
@@ -72,14 +82,18 @@ export default function LiveCPDPage(){
     const payload={join_code:makeCode(),exit_code:makeCode(),title:String(form.get("title")||"Untitled CPD"),presenter_id:profile.id,presenter_name:profile.full_name,location:String(form.get("location")||""),description:String(form.get("description")||""),objectives:String(form.get("objectives")||"").split("\n").map(s=>s.trim()).filter(Boolean),starts_at:new Date(starts).toISOString(),status:"draft" as const};
     const {data,error}=await supabase.from("live_sessions").insert(payload).select().single();if(error){setMessage(error.message);return;}
     const session=data as LiveSession;
-    const {error:activityError}=await supabase.from("live_activities").insert([
-      {session_id:session.id,sort_order:1,activity_type:"rating",title:"Starting confidence",prompt:"How confident do you currently feel about this CPD topic?",options:["1","2","3","4","5"],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"pre"},
-      {session_id:session.id,sort_order:2,activity_type:"short_answer",title:"Apply it",prompt:"What is one practical change you could test in your own classroom?",options:[],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"},
-      {session_id:session.id,sort_order:3,activity_type:"rating",title:"Ending confidence",prompt:"How confident do you feel now?",options:["1","2","3","4","5"],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"post"},
-      {session_id:session.id,sort_order:4,activity_type:"exit_ticket",title:"Exit ticket",prompt:"What is the most important idea you are taking from this session?",options:[],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"},
-    ]);
+    const presetQuiz=coursePreset?.modules.find((m):m is Extract<Module,{type:"quiz"}=>m.type==="quiz");
+    const presetScenario=coursePreset?.modules.find((m):m is Extract<Module,{type:"scenario"}=>m.type==="scenario");
+    const seeded:Array<Record<string,unknown>>=[];let sortOrder=1;
+    seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"rating",title:"Starting confidence",prompt:"How confident do you currently feel about this CPD topic?",options:["1","2","3","4","5"],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"pre"});
+    if(presetQuiz)seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"multiple_choice",title:presetQuiz.title,prompt:presetQuiz.question,options:presetQuiz.options,required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"});
+    if(presetScenario)seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"scenario",title:presetScenario.title,prompt:presetScenario.prompt,options:presetScenario.options.map(o=>o.label),required:false,is_open:false,response_mode:"anonymous",confidence_phase:"none"});
+    seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"short_answer",title:"Apply it",prompt:coursePreset?`What is one practical change from ${coursePreset.title} you could test in your own classroom?`:"What is one practical change you could test in your own classroom?",options:[],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"});
+    seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"rating",title:"Ending confidence",prompt:"How confident do you feel now?",options:["1","2","3","4","5"],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"post"});
+    seeded.push({session_id:session.id,sort_order:sortOrder++,activity_type:"exit_ticket",title:"Exit ticket",prompt:"What is the most important idea you are taking from this session?",options:[],required:true,is_open:false,response_mode:"anonymous",confidence_phase:"none"});
+    const {error:activityError}=await supabase.from("live_activities").insert(seeded);
     if(activityError){setMessage(activityError.message);return;}
-    setSessions(prev=>[session,...prev]);setSelected(session);setShowCreate(false);formEl.reset();setMessage("Session created. Start it when you are ready.");
+    setSessions(prev=>[session,...prev]);setSelected(session);setShowCreate(false);setCoursePreset(null);formEl.reset();setMessage("Session created with course-linked live activities. Start it when you are ready.");
   }
 
   async function changeStatus(session:LiveSession,status:LiveSession["status"]){
@@ -128,11 +142,11 @@ export default function LiveCPDPage(){
 
   if(loading)return <main className="phasePage"><div className="phaseCard">Loading live CPD…</div></main>;
   return <main className="phasePage">
-    <section className="phaseHero compactHero"><a className="phaseBack" href="/">← Teaching CPD</a><span className="eyebrow">STAGE 10 · ADVANCED LIVE CPD</span><h1>Secure, interactive staff-development sessions</h1><p>Rotate time-limited QR codes, push live activities, choose named or anonymous response display, compare confidence before and after, and review participation in real time.</p><div className="phaseActions">{leader&&<button className="primary" onClick={()=>setShowCreate(true)}>Create CPD session</button>}<a className="secondary phaseLinkButton" href="/auth">Account</a></div></section>
+    <section className="phaseHero compactHero"><a className="phaseBack" href="/">← Teaching CPD</a><span className="eyebrow">STAGE 10 · ADVANCED LIVE CPD</span><h1>Secure, interactive staff-development sessions</h1><p>Rotate time-limited QR codes, push live activities, choose named or anonymous response display, compare confidence before and after, and review participation in real time.</p><div className="phaseActions">{leader&&<button className="primary" onClick={()=>{setCoursePreset(null);setShowCreate(true);}}>Create CPD session</button>}<a className="secondary phaseLinkButton" href="/auth">Account</a></div></section>
     {message&&<div className="phaseNotice">{message}</div>}
     {!leader&&<div className="phaseNotice">Staff accounts can join live CPD from a QR code. Department Lead, CPD Lead or Admin permission is required to facilitate sessions.</div>}
 
-    {showCreate&&leader&&<form className="phaseCard createSessionCard" onSubmit={createSession}><div className="phaseCardHead"><div><span className="eyebrow">NEW SESSION</span><h2>Create live CPD</h2></div><button type="button" className="iconButton" onClick={()=>setShowCreate(false)}>×</button></div><div className="phaseFormGrid"><label>Session title<input required name="title" placeholder="e.g. Effective Questioning"/></label><label>Location<input name="location" placeholder="e.g. Main Hall"/></label><label>Start time<input required name="starts_at" type="datetime-local" defaultValue={localDateTime()}/></label><label className="span2">Description<textarea name="description" rows={3}/></label><label className="span2">Learning objectives<textarea name="objectives" rows={4} placeholder={"One objective per line\nUnderstand...\nApply..."}/></label></div><button className="primary">Create session</button></form>}
+    {showCreate&&leader&&<form key={coursePreset?.id||"blank-live-session"} className="phaseCard createSessionCard" onSubmit={createSession}><div className="phaseCardHead"><div><span className="eyebrow">NEW SESSION</span><h2>{coursePreset?`Run ${coursePreset.title} live`:"Create live CPD"}</h2>{coursePreset&&<p className="muted">Course objectives and suitable quiz/scenario activities will seed this session automatically.</p>}</div><button type="button" className="iconButton" onClick={()=>{setShowCreate(false);setCoursePreset(null);}}>×</button></div><div className="phaseFormGrid"><label>Session title<input required name="title" defaultValue={coursePreset?.title||""} placeholder="e.g. Effective Questioning"/></label><label>Location<input name="location" placeholder="e.g. Main Hall"/></label><label>Start time<input required name="starts_at" type="datetime-local" defaultValue={localDateTime()}/></label><label className="span2">Description<textarea name="description" rows={3} defaultValue={coursePreset?.summary||""}/></label><label className="span2">Learning objectives<textarea name="objectives" rows={4} defaultValue={coursePreset?.objectives.join("\n")||""} placeholder={"One objective per line\nUnderstand...\nApply..."}/></label></div><button className="primary">Create session</button></form>}
 
     <section className="liveLayout"><div className="phaseCard liveList"><div className="phaseCardHead"><div><span className="eyebrow">YOUR SESSIONS</span><h2>{sessions.length} created</h2></div></div>{sessions.length===0?<p className="muted">No live CPD sessions yet.</p>:sessions.map(s=><button key={s.id} className={`liveSessionRow ${selected?.id===s.id?"selected":""}`} onClick={()=>setSelected(s)}><div><strong>{s.title}</strong><span>{new Date(s.starts_at).toLocaleString("en-GB")} · {s.location||"No location"}</span></div><b className={`statusPill ${s.status}`}>{s.status}</b></button>)}</div>
 
