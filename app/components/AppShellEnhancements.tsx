@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { claimSchoolAccess } from "@/lib/schoolAccess";
 
 const PUBLIC_PREFIXES = ["/auth", "/access", "/join", "/offline"];
+const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access"];
 
 export default function AppShellEnhancements() {
   const pathname = usePathname();
@@ -27,6 +28,7 @@ export default function AppShellEnhancements() {
 
   useEffect(() => {
     if (PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix))) return;
+    if (SELF_GUARDED_SETUP_PREFIXES.some(prefix => pathname.startsWith(prefix))) return;
     const client = getSupabaseBrowserClient();
     let active = true;
     (async () => {
