@@ -9,6 +9,7 @@ import { schoolCoursesBatch3 } from "./schoolCoursesBatch3";
 import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
 import { deepTeachingCourses } from "./deepTeachingCourses";
 import { deepTeachingCourses2 } from "./deepTeachingCourses2";
+import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -38,7 +39,8 @@ function validateCourse(course: Course) {
   if (new Set(moduleIds).size !== moduleIds.length) throw new Error(`CPD course ${course.id} contains duplicate module ids`);
   const interactiveTypes = new Set(["quiz", "scenario", "reflection", "checklist", "activity"]);
   if (!course.modules.some(module => interactiveTypes.has(module.type))) throw new Error(`CPD course ${course.id} needs at least one interactive or reflective module`);
+  if (!course.modules.some(module => module.type === "visual")) throw new Error(`CPD course ${course.id} needs at least one visual explainer`);
 }
 
-export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements];
+export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements].map(enrichCourseWithVisuals);
 courses.forEach(validateCourse);
