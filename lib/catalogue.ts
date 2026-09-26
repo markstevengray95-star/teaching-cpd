@@ -7,6 +7,7 @@ import { schoolCoursesBatch1 } from "./schoolCoursesBatch1";
 import { schoolCoursesBatch2 } from "./schoolCoursesBatch2";
 import { schoolCoursesBatch3 } from "./schoolCoursesBatch3";
 import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
+import type { Course } from "./data";
 
 export { categoryOrder };
 export type { Course, Module, Role, CourseCategory } from "./data";
@@ -25,4 +26,15 @@ const replacementMap = new Map(
 );
 const replacementIds = new Set(replacementMap.keys());
 const replacements = [...replacementMap.values()];
+
+function validateCourse(course: Course) {
+  if (!course.id.trim() || !course.title.trim()) throw new Error("CPD course is missing an id or title");
+  if (!course.modules.length) throw new Error(`CPD course ${course.id} has no modules`);
+  const moduleIds = course.modules.map(module => module.id);
+  if (new Set(moduleIds).size !== moduleIds.length) throw new Error(`CPD course ${course.id} contains duplicate module ids`);
+  const interactiveTypes = new Set(["quiz", "scenario", "reflection", "checklist", "activity"]);
+  if (!course.modules.some(module => interactiveTypes.has(module.type))) throw new Error(`CPD course ${course.id} needs at least one interactive or reflective module`);
+}
+
 export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements];
+courses.forEach(validateCourse);
