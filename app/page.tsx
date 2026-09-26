@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { categoryOrder, courses, type Course, type Module, type Role } from "@/lib/catalogue";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import CourseLab from "./components/CourseLab";
 
 type Profile = { id: string; name: string; email: string; role: Role; department: string };
 type ProgressItem = { completedModules: string[]; reflections: Record<string, string>; completedAt?: string };
@@ -76,6 +77,22 @@ export default function Home() {
     else notify(finished ? "Course completed and saved to your CPD record." : "Progress saved to your account.");
   }
 
+  async function saveCourseMeta(course: Course, key: string, value: string) {
+    if (!profile) return;
+    const current = progress[course.id] || { completedModules: [], reflections: {} };
+    const next: ProgressItem = { ...current, reflections: { ...current.reflections, [key]: value } };
+    setProgress(prev => ({ ...prev, [course.id]: next }));
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase!.from("course_progress").upsert({
+      user_id: profile.id,
+      course_id: course.id,
+      completed_modules: next.completedModules,
+      reflections: next.reflections,
+      completed_at: next.completedAt || null,
+    }, { onConflict: "user_id,course_id" });
+    if (error) notify(`Could not save Course Lab data: ${error.message}`);
+  }
+
   async function saveProfile(next: Profile) {
     const supabase = getSupabaseBrowserClient();
     setSyncing(true);
@@ -122,7 +139,7 @@ export default function Home() {
       </div>
     </main>
 
-    {selectedCourse && <CourseModal course={selectedCourse} state={progress[selectedCourse.id]} onClose={() => setSelectedCourse(null)} onComplete={completeModule} />}
+    {selectedCourse && <CourseModal key={selectedCourse.id} course={selectedCourse} state={progress[selectedCourse.id]} onClose={() => setSelectedCourse(null)} onComplete={completeModule} onSaveMeta={(key, value) => saveCourseMeta(selectedCourse, key, value)} onOpenCourse={openCourse} />}
     <nav className="mobileNav">
       <NavButton icon="⌂" label="Home" active={view === "dashboard"} onClick={() => setView("dashboard")} />
       <NavButton icon="▦" label="Courses" active={view === "courses"} onClick={() => setView("courses")} />
@@ -166,10 +183,11 @@ function ProfileView({ profile, onSave, onSignOut }: { profile: Profile; onSave:
   return <><section className="pageTitle"><div><span className="eyebrow">PROFILE</span><h1>Your professional profile.</h1><p>Your role is controlled by the school; you can update your name and department.</p></div></section><div className="panel profilePanel"><div className="profileHero"><div className="avatar big">{initials(draft.name)}</div><div><h2>{draft.name}</h2><p>{draft.role} · {draft.department || "No department"}</p></div></div><div className="formGrid"><label>Name<input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label><label>Email<input value={draft.email} readOnly /></label><label>Role<input value={draft.role} readOnly /></label><label>Department<input value={draft.department} onChange={e => setDraft({ ...draft, department: e.target.value })} /></label></div><div className="profileActions"><button className="primary" onClick={() => onSave(draft)}>Save profile</button><button className="danger" onClick={onSignOut}>Sign out</button></div></div></>;
 }
 
-function CourseModal({ course, state, onClose, onComplete }: { course: Course; state?: ProgressItem; onClose: () => void; onComplete: (c: Course, m: Module, reflection?: string) => Promise<void> }) {
+function CourseModal({ course, state, onClose, onComplete, onSaveMeta, onOpenCourse }: { course: Course; state?: ProgressItem; onClose: () => void; onComplete: (c: Course, m: Module, reflection?: string) => Promise<void>; onSaveMeta: (key: string, value: string) => Promise<void>; onOpenCourse: (course: Course) => void }) {
   const completed = state?.completedModules || [];
   const firstIncomplete = course.modules.findIndex(m => !completed.includes(m.id));
   const [index, setIndex] = useState(firstIncomplete === -1 ? 0 : firstIncomplete);
+  const [showLab, setShowLab] = useState(false);
   const module = course.modules[index];
   const [answer, setAnswer] = useState<number | null>(null);
   const [writtenResponse, setWrittenResponse] = useState(state?.reflections[module.id] || "");
@@ -195,6 +213,10 @@ function CourseModal({ course, state, onClose, onComplete }: { course: Course; s
       setFeedback("Work through every item before marking this module complete.");
       return;
     }
+    if (module.type === "quiz" && answer !== module.answer) {
+      setFeedback("Choose the correct answer before completing this knowledge check.");
+      return;
+    }
     setBusy(true);
     await onComplete(course, module, isWritten ? writtenResponse.trim() : undefined);
     setBusy(false);
@@ -202,12 +224,12 @@ function CourseModal({ course, state, onClose, onComplete }: { course: Course; s
   }
 
   const percent = Math.round((completed.length / course.modules.length) * 100);
-  const needsAnswer = (module.type === "quiz" || module.type === "scenario") && answer === null;
+  const needsAnswer = module.type === "scenario" ? answer === null : module.type === "quiz" ? answer !== module.answer : false;
   const checklistIncomplete = module.type === "checklist" && checkedItems.length < module.items.length;
   const activityMinimum = module.type === "activity" ? (module.minimumCharacters ?? 30) : 0;
   const activityIncomplete = module.type === "activity" && writtenResponse.trim().length < activityMinimum;
 
-  return <div className="modalBackdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="courseModal"><header className="courseModalHead"><div><span className="eyebrow">{course.category} · {course.duration} MIN</span><h2>{course.title}</h2></div><button className="iconButton" onClick={onClose}>×</button></header><div className="courseProgress"><div><span>{completed.length} of {course.modules.length} modules complete</span><strong>{percent}%</strong></div><Progress value={percent} /></div><div className="moduleLayout"><aside className="moduleNav">{course.modules.map((m, i) => <button key={m.id} className={`${i === index ? "current" : ""} ${completed.includes(m.id) ? "done" : ""}`} onClick={() => setIndex(i)}><span>{completed.includes(m.id) ? "✓" : i + 1}</span><div><strong>{m.title}</strong><small>{m.type}</small></div></button>)}</aside><article className="moduleContent"><span className={`moduleType ${module.type}`}>{module.type.toUpperCase()}</span><h2>{module.title}</h2>
+  return <div className="modalBackdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className={`courseModal ${showLab ? "labMode" : ""}`}><header className="courseModalHead"><div><span className="eyebrow">{course.category} · {course.duration} MIN</span><h2>{course.title}</h2></div><div className="courseModalHeadActions"><button className={showLab ? "primary courseLabToggle" : "secondary courseLabToggle"} onClick={() => setShowLab(v => !v)}>{showLab ? "Back to modules" : "Open Course Lab"}</button><button className="iconButton" onClick={onClose}>×</button></div></header><div className="courseProgress"><div><span>{completed.length} of {course.modules.length} modules complete</span><strong>{percent}%</strong></div><Progress value={percent} /></div>{showLab ? <div className="courseLabViewport"><CourseLab course={course} allCourses={courses} savedMeta={state?.reflections || {}} completedCount={completed.length} totalModules={course.modules.length} onSaveMeta={onSaveMeta} onOpenCourse={onOpenCourse}/></div> : <div className="moduleLayout"><aside className="moduleNav">{course.modules.map((m, i) => <button key={m.id} className={`${i === index ? "current" : ""} ${completed.includes(m.id) ? "done" : ""}`} onClick={() => setIndex(i)}><span>{completed.includes(m.id) ? "✓" : i + 1}</span><div><strong>{m.title}</strong><small>{m.type}</small></div></button>)}</aside><article className="moduleContent"><span className={`moduleType ${module.type}`}>{module.type.toUpperCase()}</span><h2>{module.title}</h2>
   {module.type === "content" && <><p className="lead">{module.body}</p>{module.keyPoints && <div className="keyPoints"><strong>Key points</strong>{module.keyPoints.map(k => <div key={k}>✓ {k}</div>)}</div>}</>}
   {module.type === "quiz" && <><p className="lead">{module.question}</p><div className="optionList">{module.options.map((opt, i) => <button key={opt} className={answer === i ? "option selected" : "option"} onClick={() => { setAnswer(i); setFeedback(i === module.answer ? `Correct. ${module.feedback}` : "Not quite. Review the options and try again."); }}>{opt}</button>)}</div></>}
   {module.type === "scenario" && <><div className="scenarioBox">{module.prompt}</div><div className="optionList">{module.options.map((opt, i) => <button key={opt.label} className={answer === i ? "option selected" : "option"} onClick={() => { setAnswer(i); setFeedback(opt.feedback); }}>{opt.label}</button>)}</div></>}
@@ -215,7 +237,7 @@ function CourseModal({ course, state, onClose, onComplete }: { course: Course; s
   {module.type === "visual" && <div className="visualExplainer">{module.caption && <p>{module.caption}</p>}<div className={`visualGrid ${module.layout}`}>{module.items.map((item, i) => <div className="visualCard" key={`${item.heading}-${i}`}><div className="visualCardIcon">{item.icon || String(i + 1)}</div><strong>{item.heading}</strong><span>{item.text}</span></div>)}</div></div>}
   {module.type === "checklist" && <><p className="lead">{module.prompt}</p><div className="interactiveChecklist">{module.items.map((item, i) => { const checked = checkedItems.includes(i); return <button type="button" aria-pressed={checked} key={item} className={checked ? "checkItem checked" : "checkItem"} onClick={() => setCheckedItems(prev => checked ? prev.filter(n => n !== i) : [...prev, i])}><span className="checkMark">✓</span><span className="checkItemText">{item}</span></button>; })}</div><div className="checkProgress">{checkedItems.length} of {module.items.length} checked</div></>}
   {module.type === "activity" && <div className="practiceActivity"><p className="lead">{module.prompt}</p><ol>{module.instructions.map(step => <li key={step}>{step}</li>)}</ol><textarea className="activityResponse" rows={7} placeholder={module.placeholder || "Write your response…"} value={writtenResponse} onChange={e => setWrittenResponse(e.target.value)} /><div className="activityCounter">{writtenResponse.trim().length} characters · minimum {activityMinimum}</div><small className="muted">This response is saved privately to your CPD account.</small></div>}
-  {feedback && <div className="feedback">{feedback}</div>}<div className="moduleActions"><button className="secondary" onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}>Back</button><div className="actionSpacer" />{!moduleComplete && <button className="primary" onClick={mark} disabled={busy || needsAnswer || checklistIncomplete || activityIncomplete}>{busy ? "Saving…" : module.type === "reflection" ? "Save reflection" : module.type === "activity" ? "Save activity" : module.type === "checklist" ? "Complete checklist" : "Mark complete"}</button>}{moduleComplete && index < course.modules.length - 1 && <button className="primary" onClick={() => setIndex(index + 1)}>Next module</button>}{moduleComplete && index === course.modules.length - 1 && <button className="primary" onClick={onClose}>Finish course</button>}</div></article></div></section></div>;
+  {feedback && <div className="feedback">{feedback}</div>}<div className="moduleActions"><button className="secondary" onClick={() => setIndex(Math.max(0, index - 1))} disabled={index === 0}>Back</button><div className="actionSpacer" />{!moduleComplete && <button className="primary" onClick={mark} disabled={busy || needsAnswer || checklistIncomplete || activityIncomplete}>{busy ? "Saving…" : module.type === "reflection" ? "Save reflection" : module.type === "activity" ? "Save activity" : module.type === "checklist" ? "Complete checklist" : "Mark complete"}</button>}{moduleComplete && index < course.modules.length - 1 && <button className="primary" onClick={() => setIndex(index + 1)}>Next module</button>}{moduleComplete && index === course.modules.length - 1 && <button className="primary" onClick={onClose}>Finish course</button>}</div></article></div>}</section></div>;
 }
 
 function CourseCard({ course, state, onClick }: { course: Course; state?: ProgressItem; onClick: () => void }) { const count = state?.completedModules.length || 0; const pct = Math.round(count / course.modules.length * 100); const complete = count === course.modules.length; return <button className="courseCard" onClick={onClick}><div className="courseCardTop"><span className={`categoryDot cat-${course.category.replace(/[^a-z]/gi, "").toLowerCase()}`} /><span>{course.category}</span><span className="courseLevel">{course.level}</span></div><h3>{course.title}</h3><p>{course.summary}</p><div className="courseCardFoot"><span>{course.duration} min</span><span>{course.modules.length} modules</span></div>{count > 0 && <div className="miniProgress"><Progress value={pct} /><span>{complete ? "Completed" : `${pct}%`}</span></div>}</button>; }
