@@ -7,7 +7,8 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { claimSchoolAccess } from "@/lib/schoolAccess";
 
 const PUBLIC_PREFIXES = ["/auth", "/access", "/join", "/offline"];
-const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access"];
+const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/platform"];
+const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 export default function AppShellEnhancements() {
   const pathname = usePathname();
@@ -25,6 +26,25 @@ export default function AppShellEnhancements() {
       window.removeEventListener("offline", update);
     };
   }, []);
+
+  useEffect(() => {
+    if (PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix))) return;
+    const client = getSupabaseBrowserClient();
+    let active = true;
+    (async () => {
+      const { data: auth } = await client.auth.getUser();
+      if (!active || !auth.user) return;
+      const { data: profile } = await client.from("staff_profiles").select("organisation_id").eq("id", auth.user.id).maybeSingle();
+      if (!active || !profile?.organisation_id) return;
+      const { data: org } = await client.from("organisations").select("brand_name,accent_color,secondary_color").eq("id", profile.organisation_id).maybeSingle();
+      if (!active || !org) return;
+      const root = document.documentElement;
+      if (org.accent_color && HEX.test(org.accent_color)) root.style.setProperty("--green", org.accent_color);
+      if (org.secondary_color && HEX.test(org.secondary_color)) root.style.setProperty("--green2", org.secondary_color);
+      if (org.brand_name) document.title = `${org.brand_name} · CPD Hub`;
+    })();
+    return () => { active = false; };
+  }, [pathname]);
 
   useEffect(() => {
     if (PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix))) return;
