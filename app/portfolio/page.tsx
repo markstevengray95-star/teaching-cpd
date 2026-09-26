@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { courses } from "@/lib/catalogue";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-type PortfolioEntry = { id: string; title: string; description: string; evidence_type: string; course_id: string | null; external_link: string | null; cpd_hours: number | string; occurred_on: string; created_at: string };
+type PortfolioEntry = { id: string; title: string; description: string; evidence_type: string; course_id: string | null; external_link: string | null; evidence_path: string | null; cpd_hours: number | string; occurred_on: string; created_at: string };
 type CourseRecord = { course_id: string; completed_at: string };
 type LiveRecord = { session_id: string; checked_out_at: string | null };
 type LiveSession = { id: string; title: string; presenter_name: string; starts_at: string; ends_at: string | null };
@@ -40,7 +40,7 @@ export default function PortfolioPage() {
       if (!auth.user) { window.location.href = "/auth?next=/portfolio"; return; }
       setUserId(auth.user.id);
       const [{ data: portfolio, error: portfolioError }, { data: completed, error: completedError }, { data: live, error: liveError }] = await Promise.all([
-        supabase.from("portfolio_entries").select("id,title,description,evidence_type,course_id,external_link,cpd_hours,occurred_on,created_at").eq("user_id", auth.user.id).order("occurred_on", { ascending: false }),
+        supabase.from("portfolio_entries").select("id,title,description,evidence_type,course_id,external_link,evidence_path,cpd_hours,occurred_on,created_at").eq("user_id", auth.user.id).order("occurred_on", { ascending: false }),
         supabase.from("course_progress").select("course_id,completed_at").eq("user_id", auth.user.id).not("completed_at", "is", null).order("completed_at", { ascending: false }),
         supabase.from("live_participants").select("session_id,checked_out_at").eq("user_id", auth.user.id).eq("status", "completed").order("checked_out_at", { ascending: false }),
       ]);
@@ -71,7 +71,7 @@ export default function PortfolioPage() {
     if (linkText) {
       try {
         const parsed = new URL(linkText);
-        if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error();
         externalLink = parsed.toString();
       } catch {
         setMessage("Use a valid http or https evidence link, or leave the link blank.");
@@ -88,7 +88,7 @@ export default function PortfolioPage() {
       cpd_hours: Math.max(0, Number(form.get("cpd_hours") || 0)),
       occurred_on: String(form.get("occurred_on") || today()),
     };
-    const { data, error } = await supabase.from("portfolio_entries").insert(payload).select("id,title,description,evidence_type,course_id,external_link,cpd_hours,occurred_on,created_at").single();
+    const { data, error } = await supabase.from("portfolio_entries").insert(payload).select("id,title,description,evidence_type,course_id,external_link,evidence_path,cpd_hours,occurred_on,created_at").single();
     if (error) { setMessage(error.message); return; }
     setEntries(prev => [data as PortfolioEntry, ...prev]);
     setShowForm(false);
@@ -96,12 +96,21 @@ export default function PortfolioPage() {
     e.currentTarget.reset();
   }
 
-  async function removeEntry(id: string) {
+  async function openEvidence(entry: PortfolioEntry) {
+    if (!entry.evidence_path) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data, error } = await supabase.storage.from("cpd-evidence").createSignedUrl(entry.evidence_path, 300);
+    if (error || !data?.signedUrl) { setMessage(error?.message || "Unable to open evidence."); return; }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function removeEntry(entry: PortfolioEntry) {
     const supabase = getSupabaseBrowserClient();
     if (!supabase) return;
-    const { error } = await supabase.from("portfolio_entries").delete().eq("id", id).eq("user_id", userId);
+    const { error } = await supabase.from("portfolio_entries").delete().eq("id", entry.id).eq("user_id", userId);
     if (error) { setMessage(error.message); return; }
-    setEntries(prev => prev.filter(e => e.id !== id));
+    if (entry.evidence_path) await supabase.storage.from("cpd-evidence").remove([entry.evidence_path]);
+    setEntries(prev => prev.filter(e => e.id !== entry.id));
     setMessage("Portfolio entry removed.");
   }
 
@@ -153,7 +162,7 @@ export default function PortfolioPage() {
       <div className="phaseCard">
         <div className="phaseCardHead"><div><span className="eyebrow">YOUR EVIDENCE</span><h2>Additional portfolio entries</h2></div></div>
         <div className="entryList">
-          {entries.map(entry => <div className="entryRow" key={entry.id}><div><h3>{entry.title}</h3><p>{entry.description || "No summary added."}</p><div className="entryMeta"><span>{evidenceLabels[entry.evidence_type] || entry.evidence_type}</span><span>{Number(entry.cpd_hours || 0).toFixed(1)} h</span><span>{new Date(`${entry.occurred_on}T12:00:00`).toLocaleDateString("en-GB")}</span>{entry.external_link && <a className="smallLink" href={entry.external_link} target="_blank" rel="noreferrer">Evidence link ↗</a>}</div></div><button className="textButton" onClick={() => removeEntry(entry.id)}>Remove</button></div>)}
+          {entries.map(entry => <div className="entryRow" key={entry.id}><div><h3>{entry.title}</h3><p>{entry.description || "No summary added."}</p><div className="entryMeta"><span>{evidenceLabels[entry.evidence_type] || entry.evidence_type}</span><span>{Number(entry.cpd_hours || 0).toFixed(1)} h</span><span>{new Date(`${entry.occurred_on}T12:00:00`).toLocaleDateString("en-GB")}</span>{entry.external_link && <a className="smallLink" href={entry.external_link} target="_blank" rel="noreferrer">Evidence link ↗</a>}{entry.evidence_path && <button className="smallLink evidenceLinkButton" onClick={() => openEvidence(entry)}>Private evidence ↗</button>}</div></div><button className="textButton" onClick={() => removeEntry(entry)}>Remove</button></div>)}
           {!entries.length && <div className="emptyDevelopment">No additional evidence yet. Add external CPD, coaching or classroom evidence when it is useful.</div>}
         </div>
       </div>
