@@ -6,7 +6,7 @@ import { applyAccessibilityPreferences, readAccessibilityPreferences } from "@/l
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { claimSchoolAccess } from "@/lib/schoolAccess";
 
-const PUBLIC_PREFIXES = ["/auth", "/access", "/join", "/offline"];
+const PUBLIC_PREFIXES = ["/auth", "/admin-login", "/access", "/join", "/offline"];
 const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/platform"];
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
