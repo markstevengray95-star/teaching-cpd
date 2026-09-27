@@ -31,6 +31,7 @@ export default function DevelopmentDock() {
   const links: [string,string][] = [
     ["/", "Home"],
     ["/school-hub", "School hub"],
+    ["/safeguarding", "Safeguarding"],
     ["/reminders", "Reminders"],
     ["/micro-cpd", "Micro-CPD"],
     ["/course-studio", "Course Studio"],
