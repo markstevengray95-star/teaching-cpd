@@ -36,6 +36,7 @@ export default function DevelopmentDock() {
     ["/reminders", "Reminders"],
     ["/micro-cpd", "Micro-CPD"],
     ["/course-studio", "Course Studio"],
+    ["/course-packs", "Course packs"],
     ["/training", "My training"],
     ["/needs-audit", "Needs audit"],
     ["/coach", "CPD Coach"],
