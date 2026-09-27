@@ -81,7 +81,7 @@ export default function AuthPage() {
         });
         if (error) throw error;
         if (data.session) await finishSchoolAccess();
-        else setMessage("Account created. Confirm your school email, then return here to sign in. School access is granted only when the email domain belongs to a verified active subscription.");
+        else setMessage("Account created. Confirm your school email, then return here to sign in. If your school has an active subscription and verified domain, access will be granted automatically without an invitation.");
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to authenticate.");
@@ -90,26 +90,29 @@ export default function AuthPage() {
     }
   }
 
+  function openAccountCreation(){setShowFallback(true);setPasswordMode("signup");setMessage("");}
+
   return <main className="phasePage authPhasePage schoolAuthPage">
     <section className="phaseHero compactHero schoolAuthHero">
       <span className="eyebrow">TEACHING CPD · SCHOOL ACCESS</span>
       <h1>Use your school account.</h1>
-      <p>If your school has an active subscription, staff using its verified email domain are connected to the correct school automatically. No invitation code is required for normal staff onboarding.</p>
+      <p>If your school has purchased the School plan, any member of staff using its verified school email domain can create an account and join automatically. No individual invitation code is required.</p>
       <div className="schoolAccessFlow" aria-label="School access process">
-        <span><b>1</b> School subscription</span><i>→</i><span><b>2</b> Verified domain</span><i>→</i><span><b>3</b> Staff school login</span><i>→</i><span><b>4</b> Automatic access</span>
+        <span><b>1</b> School subscription</span><i>→</i><span><b>2</b> Verified domain</span><i>→</i><span><b>3</b> Staff creates/signs into account</span><i>→</i><span><b>4</b> Automatic school access</span>
       </div>
-      <div className="schoolAuthTrust"><span>✓ School-scoped data</span><span>✓ Existing CPD records retained</span><span>✓ Subscription checked automatically</span></div>
+      <div className="schoolAuthTrust"><span>✓ Whole-school access</span><span>✓ School-scoped data</span><span>✓ Admin-controlled roles</span></div>
     </section>
 
     <section className="phaseCard authCard schoolAuthCard">
       {!hasSupabaseConfig() && <div className="phaseNotice">The authentication service is not connected.</div>}
-      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN</span><h2>Continue with your school identity</h2><p>Choose the provider your school uses for staff email.</p></div>
+      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN / CREATE ACCOUNT</span><h2>Continue with your school identity</h2><p>First time here? Choosing Google or Microsoft creates your account automatically when your school identity is accepted.</p></div>
       <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
       <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={() => schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
 
-      <div className="schoolDomainRule"><strong>How access works</strong><p>Signing in proves who you are. The app then checks your email domain against a verified school subscription before allowing access to school CPD data.</p></div>
+      <div className="schoolDomainRule"><strong>No invite needed for subscribed schools</strong><p>Once the school domain is verified and the subscription is active, any confirmed staff email on that domain can join. New users start with Staff access unless a School Admin gives them a higher role.</p></div>
 
-      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); setMessage(""); }}>{showFallback ? "Hide email/password fallback" : "Use email/password fallback"}</button>
+      <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a></div>
+      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide email/password options" : "Use email/password fallback"}</button>
       {showFallback && <form className="schoolFallbackForm" onSubmit={passwordSubmit}>
         {passwordMode === "signup" && <>
           <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
@@ -117,12 +120,12 @@ export default function AuthPage() {
         </>}
         <label>School email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@school.org" /></label>
         <label>Password<input required minLength={8} type="password" autoComplete={passwordMode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
-        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in with email" : "Create email fallback account"}</button>
-        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "First time using email/password?" : "Already have a password account?"}</button>
+        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in with email" : "Create school account"}</button>
+        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "Create a new school account" : "Already have a password account?"}</button>
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school unless an authorised administrator has explicitly provisioned that account through another supported route.</p>
+      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. School access is based on the confirmed email domain and the school's active subscription.</p>
     </section>
   </main>;
 }
