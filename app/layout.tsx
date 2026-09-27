@@ -23,6 +23,8 @@ import "./staff-sync.css";
 import "./staff-access.css";
 import "./admin-login.css";
 import "./safeguarding.css";
+import "./safeguarding-documents.css";
+import "./digital-certificates.css";
 import "./reminders.css";
 import "./help.css";
 import "./launch-readiness.css";
