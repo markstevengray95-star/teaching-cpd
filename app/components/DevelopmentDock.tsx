@@ -26,12 +26,13 @@ export default function DevelopmentDock() {
     return () => { active = false; };
   }, []);
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/access") || pathname.startsWith("/join")) return null;
+  if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/access") || pathname.startsWith("/join")) return null;
 
   const links: [string,string][] = [
     ["/", "Home"],
     ["/school-hub", "School hub"],
     ["/safeguarding", "Safeguarding"],
+    ["/safety", "Safety & compliance"],
     ["/reminders", "Reminders"],
     ["/micro-cpd", "Micro-CPD"],
     ["/course-studio", "Course Studio"],
