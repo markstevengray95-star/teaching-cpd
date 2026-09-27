@@ -26,7 +26,7 @@ export default function DevelopmentDock() {
     return () => { active = false; };
   }, []);
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/access") || pathname.startsWith("/join")) return null;
+  if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/access") || pathname.startsWith("/join")) return null;
 
   const links: [string,string][] = [
     ["/", "Home"],
@@ -61,6 +61,7 @@ export default function DevelopmentDock() {
     links.push(["/admin", "CPD admin"]);
     links.push(["/builder", "Course creator"]);
   }
+  if (role === "Admin") links.push(["/staff-access", "Staff access"]);
   if (platformAdmin) links.push(["/platform", "Platform"]);
 
   return <nav className="developmentDock" aria-label="Professional development navigation">
