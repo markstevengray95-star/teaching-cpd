@@ -32,6 +32,7 @@ export default function DevelopmentDock() {
     ["/", "Home"],
     ["/school-hub", "School hub"],
     ["/reminders", "Reminders"],
+    ["/micro-cpd", "Micro-CPD"],
     ["/course-studio", "Course Studio"],
     ["/training", "My training"],
     ["/needs-audit", "Needs audit"],
