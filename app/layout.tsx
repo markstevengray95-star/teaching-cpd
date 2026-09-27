@@ -17,6 +17,7 @@ import "./course-studio.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
+import "./owner-portal.css";
 import "./staff-sync.css";
 import "./staff-access.css";
 import "./admin-login.css";
