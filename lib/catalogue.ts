@@ -7,6 +7,7 @@ import { schoolCoursesBatch1 } from "./schoolCoursesBatch1";
 import { schoolCoursesBatch2 } from "./schoolCoursesBatch2";
 import { schoolCoursesBatch3 } from "./schoolCoursesBatch3";
 import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
+import { schoolCoursesBatch5 } from "./schoolCoursesBatch5";
 import { deepTeachingCourses } from "./deepTeachingCourses";
 import { deepTeachingCourses2 } from "./deepTeachingCourses2";
 import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
@@ -25,6 +26,7 @@ const replacementMap = new Map(
     ...schoolCoursesBatch2,
     ...schoolCoursesBatch3,
     ...schoolCoursesBatch4,
+    ...schoolCoursesBatch5,
     ...deepTeachingCourses,
     ...deepTeachingCourses2,
   ].map(course => [course.id, course] as const),
