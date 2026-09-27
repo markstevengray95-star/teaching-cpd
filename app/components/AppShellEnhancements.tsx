@@ -7,7 +7,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { claimSchoolAccess } from "@/lib/schoolAccess";
 
 const PUBLIC_PREFIXES = ["/auth", "/admin-login", "/owner-login", "/reset-password", "/access", "/join", "/offline"];
-const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/platform"];
+const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/platform", "/owner-portal"];
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 export default function AppShellEnhancements() {
@@ -59,6 +59,8 @@ export default function AppShellEnhancements() {
         return;
       }
       try {
+        const { data: platform } = await client.from("platform_admins").select("user_id").eq("user_id", data.user.id).maybeSingle();
+        if (platform) return;
         const access = await claimSchoolAccess(client);
         if (!active) return;
         if (!access.allowed) {
