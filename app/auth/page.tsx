@@ -95,10 +95,39 @@ export default function AuthPage() {
         else setMessage("Account created. Confirm your school email, then return here to sign in. If your school has an active subscription and verified domain, access will be granted automatically without an invitation.");
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to authenticate.");
+      const raw = error instanceof Error ? error.message : "Unable to authenticate.";
+      setMessage(raw.toLowerCase().includes("invalid login credentials")
+        ? "That email/password combination was not accepted. Use ‘Email me a sign-in link’ below or reset your password."
+        : raw);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sendMagicLink(){
+    const value=email.trim();
+    if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Email me a sign-in link’.");return;}
+    const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
+    try{
+      const redirectTo=`${window.location.origin}/auth?next=${encodeURIComponent(nextPath())}`;
+      const {error}=await supabase.auth.signInWithOtp({email:value,options:{emailRedirectTo:redirectTo,shouldCreateUser:false}});
+      if(error)throw error;
+      setMessage("Sign-in link sent. Open the email on this device and you’ll be returned to Teaching CPD. Platform Admin accounts then open the Owner Portal automatically.");
+    }catch(error){setMessage(error instanceof Error?error.message:"Unable to send the sign-in link.");}
+    finally{setBusy(false);}
+  }
+
+  async function resetPassword(){
+    const value=email.trim();
+    if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Reset password’.");return;}
+    const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
+    try{
+      const redirectTo=`${window.location.origin}/reset-password`;
+      const {error}=await supabase.auth.resetPasswordForEmail(value,{redirectTo});
+      if(error)throw error;
+      setMessage("Password reset email sent. Open the link in that email to choose a new password.");
+    }catch(error){setMessage(error instanceof Error?error.message:"Unable to send the password reset email.");}
+    finally{setBusy(false);}
   }
 
   function openAccountCreation(){setShowFallback(true);setPasswordMode("signup");setMessage("");}
@@ -132,11 +161,12 @@ export default function AuthPage() {
         <label>School email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@school.org" /></label>
         <label>Password<input required minLength={8} type="password" autoComplete={passwordMode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
         <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in with email" : "Create school account"}</button>
+        {passwordMode==="signin"&&<div className="passwordHelpActions"><button type="button" className="secondary" disabled={busy} onClick={sendMagicLink}>Email me a sign-in link</button><button type="button" className="textButton" disabled={busy} onClick={resetPassword}>Reset password</button></div>}
         <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "Create a new school account" : "Already have a password account?"}</button>
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. School access is based on the confirmed email domain and the school's active subscription.</p>
+      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts are handled separately and can use the email/password or passwordless sign-in options above.</p>
     </section>
   </main>;
 }
