@@ -35,6 +35,7 @@ export default function DevelopmentDock() {
     ["/safeguarding/documents", "Safeguarding documents"],
     ["/safety", "Safety & compliance"],
     ["/certificates", "Certificates"],
+    ["/reading", "Course reading"],
     ["/reminders", "Reminders"],
     ["/micro-cpd", "Micro-CPD"],
     ["/course-studio", "Course Studio"],
