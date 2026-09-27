@@ -10,6 +10,7 @@ import { schoolCoursesBatch4 } from "./schoolCoursesBatch4";
 import { schoolCoursesBatch5 } from "./schoolCoursesBatch5";
 import { deepTeachingCourses } from "./deepTeachingCourses";
 import { deepTeachingCourses2 } from "./deepTeachingCourses2";
+import { safeguardingIntegratedCourse } from "./safeguardingIntegratedCourse";
 import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
 import { enhanceMainCourse } from "./mainCourseEnhancement";
 import { addFlagshipFacilitatorPack } from "./mainCourseFacilitatorEnhancement";
@@ -32,6 +33,7 @@ const replacementMap = new Map(
     ...schoolCoursesBatch5,
     ...deepTeachingCourses,
     ...deepTeachingCourses2,
+    safeguardingIntegratedCourse,
   ].map(course => [course.id, course] as const),
 );
 const replacementIds = new Set(replacementMap.keys());
