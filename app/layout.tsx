@@ -20,6 +20,7 @@ import "./platform.css";
 import "./staff-sync.css";
 import "./reminders.css";
 import "./help.css";
+import "./launch-readiness.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
