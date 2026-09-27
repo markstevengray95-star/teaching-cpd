@@ -20,6 +20,7 @@ import "./platform.css";
 import "./staff-sync.css";
 import "./staff-access.css";
 import "./admin-login.css";
+import "./safeguarding.css";
 import "./reminders.css";
 import "./help.css";
 import "./launch-readiness.css";
