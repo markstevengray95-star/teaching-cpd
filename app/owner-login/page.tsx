@@ -27,13 +27,13 @@ export default function OwnerLoginPage(){
 
   async function passwordSignIn(e:FormEvent){
     e.preventDefault();const c=getSupabaseBrowserClient();setBusy(true);setMessage("");
-    const {error}=await c.auth.signInWithPassword({email:email.trim(),password});
+    const {error}=await c.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
     if(error){const raw=error.message||"Unable to sign in.";setMessage(raw.toLowerCase().includes("invalid login credentials")?"That password was not accepted. Use the email sign-in link below or reset your password.":raw);setBusy(false);return;}
     await finish();
   }
 
   async function magicLink(){
-    const value=email.trim();if(!value){setMessage("Enter your email address first.");return;}
+    const value=email.trim().toLowerCase();if(!value){setMessage("Enter your email address first.");return;}
     const c=getSupabaseBrowserClient();setBusy(true);setMessage("");
     const {error}=await c.auth.signInWithOtp({email:value,options:{emailRedirectTo:`${window.location.origin}/owner-login`,shouldCreateUser:false}});
     setBusy(false);
@@ -41,7 +41,7 @@ export default function OwnerLoginPage(){
   }
 
   async function reset(){
-    const value=email.trim();if(!value){setMessage("Enter your email address first.");return;}
+    const value=email.trim().toLowerCase();if(!value){setMessage("Enter your email address first.");return;}
     const c=getSupabaseBrowserClient();setBusy(true);setMessage("");
     const {error}=await c.auth.resetPasswordForEmail(value,{redirectTo:`${window.location.origin}/reset-password`});
     setBusy(false);
@@ -51,10 +51,10 @@ export default function OwnerLoginPage(){
   async function signOut(){const c=getSupabaseBrowserClient();await c.auth.signOut();setMessage("Signed out. You can now sign in again as Platform Owner.");}
 
   return <main className="phasePage authPhasePage schoolAuthPage adminLoginPage">
-    <section className="phaseHero compactHero adminLoginHero"><span className="eyebrow">TEACHING CPD · PLATFORM OWNER</span><h1>Owner sign in</h1><p>This login is separate from school and staff access. It opens the platform Owner Portal for customer-school, subscription and domain management.</p><div className="schoolAuthTrust"><span>✓ Platform Admin only</span><span>✓ Passwordless option</span><span>✓ Direct Owner Portal access</span></div></section>
+    <section className="phaseHero compactHero adminLoginHero"><span className="eyebrow">TEACHING CPD · PLATFORM OWNER</span><h1>Owner sign in</h1><p>This login is completely separate from school-domain access. Your personal Platform Admin email can sign in here even though it is not a school email.</p><div className="schoolAuthTrust"><span>✓ No school domain required</span><span>✓ Platform Admin only</span><span>✓ Direct Owner Portal access</span></div></section>
     <section className="phaseCard authCard schoolAuthCard adminLoginCard">
-      <div className="schoolAuthHeading"><span className="eyebrow">OWNER ACCESS</span><h2>Sign in to the platform control centre</h2><p>Your Platform Admin account is checked after authentication before the Owner Portal opens.</p></div>
-      <form className="schoolFallbackForm" onSubmit={passwordSignIn}><label>Email<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input required minLength={8} type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary full" disabled={busy}>{busy?"Checking owner access…":"Sign in to Owner Portal"}</button></form>
+      <div className="schoolAuthHeading"><span className="eyebrow">OWNER ACCESS</span><h2>Sign in to the platform control centre</h2><p>Your account is checked against Platform Admin permissions only. School subscription/domain checks do not apply on this route.</p></div>
+      <form className="schoolFallbackForm" onSubmit={passwordSignIn}><label>Owner email<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input required minLength={8} type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary full" disabled={busy}>{busy?"Checking owner access…":"Sign in to Owner Portal"}</button></form>
       <div className="passwordHelpActions"><button type="button" className="secondary" disabled={busy} onClick={magicLink}>Email me an owner sign-in link</button><button type="button" className="textButton" disabled={busy} onClick={reset}>Reset password</button></div>
       {message&&<div className="feedback" role="status">{message}</div>}
       <div className="adminLoginLinks"><a href="/auth">Staff / school sign in</a><a href="/admin-login">School Admin sign in</a><button className="textButton" type="button" onClick={signOut}>Sign out current account</button></div>
