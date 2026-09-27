@@ -49,7 +49,10 @@ export default function DevelopmentDock() {
     ["/help", "Help"],
     ["/accessibility", "App settings"],
   ];
-  if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
+  if (["Department Lead", "CPD Lead", "Admin"].includes(role)) {
+    links.push(["/department-cpd", "Department CPD"]);
+    links.push(["/leadership", "Leadership"]);
+  }
   if (["CPD Lead", "Admin"].includes(role)) {
     links.push(["/launch-readiness", "Launch readiness"]);
     links.push(["/staff-sync", "Staff sync"]);
