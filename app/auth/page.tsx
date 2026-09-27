@@ -20,28 +20,28 @@ export default function AuthPage() {
     const supabase = getSupabaseBrowserClient();
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) finishSchoolAccess();
+      if (active && data.session) finishAccess();
     });
     return () => { active = false; };
   }, []);
 
-  async function finishSchoolAccess() {
+  async function finishAccess() {
     const supabase = getSupabaseBrowserClient();
     try {
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        const { data: platform, error: platformError } = await supabase.from("platform_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle();
+        if (platformError) throw platformError;
+        if (platform) {
+          const target = nextPath();
+          window.location.replace(target === "/" || target.startsWith("/access") ? "/owner-portal" : target);
+          return;
+        }
+      }
+
       const access = await claimSchoolAccess(supabase);
       if (access.allowed) {
-        const target = nextPath();
-        if (target === "/") {
-          const { data: auth } = await supabase.auth.getUser();
-          if (auth.user) {
-            const { data: platform } = await supabase.from("platform_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle();
-            if (platform) {
-              window.location.replace("/owner-portal");
-              return;
-            }
-          }
-        }
-        window.location.replace(target);
+        window.location.replace(nextPath());
         return;
       }
       window.location.replace(`/access?reason=${encodeURIComponent(access.reason)}&next=${encodeURIComponent(nextPath())}`);
@@ -83,7 +83,7 @@ export default function AuthPage() {
       if (passwordMode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
-        await finishSchoolAccess();
+        await finishAccess();
       } else {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
@@ -91,7 +91,7 @@ export default function AuthPage() {
           options: { data: { full_name: name.trim(), department: department.trim() } },
         });
         if (error) throw error;
-        if (data.session) await finishSchoolAccess();
+        if (data.session) await finishAccess();
         else setMessage("Account created. Confirm your school email, then return here to sign in. If your school has an active subscription and verified domain, access will be granted automatically without an invitation.");
       }
     } catch (error) {
@@ -166,7 +166,7 @@ export default function AuthPage() {
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts use the dedicated Platform Owner sign-in above.</p>
+      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts use the dedicated Platform Owner sign-in above and bypass school-domain checks.</p>
     </section>
   </main>;
 }
