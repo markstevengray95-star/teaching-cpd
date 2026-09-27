@@ -30,7 +30,18 @@ export default function AuthPage() {
     try {
       const access = await claimSchoolAccess(supabase);
       if (access.allowed) {
-        window.location.replace(nextPath());
+        const target = nextPath();
+        if (target === "/") {
+          const { data: auth } = await supabase.auth.getUser();
+          if (auth.user) {
+            const { data: platform } = await supabase.from("platform_admins").select("user_id").eq("user_id", auth.user.id).maybeSingle();
+            if (platform) {
+              window.location.replace("/owner-portal");
+              return;
+            }
+          }
+        }
+        window.location.replace(target);
         return;
       }
       window.location.replace(`/access?reason=${encodeURIComponent(access.reason)}&next=${encodeURIComponent(nextPath())}`);
