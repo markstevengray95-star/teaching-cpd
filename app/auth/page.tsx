@@ -151,7 +151,7 @@ export default function AuthPage() {
 
       <div className="schoolDomainRule"><strong>No invite needed for subscribed schools</strong><p>Once the school domain is verified and the subscription is active, any confirmed staff email on that domain can join. New users start with Staff access unless a School Admin gives them a higher role.</p></div>
 
-      <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a></div>
+      <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a><a className="textButton" href="/owner-login">Platform Owner sign in</a></div>
       <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide email/password options" : "Use email/password fallback"}</button>
       {showFallback && <form className="schoolFallbackForm" onSubmit={passwordSubmit}>
         {passwordMode === "signup" && <>
@@ -166,7 +166,7 @@ export default function AuthPage() {
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts are handled separately and can use the email/password or passwordless sign-in options above.</p>
+      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts use the dedicated Platform Owner sign-in above.</p>
     </section>
   </main>;
 }
