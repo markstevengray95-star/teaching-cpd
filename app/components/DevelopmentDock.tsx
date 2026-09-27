@@ -38,6 +38,7 @@ export default function DevelopmentDock() {
     ["/coach", "CPD Coach"],
     ["/coaching", "Coaching"],
     ["/improvement", "School improvement"],
+    ["/recommendations", "Recommendations"],
     ["/pathways", "Pathways"],
     ["/portfolio", "Portfolio"],
     ["/external-cpd", "External CPD"],
