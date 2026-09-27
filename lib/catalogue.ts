@@ -11,6 +11,7 @@ import { schoolCoursesBatch5 } from "./schoolCoursesBatch5";
 import { deepTeachingCourses } from "./deepTeachingCourses";
 import { deepTeachingCourses2 } from "./deepTeachingCourses2";
 import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
+import { enhanceMainCourse } from "./mainCourseEnhancement";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -44,5 +45,8 @@ function validateCourse(course: Course) {
   if (!course.modules.some(module => module.type === "visual")) throw new Error(`CPD course ${course.id} needs at least one visual explainer`);
 }
 
-export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements].map(enrichCourseWithVisuals);
+export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
+  .map(enrichCourseWithVisuals)
+  .map(enhanceMainCourse);
+
 courses.forEach(validateCourse);
