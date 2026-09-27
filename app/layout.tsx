@@ -24,6 +24,7 @@ import "./launch-readiness.css";
 import "./recommendations.css";
 import "./micro-cpd.css";
 import "./impact.css";
+import "./department-cpd.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
