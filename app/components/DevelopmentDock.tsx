@@ -43,6 +43,7 @@ export default function DevelopmentDock() {
     ["/external-cpd", "External CPD"],
     ["/actions", "Action plans"],
     ["/organisation", "Organisation"],
+    ["/help", "Help"],
     ["/accessibility", "App settings"],
   ];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) links.push(["/leadership", "Leadership"]);
