@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { courses, type Course, type Module } from "@/lib/catalogue";
+import { readingsForCourse } from "@/lib/courseReadingLibrary";
 
 const flagshipCourses = courses.filter(course => course.modules.some(module => module.id === `chapter-orient-${course.id}`));
 
@@ -23,6 +24,7 @@ export default function CoursePacksPage(){
   const facilitator=content(course,"fac-guide-");
   const practice=activity(course,"worked-practice-")||activity(course,"mc-practice-");
   const followup=visual(course,"mc-followup-");
+  const readings=readingsForCourse(course.id);
 
   function download(){
     const lines=[
@@ -37,6 +39,9 @@ export default function CoursePacksPage(){
       "",
       "KEY VOCABULARY & CONCEPTS",
       ...(glossary?.keyPoints||[]).map(x=>`- ${x}`),
+      "",
+      "EVIDENCE & READING",
+      ...readings.flatMap(item=>[`${item.title} — ${item.publisher}`,item.url,...item.focusPoints.map(point=>`- ${point}`),""]),
       "",
       "READY-TO-USE MATERIALS",
       ...(resources?.keyPoints||[]).map(x=>`- ${x}`),
@@ -60,7 +65,7 @@ export default function CoursePacksPage(){
   }
 
   return <main className="stagePage coursePacksPage">
-    <section className="stageHero coursePacksHero"><span className="eyebrow">FLAGSHIP CPD MATERIALS</span><h1>Course packs</h1><p>Printable, reusable materials for individual study, coaching, department meetings and whole-school CPD. Each pack brings together the key vocabulary, practical task, implementation evidence and follow-up cycle from the full interactive course.</p><div className="stageHeroActions noPrint"><button className="primary" onClick={()=>window.print()}>Print / save PDF</button><button className="secondary" onClick={download}>Download text pack</button></div></section>
+    <section className="stageHero coursePacksHero"><span className="eyebrow">FLAGSHIP CPD MATERIALS</span><h1>Course packs</h1><p>Printable, reusable materials for individual study, coaching, department meetings and whole-school CPD. Each pack brings together the key vocabulary, evidence reading, practical task, implementation evidence and follow-up cycle from the full interactive course.</p><div className="stageHeroActions noPrint"><button className="primary" onClick={()=>window.print()}>Print / save PDF</button><button className="secondary" onClick={download}>Download text pack</button>{readings.length>0&&<a className="secondary phaseLinkButton" href={`/reading?course=${encodeURIComponent(course.id)}`}>Open reading & questions</a>}</div></section>
 
     <section className="stageCard coursePackSelector noPrint"><label><span>Choose flagship course</span><select value={course.id} onChange={e=>setSelectedId(e.target.value)}>{flagshipCourses.map(item=><option value={item.id} key={item.id}>{item.title}</option>)}</select></label></section>
 
@@ -68,6 +73,7 @@ export default function CoursePacksPage(){
       <header className="coursePackTitle"><span>{course.category} · {course.duration} min · {course.level}</span><h1>{course.title}</h1><p>{course.summary}</p></header>
       <section><h2>Learning outcomes</h2><ol>{course.objectives.map(item=><li key={item}>{item}</li>)}</ol></section>
       <section><h2>Key vocabulary & concepts</h2><div className="coursePackGrid">{(glossary?.keyPoints||[]).map(item=>{const [term,...rest]=item.split(" — ");return <div className="coursePackConcept" key={item}><strong>{term}</strong><p>{rest.join(" — ")}</p></div>})}</div></section>
+      {readings.length>0&&<section><h2>Evidence & further reading</h2><p className="coursePackLead">Open the original source, use the focus prompts, then complete the linked questions in the Course Reading hub.</p><div className="coursePackGrid">{readings.map(item=><div className="coursePackConcept" key={item.id}><strong>{item.title}</strong><p>{item.publisher} · approx. {item.readTime} min</p><a href={item.url} target={item.external===false?undefined:"_blank"} rel={item.external===false?undefined:"noreferrer"}>Open source →</a></div>)}</div></section>}
       <section><h2>Ready-to-use professional learning materials</h2><ul>{(resources?.keyPoints||[]).map(item=><li key={item}>{item}</li>)}</ul></section>
       {practice&&<section><h2>Practice / implementation task</h2><p className="coursePackLead">{practice.prompt}</p><ol>{practice.instructions.map(item=><li key={item}>{item}</li>)}</ol><div className="coursePackWriting"><span>Plan / notes</span><i/><i/><i/><i/></div></section>}
       {followup&&<section><h2>30-day follow-up</h2><div className="coursePackTimeline">{followup.items.map(item=><div key={item.heading}><strong>{item.heading}</strong><p>{item.text}</p></div>)}</div></section>}
