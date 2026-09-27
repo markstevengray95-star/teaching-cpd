@@ -55,13 +55,15 @@ export default function DevelopmentDock() {
   }
   if (["CPD Lead", "Admin"].includes(role)) {
     links.push(["/launch-readiness", "Launch readiness"]);
-    links.push(["/staff-sync", "Staff sync"]);
     links.push(["/school-access", "School access"]);
     links.push(["/quality", "Annual CPD & QA"]);
     links.push(["/admin", "CPD admin"]);
     links.push(["/builder", "Course creator"]);
   }
-  if (role === "Admin") links.push(["/staff-access", "Staff access"]);
+  if (role === "Admin") {
+    links.push(["/staff-access", "Staff access"]);
+    links.push(["/staff-sync", "Staff sync"]);
+  }
   if (platformAdmin) links.push(["/platform", "Platform"]);
 
   return <nav className="developmentDock" aria-label="Professional development navigation">
