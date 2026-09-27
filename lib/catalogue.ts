@@ -13,6 +13,7 @@ import { deepTeachingCourses2 } from "./deepTeachingCourses2";
 import { safeguardingIntegratedCourse } from "./safeguardingIntegratedCourse";
 import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
 import { deepenSafeguarding2026 } from "./safeguardingDepth2026";
+import { addAdvancedSafeguarding2026 } from "./safeguardingAdvanced2026";
 import { enhanceMainCourse } from "./mainCourseEnhancement";
 import { addFlagshipFacilitatorPack } from "./mainCourseFacilitatorEnhancement";
 import { structureFlagshipCourse } from "./flagshipCourseMaterials";
@@ -54,6 +55,7 @@ function validateCourse(course: Course) {
 export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
   .map(enrichCourseWithVisuals)
   .map(deepenSafeguarding2026)
+  .map(addAdvancedSafeguarding2026)
   .map(enhanceMainCourse)
   .map(addFlagshipFacilitatorPack)
   .map(structureFlagshipCourse)
