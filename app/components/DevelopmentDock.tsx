@@ -65,7 +65,10 @@ export default function DevelopmentDock() {
     links.push(["/staff-access", "Staff access"]);
     links.push(["/staff-sync", "Staff sync"]);
   }
-  if (platformAdmin) links.push(["/platform", "Platform"]);
+  if (platformAdmin) {
+    links.push(["/owner-portal", "Owner portal"]);
+    links.push(["/platform", "Platform"]);
+  }
 
   return <nav className="developmentDock" aria-label="Professional development navigation">
     {links.map(([href, label]) => <a key={href} href={href} className={pathname === href || (href !== "/" && pathname.startsWith(href)) ? "active" : ""}>{label}</a>)}
