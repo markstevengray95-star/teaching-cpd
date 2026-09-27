@@ -12,9 +12,11 @@ import { deepTeachingCourses } from "./deepTeachingCourses";
 import { deepTeachingCourses2 } from "./deepTeachingCourses2";
 import { safeguardingIntegratedCourse } from "./safeguardingIntegratedCourse";
 import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
+import { deepenSafeguarding2026 } from "./safeguardingDepth2026";
 import { enhanceMainCourse } from "./mainCourseEnhancement";
 import { addFlagshipFacilitatorPack } from "./mainCourseFacilitatorEnhancement";
 import { structureFlagshipCourse } from "./flagshipCourseMaterials";
+import { addCourseVisualDepth } from "./courseVisualDepth";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -51,8 +53,10 @@ function validateCourse(course: Course) {
 
 export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
   .map(enrichCourseWithVisuals)
+  .map(deepenSafeguarding2026)
   .map(enhanceMainCourse)
   .map(addFlagshipFacilitatorPack)
-  .map(structureFlagshipCourse);
+  .map(structureFlagshipCourse)
+  .map(addCourseVisualDepth);
 
 courses.forEach(validateCourse);
