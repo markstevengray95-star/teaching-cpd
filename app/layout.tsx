@@ -12,6 +12,7 @@ import "./stage1012.css";
 import "./phase1314.css";
 import "./course-enhancements.css";
 import "./course-visuals-plus.css";
+import "./course-motion-plus.css";
 import "./course-lab.css";
 import "./course-engagement.css";
 import "./course-studio.css";
