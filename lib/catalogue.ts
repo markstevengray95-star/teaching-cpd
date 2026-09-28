@@ -29,6 +29,7 @@ import { addCourseDeepPractice3 } from "./courseDeepPractice3";
 import { structureCourseAsPresentation } from "./coursePresentationStructure";
 import { boostCourseEngagement } from "./courseEngagementBoost";
 import { openCourseWithPresentationOverview } from "./coursePresentationOrder";
+import { qualityAssureFirstTenCourse, validateFirstTenCatalogueOrder, validateFirstTenCourseQuality } from "./firstTenCourseQuality";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -82,6 +83,9 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(addCourseDeepPractice3)
   .map(structureCourseAsPresentation)
   .map(boostCourseEngagement)
-  .map(openCourseWithPresentationOverview);
+  .map(openCourseWithPresentationOverview)
+  .map(qualityAssureFirstTenCourse);
 
 courses.forEach(validateCourse);
+courses.forEach(validateFirstTenCourseQuality);
+validateFirstTenCatalogueOrder(courses);
