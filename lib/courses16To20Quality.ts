@@ -3,9 +3,9 @@ import type { Course, Module } from "./data";
 export const COURSES_16_TO_20_IDS = [
   "parent-communication",
   "ect-induction",
-  "high-attaining-pupils",
   "rosenshine-principles",
   "maslow-needs",
+  "effective-questioning",
 ] as const;
 
 type TargetId = (typeof COURSES_16_TO_20_IDS)[number];
@@ -45,21 +45,6 @@ const bespokePractice: Record<TargetId, ActivityModule> = {
     placeholder: "Target habit…\nWhat good looks like…\nRehearsal/support…\nEvidence…\nNext adaptation…",
     minimumCharacters: 220,
   },
-  "high-attaining-pupils": {
-    id: "qa20-high-attaining-task-redesign",
-    type: "activity",
-    title: "Practice studio: deepen a task without adding volume",
-    prompt: "Choose one task that high-attaining pupils can already complete successfully and redesign it for greater conceptual depth, transfer or independence rather than simply adding more of the same work.",
-    instructions: [
-      "State the original learning goal and what pupils already do securely.",
-      "Choose one form of deeper challenge: transfer, comparison, justification, evaluation, abstraction or independent decision-making.",
-      "Rewrite the task so that the extra challenge comes from thinking rather than workload alone.",
-      "Identify any scaffold that may still be useful without capping the level of thought required.",
-      "State what evidence would show that pupils are reasoning more deeply rather than just working faster.",
-    ],
-    placeholder: "Original goal…\nSecure prior performance…\nDeeper challenge…\nRedesigned task…\nScaffold…\nEvidence of depth…",
-    minimumCharacters: 230,
-  },
   "rosenshine-principles": {
     id: "qa20-rosenshine-lesson-cycle",
     type: "activity",
@@ -89,6 +74,21 @@ const bespokePractice: Record<TargetId, ActivityModule> = {
     ],
     placeholder: "Observable condition…\nUseful lens, not diagnosis…\nClassroom change…\nWhen school systems take priority…\nEvidence to review…",
     minimumCharacters: 240,
+  },
+  "effective-questioning": {
+    id: "qa20-questioning-hinge-design",
+    type: "activity",
+    title: "Practice studio: design a diagnostic questioning sequence",
+    prompt: "Choose one upcoming lesson and design a short questioning sequence that reveals pupil thinking and leads to a clear teaching decision.",
+    instructions: [
+      "State the precise learning point or misconception you need the question to diagnose.",
+      "Write one hinge question with plausible responses that reveal different misunderstandings.",
+      "Plan how every pupil will respond rather than relying only on volunteers.",
+      "Write one follow-up prompt that probes reasoning rather than just asking for the answer again.",
+      "State what response pattern would make you move on, re-model, add a scaffold or change the next task.",
+    ],
+    placeholder: "Learning point…\nHinge question and responses…\nWhole-class response method…\nFollow-up prompt…\nTeaching decision rule…",
+    minimumCharacters: 230,
   },
 };
 
@@ -123,19 +123,7 @@ const bespokeKnowledge: Partial<Record<TargetId, QuizModule>> = {
   },
 };
 
-const bespokeDecision: Partial<Record<TargetId, ScenarioModule>> = {
-  "high-attaining-pupils": {
-    id: "qa20-high-attaining-decision",
-    type: "scenario",
-    title: "Decision point: deepen, do not just add",
-    prompt: "A pupil finishes a set of routine problems accurately and much earlier than the class. Which response best increases challenge?",
-    options: [
-      { label: "Give another page of nearly identical questions", feedback: "More volume can increase workload without increasing the conceptual demand." },
-      { label: "Give an unfamiliar case and ask the pupil to select, justify and compare possible methods, including when each would fail", feedback: "This increases transfer, justification and independent decision-making rather than simply extending repetition." },
-      { label: "Let the pupil stop learning because the original task is finished", feedback: "Finishing routine practice quickly can be a signal to deepen the thinking rather than end it." },
-    ],
-  },
-};
+const bespokeDecision: Partial<Record<TargetId, ScenarioModule>> = {};
 
 function isPresentationOverview(course: Course, module: Module) {
   return module.id === `presentation-${course.id}-map` || (module.id.startsWith("presentation-") && module.id.endsWith("-map"));
