@@ -34,6 +34,7 @@ import { polishFirstTenCourseFlow, validateFirstTenCourseFlow, validateFirstTenO
 import { qualityAssureNextFiveCourse, validateNextFiveCatalogueOrder, validateNextFiveCourseQuality } from "./nextFiveCourseQuality";
 import { qualityAssureCourses16To20, validateCourses16To20Order, validateCourses16To20Quality } from "./courses16To20Quality";
 import { qualityAssureCourses21To25, validateCourses21To25Order, validateCourses21To25Quality } from "./courses21To25Quality";
+import { validateCourses26To30Order } from "./courses26To30Quality";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -105,3 +106,4 @@ validateFirstTenOrderAfterFlow(courses);
 validateNextFiveCatalogueOrder(courses);
 validateCourses16To20Order(courses);
 validateCourses21To25Order(courses);
+validateCourses26To30Order(courses);
