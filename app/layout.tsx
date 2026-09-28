@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DevelopmentDock from "./components/DevelopmentDock";
 import AppShellEnhancements from "./components/AppShellEnhancements";
+import CoursePresentationController from "./components/CoursePresentationController";
 import "./globals.css";
 import "./mobile.css";
 import "./phase2.css";
@@ -18,6 +19,7 @@ import "./course-engagement.css";
 import "./course-navigation.css";
 import "./course-module-navigation.css";
 import "./course-fun-engagement.css";
+import "./course-presentation-player.css";
 import "./development-dock.css";
 import "./course-studio.css";
 import "./course-packs.css";
@@ -52,6 +54,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <AppShellEnhancements />
+        <CoursePresentationController />
         <div id="main-content">{children}</div>
         <DevelopmentDock />
       </body>
