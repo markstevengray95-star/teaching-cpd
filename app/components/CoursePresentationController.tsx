@@ -17,6 +17,23 @@ function isTypingTarget(target: EventTarget | null) {
   return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable;
 }
 
+function ensurePresentationToggle(modal: HTMLElement) {
+  const actions = modal.querySelector<HTMLElement>(".courseModalHeadActions");
+  if (!actions || actions.querySelector(".presentationModeToggle")) return;
+
+  const presentButton = document.createElement("button");
+  presentButton.type = "button";
+  presentButton.className = "secondary presentationModeToggle";
+  presentButton.textContent = modal.classList.contains("presentationFocus") ? "Exit presentation" : "Present";
+  presentButton.setAttribute("aria-pressed", String(modal.classList.contains("presentationFocus")));
+  presentButton.addEventListener("click", () => {
+    const focused = modal.classList.toggle("presentationFocus");
+    presentButton.textContent = focused ? "Exit presentation" : "Present";
+    presentButton.setAttribute("aria-pressed", String(focused));
+  });
+  actions.prepend(presentButton);
+}
+
 function decoratePresentation(modal: HTMLElement) {
   if (modal.classList.contains("labMode")) return;
   const nav = modal.querySelector<HTMLElement>(".moduleNav");
@@ -30,10 +47,9 @@ function decoratePresentation(modal: HTMLElement) {
   const moduleType = (article.querySelector(".moduleType")?.textContent || "CONTENT").trim().toUpperCase();
   const progressText = modal.querySelector<HTMLElement>(".courseProgress span")?.textContent || "";
   const completedPreviously = /completed previously/i.test(progressText);
-  const stateSignature = `${currentIndex}|${moduleType}|${completedPreviously ? 1 : 0}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
-  if (modal.dataset.presentationSignature === stateSignature) return;
-  modal.dataset.presentationSignature = stateSignature;
 
+  // Always re-apply the actual control state. React may recreate these buttons without
+  // changing the visible presentation state, so this must not sit behind the signature guard.
   buttons.forEach((button, index) => {
     const current = button.classList.contains("current");
     const done = button.classList.contains("done");
@@ -46,6 +62,12 @@ function decoratePresentation(modal: HTMLElement) {
     const title = button.querySelector("strong")?.textContent?.trim() || `Slide ${index + 1}`;
     button.setAttribute("aria-label", `${unlocked ? "" : "Locked. "}Slide ${index + 1} of ${buttons.length}: ${title}`);
   });
+
+  ensurePresentationToggle(modal);
+
+  const stateSignature = `${currentIndex}|${moduleType}|${completedPreviously ? 1 : 0}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
+  if (modal.dataset.presentationSignature === stateSignature) return;
+  modal.dataset.presentationSignature = stateSignature;
 
   const stage = STAGE_LABELS[moduleType] || "Learn";
   article.dataset.presentationStage = stage;
@@ -83,21 +105,6 @@ function decoratePresentation(modal: HTMLElement) {
     dot.title = `Slide ${index + 1}`;
     dots!.append(dot);
   });
-
-  const actions = modal.querySelector<HTMLElement>(".courseModalHeadActions");
-  if (actions && !actions.querySelector(".presentationModeToggle")) {
-    const presentButton = document.createElement("button");
-    presentButton.type = "button";
-    presentButton.className = "secondary presentationModeToggle";
-    presentButton.textContent = "Present";
-    presentButton.setAttribute("aria-pressed", "false");
-    presentButton.addEventListener("click", () => {
-      const focused = modal.classList.toggle("presentationFocus");
-      presentButton.textContent = focused ? "Exit presentation" : "Present";
-      presentButton.setAttribute("aria-pressed", String(focused));
-    });
-    actions.prepend(presentButton);
-  }
 }
 
 export default function CoursePresentationController() {
