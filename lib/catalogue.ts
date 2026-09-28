@@ -31,6 +31,7 @@ import { boostCourseEngagement } from "./courseEngagementBoost";
 import { openCourseWithPresentationOverview } from "./coursePresentationOrder";
 import { qualityAssureFirstTenCourse, validateFirstTenCatalogueOrder, validateFirstTenCourseQuality } from "./firstTenCourseQuality";
 import { polishFirstTenCourseFlow, validateFirstTenCourseFlow, validateFirstTenOrderAfterFlow } from "./firstTenCourseFlowAudit";
+import { qualityAssureNextFiveCourse, validateNextFiveCatalogueOrder, validateNextFiveCourseQuality } from "./nextFiveCourseQuality";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -86,10 +87,13 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(boostCourseEngagement)
   .map(openCourseWithPresentationOverview)
   .map(qualityAssureFirstTenCourse)
-  .map(polishFirstTenCourseFlow);
+  .map(polishFirstTenCourseFlow)
+  .map(qualityAssureNextFiveCourse);
 
 courses.forEach(validateCourse);
 courses.forEach(validateFirstTenCourseQuality);
 courses.forEach(validateFirstTenCourseFlow);
+courses.forEach(validateNextFiveCourseQuality);
 validateFirstTenCatalogueOrder(courses);
 validateFirstTenOrderAfterFlow(courses);
+validateNextFiveCatalogueOrder(courses);
