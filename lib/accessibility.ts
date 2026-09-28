@@ -2,6 +2,8 @@ export type AccessibilityPreferences = {
   highContrast: boolean;
   largeText: boolean;
   reduceMotion: boolean;
+  readingWidth: boolean;
+  increasedSpacing: boolean;
 };
 
 export const accessibilityPreferenceKey = "teaching-cpd-ui-preferences";
@@ -9,6 +11,8 @@ export const defaultAccessibilityPreferences: AccessibilityPreferences = {
   highContrast: false,
   largeText: false,
   reduceMotion: false,
+  readingWidth: false,
+  increasedSpacing: false,
 };
 
 export function applyAccessibilityPreferences(prefs: AccessibilityPreferences) {
@@ -17,6 +21,8 @@ export function applyAccessibilityPreferences(prefs: AccessibilityPreferences) {
   root.dataset.cpdContrast = prefs.highContrast ? "high" : "standard";
   root.dataset.cpdText = prefs.largeText ? "large" : "standard";
   root.dataset.cpdMotion = prefs.reduceMotion ? "reduce" : "standard";
+  root.dataset.cpdReadingWidth = prefs.readingWidth ? "focused" : "standard";
+  root.dataset.cpdSpacing = prefs.increasedSpacing ? "increased" : "standard";
 }
 
 export function readAccessibilityPreferences(): AccessibilityPreferences {
