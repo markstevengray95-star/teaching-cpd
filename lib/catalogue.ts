@@ -97,8 +97,8 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(qualityAssureCourses16To20)
   .map(qualityAssureCourses21To25)
   .map(qualityAssureCourses26To30)
-  .map(deepenRemainingCourse)
-  .map(qualityAssureRemainingCourse);
+  .map(qualityAssureRemainingCourse)
+  .map(deepenRemainingCourse);
 
 courses.forEach(validateCourse);
 courses.forEach(validateFirstTenCourseQuality);
