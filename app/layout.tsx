@@ -3,6 +3,7 @@ import DevelopmentDock from "./components/DevelopmentDock";
 import AppShellEnhancements from "./components/AppShellEnhancements";
 import CoursePresentationController from "./components/CoursePresentationController";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
+import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
 import "./mobile.css";
 import "./phase2.css";
@@ -14,6 +15,7 @@ import "./stage1012.css";
 import "./phase1314.css";
 import "./course-enhancements.css";
 import "./course-visuals-plus.css";
+import "./course-interactive-visuals.css";
 import "./course-motion-plus.css";
 import "./course-lab.css";
 import "./course-engagement.css";
@@ -57,6 +59,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <AppShellEnhancements />
         <CoursePresentationController />
         <CourseDeepLinkController />
+        <CourseInteractivityController />
         <div id="main-content">{children}</div>
         <DevelopmentDock />
       </body>
