@@ -26,15 +26,18 @@ function decoratePresentation(modal: HTMLElement) {
   const buttons = Array.from(nav.querySelectorAll<HTMLButtonElement>("button"));
   const currentIndex = buttons.findIndex(button => button.classList.contains("current"));
   if (currentIndex < 0) return;
+
   const moduleType = (article.querySelector(".moduleType")?.textContent || "CONTENT").trim().toUpperCase();
-  const stateSignature = `${currentIndex}|${moduleType}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
+  const progressText = modal.querySelector<HTMLElement>(".courseProgress span")?.textContent || "";
+  const completedPreviously = /completed previously/i.test(progressText);
+  const stateSignature = `${currentIndex}|${moduleType}|${completedPreviously ? 1 : 0}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
   if (modal.dataset.presentationSignature === stateSignature) return;
   modal.dataset.presentationSignature = stateSignature;
 
   buttons.forEach((button, index) => {
     const current = button.classList.contains("current");
     const done = button.classList.contains("done");
-    const unlocked = current || done;
+    const unlocked = completedPreviously || current || done;
     button.disabled = !unlocked;
     button.setAttribute("aria-disabled", String(!unlocked));
     button.classList.toggle("presentationLocked", !unlocked);
@@ -64,7 +67,7 @@ function decoratePresentation(modal: HTMLElement) {
   counter.textContent = `Slide ${currentIndex + 1} of ${buttons.length}`;
   const hint = document.createElement("span");
   hint.className = "presentationKeyboardHint";
-  hint.textContent = "← back · → next when complete";
+  hint.textContent = completedPreviously ? "← / → review slides" : "← back · → next when complete";
   meta.append(stageBadge, counter, hint);
 
   let dots = article.querySelector<HTMLElement>(".presentationDots");
@@ -111,12 +114,23 @@ export default function CoursePresentationController() {
 
     apply();
     const observer = new MutationObserver(apply);
-    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ["class"] });
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
       const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode)");
       if (!modal) return;
+
+      if (event.key === "Escape" && modal.classList.contains("presentationFocus")) {
+        event.preventDefault();
+        modal.querySelector<HTMLButtonElement>(".presentationModeToggle")?.click();
+        return;
+      }
+
+      const navButtons = Array.from(modal.querySelectorAll<HTMLButtonElement>(".moduleNav button"));
+      const currentIndex = navButtons.findIndex(button => button.classList.contains("current"));
+      const completedPreviously = /completed previously/i.test(modal.querySelector<HTMLElement>(".courseProgress span")?.textContent || "");
+
       if (event.key === "ArrowLeft") {
         const back = modal.querySelector<HTMLButtonElement>(".moduleActions .secondary:not(:disabled)");
         if (back) {
@@ -124,9 +138,18 @@ export default function CoursePresentationController() {
           back.click();
         }
       }
+
       if (event.key === "ArrowRight") {
+        if (completedPreviously && currentIndex >= 0 && currentIndex < navButtons.length - 1) {
+          const nextSlide = navButtons[currentIndex + 1];
+          if (!nextSlide.disabled) {
+            event.preventDefault();
+            nextSlide.click();
+            return;
+          }
+        }
         const primary = modal.querySelector<HTMLButtonElement>(".moduleActions .primary:not(:disabled)");
-        if (primary && /next module|finish course/i.test(primary.textContent || "")) {
+        if (primary && /next (module|slide)|finish course/i.test(primary.textContent || "")) {
           event.preventDefault();
           primary.click();
         }
