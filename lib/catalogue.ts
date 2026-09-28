@@ -27,6 +27,7 @@ import { addCourseDeepPractice } from "./courseDeepPractice";
 import { addCourseDeepPractice2 } from "./courseDeepPractice2";
 import { addCourseDeepPractice3 } from "./courseDeepPractice3";
 import { structureCourseAsPresentation } from "./coursePresentationStructure";
+import { boostCourseEngagement } from "./courseEngagementBoost";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -77,6 +78,7 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(addCourseDeepPractice)
   .map(addCourseDeepPractice2)
   .map(addCourseDeepPractice3)
-  .map(structureCourseAsPresentation);
+  .map(structureCourseAsPresentation)
+  .map(boostCourseEngagement);
 
 courses.forEach(validateCourse);
