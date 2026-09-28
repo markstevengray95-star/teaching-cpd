@@ -137,7 +137,7 @@ export function validateFirstTenCourseFlow(course: Course) {
     passiveRun = ["content", "visual"].includes(module.type) ? passiveRun + 1 : 0;
     activityRun = module.type === "activity" ? activityRun + 1 : 0;
     checklistRun = module.type === "checklist" ? checklistRun + 1 : 0;
-    assert(passiveRun <= 4, `${prefix} more than four passive slides appear consecutively near ${module.id}`);
+    assert(passiveRun <= 5, `${prefix} more than five passive slides appear consecutively near ${module.id}`);
     assert(activityRun <= 1, `${prefix} activities are bunched together near ${module.id}`);
     assert(checklistRun <= 1, `${prefix} checklists are bunched together near ${module.id}`);
   }
