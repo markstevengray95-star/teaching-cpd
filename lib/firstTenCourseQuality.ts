@@ -117,6 +117,12 @@ function replaceGenericPractice(course: Course, modules: Module[]) {
   return next;
 }
 
+function chooseFinalReflection(course: Course, modules: Module[]) {
+  const reflections = modules.filter((module): module is Extract<Module, { type: "reflection" }> => module.type === "reflection");
+  const flagshipReflection = reflections.find(module => module.id === `mc-reflect-${course.id}`);
+  return flagshipReflection || reflections.at(-1);
+}
+
 export function qualityAssureFirstTenCourse(course: Course): Course {
   if (!firstTenIds.has(course.id)) return course;
 
@@ -124,15 +130,16 @@ export function qualityAssureFirstTenCourse(course: Course): Course {
   modules = replaceGenericPractice(course, modules);
 
   const overview = modules.find(module => isPresentationOverview(course, module));
+  const finalReflection = chooseFinalReflection(course, modules);
   const learning = modules.filter(module =>
     module !== overview &&
+    module !== finalReflection &&
     module.type !== "activity" &&
     module.type !== "checklist" &&
     module.type !== "reflection"
   );
   const activities = modules.filter(module => module.type === "activity");
   const checklists = modules.filter(module => module.type === "checklist");
-  const reflections = modules.filter(module => module.type === "reflection");
 
   return {
     ...course,
@@ -141,7 +148,7 @@ export function qualityAssureFirstTenCourse(course: Course): Course {
       ...learning,
       ...activities,
       ...checklists,
-      ...reflections,
+      ...(finalReflection ? [finalReflection] : []),
     ],
   };
 }
@@ -154,10 +161,12 @@ export function validateFirstTenCourseQuality(course: Course) {
   if (!firstTenIds.has(course.id)) return;
   const prefix = `First-ten QA failed for ${course.id}:`;
   const types = new Set(course.modules.map(module => module.type));
+  const reflections = course.modules.filter(module => module.type === "reflection");
 
   assert(course.modules.length >= 8, `${prefix} presentation is too thin`);
   assert(isPresentationOverview(course, course.modules[0]), `${prefix} presentation overview must be slide 1`);
   assert(course.modules.at(-1)?.type === "reflection", `${prefix} final slide must be reflection`);
+  assert(reflections.length === 1, `${prefix} course should have one definitive final reflection, found ${reflections.length}`);
   assert(course.modules.at(-2)?.type === "checklist", `${prefix} readiness checklist must come immediately before reflection`);
   assert(types.has("content") && types.has("visual") && types.has("quiz") && types.has("scenario") && types.has("activity") && types.has("checklist") && types.has("reflection"), `${prefix} missing a required presentation interaction type`);
   assert(!course.modules.some(module => isRedundantGenericSlide(course, module)), `${prefix} redundant generic visual/deep-dive slide remains`);
