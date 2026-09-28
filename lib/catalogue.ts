@@ -30,6 +30,7 @@ import { structureCourseAsPresentation } from "./coursePresentationStructure";
 import { boostCourseEngagement } from "./courseEngagementBoost";
 import { openCourseWithPresentationOverview } from "./coursePresentationOrder";
 import { qualityAssureFirstTenCourse, validateFirstTenCatalogueOrder, validateFirstTenCourseQuality } from "./firstTenCourseQuality";
+import { polishFirstTenCourseFlow, validateFirstTenCourseFlow, validateFirstTenOrderAfterFlow } from "./firstTenCourseFlowAudit";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -84,8 +85,11 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(structureCourseAsPresentation)
   .map(boostCourseEngagement)
   .map(openCourseWithPresentationOverview)
-  .map(qualityAssureFirstTenCourse);
+  .map(qualityAssureFirstTenCourse)
+  .map(polishFirstTenCourseFlow);
 
 courses.forEach(validateCourse);
 courses.forEach(validateFirstTenCourseQuality);
+courses.forEach(validateFirstTenCourseFlow);
 validateFirstTenCatalogueOrder(courses);
+validateFirstTenOrderAfterFlow(courses);
