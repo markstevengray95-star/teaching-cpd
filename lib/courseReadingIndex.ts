@@ -1,5 +1,6 @@
 import { courseReadings, type CourseReading } from "./courseReadingLibrary";
 import { additionalCourseReadings, expandReadingQuestions } from "./courseReadingExpansion";
+import { complianceReadingExpansion2026, expandReadingQuestions2026 } from "./courseReadingExpansion2";
 
 const latest2026Readings: CourseReading[] = [
   {
@@ -39,8 +40,14 @@ const latest2026Readings: CourseReading[] = [
   },
 ];
 
-export const allCourseReadings: CourseReading[] = [...courseReadings, ...additionalCourseReadings, ...latest2026Readings]
+export const allCourseReadings: CourseReading[] = [
+  ...courseReadings,
+  ...additionalCourseReadings,
+  ...latest2026Readings,
+  ...complianceReadingExpansion2026,
+]
   .map(expandReadingQuestions)
+  .map(expandReadingQuestions2026)
   .filter((reading, index, all) => all.findIndex(item => item.id === reading.id) === index);
 
 export function readingsForCourse(courseId: string) {
