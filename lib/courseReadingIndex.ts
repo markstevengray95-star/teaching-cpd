@@ -37,41 +37,6 @@ const latest2026Readings: CourseReading[] = [
       },
     ],
   },
-  {
-    id: "kcsie-2026-all-staff-overview",
-    courseIds: ["safeguarding-essentials"],
-    title: "KCSIE 2026: Part One overview for all staff",
-    publisher: "Department for Education",
-    url: "https://www.gov.uk/government/publications/keeping-children-safe-in-education--2/part-one-overview-for-all-staff",
-    external: true,
-    readTime: 10,
-    summary: "The DfE quick-reference overview covering core principles, immediate action, information sharing, recordkeeping, concerns about adults and whistleblowing. It complements but does not replace Part One.",
-    focusPoints: [
-      "All staff must still read KCSIE 2026 Part One in full.",
-      "Act immediately on a safeguarding concern and follow the setting's child-protection policy.",
-      "Safeguarding records should capture the concern, actions, decisions, rationale and outcomes.",
-      "Use the setting's procedure for concerns about adults and know the whistleblowing route.",
-    ],
-    questions: [
-      {
-        question: "What does DfE say about the relationship between this overview and KCSIE Part One?",
-        options: ["The overview replaces Part One", "Only DSLs need Part One", "The overview complements Part One but does not replace it", "Schools can choose either one"],
-        answer: 2,
-        feedback: "DfE is explicit that the overview is a companion quick reference; all staff must read Part One in full.",
-      },
-      {
-        question: "Which set of details should a safeguarding record include according to the 2026 overview?",
-        options: [
-          "Only the pupil's name and date",
-          "A summary, actions, decisions, rationale and outcomes",
-          "Only the staff member's opinion",
-          "Only information confirmed by an external agency",
-        ],
-        answer: 1,
-        feedback: "The overview highlights a clear record of the concern, actions, decisions, rationale and outcomes.",
-      },
-    ],
-  },
 ];
 
 export const allCourseReadings: CourseReading[] = [...courseReadings, ...additionalCourseReadings, ...latest2026Readings]
