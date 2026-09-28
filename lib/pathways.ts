@@ -17,6 +17,14 @@ export const pathways: Pathway[] = [
     courseIds: ["safeguarding-essentials", "behaviour-routines", "effective-questioning", "retrieval-practice", "adaptive-teaching", "assessment-for-learning"]
   },
   {
+    id: "teaching-assistant",
+    title: "Teaching Assistant Development",
+    summary: "Use support, scaffolding and communication in ways that increase access without removing pupil thinking or independence.",
+    audience: "Teaching assistants, learning support assistants and classroom support staff",
+    outcome: "More confident support for SEND, language, behaviour and classroom independence within clear professional boundaries.",
+    courseIds: ["safeguarding-essentials", "send-inclusive-practice", "adaptive-teaching", "eal-inclusive-teaching", "behaviour-routines", "supporting-anxious-pupils"]
+  },
+  {
     id: "excellent-teaching",
     title: "Excellent Teaching",
     summary: "Develop a coherent evidence-informed teaching toolkit focused on explanation, memory, checking and independence.",
@@ -33,12 +41,28 @@ export const pathways: Pathway[] = [
     courseIds: ["send-inclusive-practice", "autism-inclusive-classroom", "adhd-classroom-strategies", "dyslexia-classroom-support", "adaptive-teaching", "supporting-anxious-pupils"]
   },
   {
+    id: "safeguarding-confidence",
+    title: "Safeguarding Confidence",
+    summary: "Keep safeguarding knowledge active through policy-aware learning, professional scenarios and clear role boundaries.",
+    audience: "All school staff, with particular value for tutors, pastoral teams and new staff",
+    outcome: "Greater confidence recognising concerns, responding appropriately, recording factually and following the school's current safeguarding route.",
+    courseIds: ["safeguarding-essentials", "online-safety", "effective-tutoring", "trauma-informed-practice", "parent-communication"]
+  },
+  {
     id: "aspiring-middle-leader",
     title: "Aspiring Middle Leader",
     summary: "Move from individual classroom practice to leading improvement across a team.",
     audience: "Aspiring and current middle leaders",
     outcome: "Sharper priorities, stronger professional conversations and more sustainable team development.",
     courseIds: ["middle-leadership", "instructional-coaching", "difficult-conversations", "effective-feedback", "curriculum-sequencing", "disciplinary-literacy"]
+  },
+  {
+    id: "senior-leadership",
+    title: "Senior Leadership Development",
+    summary: "Connect implementation, staff development, curriculum, workload and evidence into sustainable whole-school improvement.",
+    audience: "Aspiring and current senior leaders, CPD leads and school improvement leads",
+    outcome: "Stronger implementation decisions, professional development systems and evidence-informed review across teams.",
+    courseIds: ["middle-leadership", "instructional-coaching", "difficult-conversations", "curriculum-sequencing", "staff-wellbeing", "assessment-for-learning"]
   },
   {
     id: "pastoral-development",
