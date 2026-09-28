@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { courses } from "@/lib/catalogue";
 import { courseIdsWithReadings, readingsForCourse } from "@/lib/courseReadingIndex";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 const readingCourseIds = new Set(courseIdsWithReadings());
 const availableCourses = courses.filter(course => readingCourseIds.has(course.id));
@@ -14,6 +15,7 @@ export default function CourseReadingPage() {
   const [selectedId, setSelectedId] = useState(availableCourses[0]?.id || "");
   const [answers, setAnswers] = useState<Answers>({});
   const [checked, setChecked] = useState<Checked>({});
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("course");
@@ -29,6 +31,38 @@ export default function CourseReadingPage() {
     const correct = all.filter(item => checked[item.key] && answers[item.key] === item.question.answer).length;
     return { total: all.length, attempted, correct };
   }, [readings, checked, answers]);
+
+  useEffect(() => {
+    if (!course || totals.total === 0 || totals.correct !== totals.total) return;
+    let active = true;
+    (async () => {
+      const client = getSupabaseBrowserClient();
+      const { data: auth } = await client.auth.getUser();
+      if (!auth.user || !active) return;
+      const { data: current } = await client.from("course_progress")
+        .select("completed_modules,reflections,completed_at")
+        .eq("user_id", auth.user.id)
+        .eq("course_id", course.id)
+        .maybeSingle();
+      const reflections = {
+        ...((current?.reflections || {}) as Record<string, string>),
+        __reading_score: "100",
+        __reading_correct: String(totals.correct),
+        __reading_total: String(totals.total),
+        __reading_completed_at: new Date().toISOString(),
+      };
+      const { error } = await client.from("course_progress").upsert({
+        user_id: auth.user.id,
+        course_id: course.id,
+        completed_modules: current?.completed_modules || [],
+        reflections,
+        completed_at: current?.completed_at || null,
+      }, { onConflict: "user_id,course_id" });
+      if (!active) return;
+      setSaveMessage(error ? "Your answers are correct, but the reading result could not be saved to your CPD record." : "Reading mastery saved to your CPD record.");
+    })();
+    return () => { active = false; };
+  }, [course, totals.correct, totals.total]);
 
   if (!course) return <main className="stagePage"><div className="stageCard">No curated reading packs are available yet.</div></main>;
 
@@ -52,7 +86,7 @@ export default function CourseReadingPage() {
     </section>
 
     <section className="stageCard readingCoursePicker">
-      <label><span>Choose a flagship course</span><select value={course.id} onChange={event => { setSelectedId(event.target.value); setAnswers({}); setChecked({}); }}>{availableCourses.map(item => <option value={item.id} key={item.id}>{item.title}</option>)}</select></label>
+      <label><span>Choose a flagship course</span><select value={course.id} onChange={event => { setSelectedId(event.target.value); setAnswers({}); setChecked({}); setSaveMessage(""); }}>{availableCourses.map(item => <option value={item.id} key={item.id}>{item.title}</option>)}</select></label>
       <div><strong>{readings.length}</strong><span>curated reading{readings.length === 1 ? "" : "s"}</span></div>
       <div><strong>{readings.reduce((sum, item) => sum + item.readTime, 0)}</strong><span>approx. reading minutes</span></div>
       <div><strong>{totals.correct}/{totals.total}</strong><span>source questions correct</span></div>
@@ -102,6 +136,7 @@ export default function CourseReadingPage() {
       <span className="eyebrow">TRANSFER TO PRACTICE</span>
       <h2>{totals.total > 0 && totals.correct === totals.total ? "Reading check complete — now transfer it to practice" : "Don't stop at reading"}</h2>
       <p>{totals.attempted} of {totals.total} questions checked · {totals.correct} correct.</p>
+      {saveMessage && <div className="phaseNotice">{saveMessage}</div>}
       <div className="readingTransferGrid"><div><span>1</span><strong>Name one idea</strong><p>Choose the part of the reading that is most relevant to a real professional need.</p></div><div><span>2</span><strong>Connect it</strong><p>Link it to the full course, your school policy and the pupils or staff context.</p></div><div><span>3</span><strong>Test it</strong><p>Use one manageable change rather than trying to implement everything at once.</p></div><div><span>4</span><strong>Review</strong><p>Look for evidence and decide whether to keep, adapt, scale or revisit the change.</p></div></div>
       <div className="phaseActions"><a className="primary phaseLinkButton" href="/">Return to courses</a>{course.id === "safeguarding-essentials" && <a className="secondary phaseLinkButton" href="/safeguarding">Open safeguarding compliance</a>}</div>
     </section>
