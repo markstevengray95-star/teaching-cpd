@@ -15,11 +15,13 @@ import { enrichCourseWithVisuals } from "./courseVisualEnrichment";
 import { deepenSafeguarding2026 } from "./safeguardingDepth2026";
 import { addAdvancedSafeguarding2026 } from "./safeguardingAdvanced2026";
 import { addSafeguardingPractice2026 } from "./safeguardingPractice2026";
+import { addSafeguardingGuidedStudy2026 } from "./safeguardingGuidedStudy2026";
 import { enhanceMainCourse } from "./mainCourseEnhancement";
 import { addFlagshipFacilitatorPack } from "./mainCourseFacilitatorEnhancement";
 import { structureFlagshipCourse } from "./flagshipCourseMaterials";
 import { addCourseVisualDepth } from "./courseVisualDepth";
 import { addCourseVisualStoryboards } from "./courseVisualStoryboards";
+import { addCourseSpecificVisualStoryboards } from "./courseVisualStoryboards2";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -59,10 +61,12 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(deepenSafeguarding2026)
   .map(addAdvancedSafeguarding2026)
   .map(addSafeguardingPractice2026)
+  .map(addSafeguardingGuidedStudy2026)
   .map(enhanceMainCourse)
   .map(addFlagshipFacilitatorPack)
   .map(structureFlagshipCourse)
   .map(addCourseVisualDepth)
-  .map(addCourseVisualStoryboards);
+  .map(addCourseVisualStoryboards)
+  .map(addCourseSpecificVisualStoryboards);
 
 courses.forEach(validateCourse);
