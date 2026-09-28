@@ -26,6 +26,7 @@ import { addCourseSpecificVisualStoryboards } from "./courseVisualStoryboards2";
 import { addCourseDeepPractice } from "./courseDeepPractice";
 import { addCourseDeepPractice2 } from "./courseDeepPractice2";
 import { addCourseDeepPractice3 } from "./courseDeepPractice3";
+import { structureCourseAsPresentation } from "./coursePresentationStructure";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -75,6 +76,7 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(addCourseSpecificVisualStoryboards)
   .map(addCourseDeepPractice)
   .map(addCourseDeepPractice2)
-  .map(addCourseDeepPractice3);
+  .map(addCourseDeepPractice3)
+  .map(structureCourseAsPresentation);
 
 courses.forEach(validateCourse);
