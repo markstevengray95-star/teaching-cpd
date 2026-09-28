@@ -28,6 +28,7 @@ import { addCourseDeepPractice2 } from "./courseDeepPractice2";
 import { addCourseDeepPractice3 } from "./courseDeepPractice3";
 import { structureCourseAsPresentation } from "./coursePresentationStructure";
 import { boostCourseEngagement } from "./courseEngagementBoost";
+import { openCourseWithPresentationOverview } from "./coursePresentationOrder";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -60,6 +61,7 @@ function validateCourse(course: Course) {
   const interactiveTypes = new Set(["quiz", "scenario", "reflection", "checklist", "activity"]);
   if (!course.modules.some(module => interactiveTypes.has(module.type))) throw new Error(`CPD course ${course.id} needs at least one interactive or reflective module`);
   if (!course.modules.some(module => module.type === "visual")) throw new Error(`CPD course ${course.id} needs at least one visual explainer`);
+  if (!(course.modules[0].id.startsWith("presentation-") && course.modules[0].id.endsWith("-map"))) throw new Error(`CPD course ${course.id} must open with its presentation overview`);
 }
 
 export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
@@ -79,6 +81,7 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(addCourseDeepPractice2)
   .map(addCourseDeepPractice3)
   .map(structureCourseAsPresentation)
-  .map(boostCourseEngagement);
+  .map(boostCourseEngagement)
+  .map(openCourseWithPresentationOverview);
 
 courses.forEach(validateCourse);
