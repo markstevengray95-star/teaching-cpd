@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { courses } from "@/lib/catalogue";
-import { courseIdsWithReadings, readingsForCourse } from "@/lib/courseReadingLibrary";
-import { additionalReadingsForCourse, expandReadingQuestions } from "@/lib/courseReadingExpansion";
+import { courseIdsWithReadings, readingsForCourse } from "@/lib/courseReadingIndex";
 
-const availableCourses = courses.filter(course => courseIdsWithReadings.includes(course.id) || additionalReadingsForCourse(course.id).length > 0);
+const readingCourseIds = new Set(courseIdsWithReadings());
+const availableCourses = courses.filter(course => readingCourseIds.has(course.id));
 
 type Answers = Record<string, number>;
 type Checked = Record<string, boolean>;
@@ -21,12 +21,7 @@ export default function CourseReadingPage() {
   }, []);
 
   const course = useMemo(() => availableCourses.find(item => item.id === selectedId) || availableCourses[0], [selectedId]);
-  const readings = useMemo(() => {
-    if (!course) return [];
-    const combined = [...readingsForCourse(course.id), ...additionalReadingsForCourse(course.id)];
-    const unique = new Map(combined.map(reading => [reading.id, reading] as const));
-    return [...unique.values()].map(expandReadingQuestions);
-  }, [course]);
+  const readings = useMemo(() => course ? readingsForCourse(course.id) : [], [course]);
 
   const totals = useMemo(() => {
     const all = readings.flatMap(reading => reading.questions.map((question, index) => ({ reading, question, key: `${reading.id}-${index}` })));
