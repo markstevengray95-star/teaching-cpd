@@ -16,6 +16,7 @@ import { deepenSafeguarding2026 } from "./safeguardingDepth2026";
 import { addAdvancedSafeguarding2026 } from "./safeguardingAdvanced2026";
 import { addSafeguardingPractice2026 } from "./safeguardingPractice2026";
 import { addSafeguardingGuidedStudy2026 } from "./safeguardingGuidedStudy2026";
+import { addSafeguardingPresentationDepth2026 } from "./safeguardingPresentationDepth2026";
 import { enhanceMainCourse } from "./mainCourseEnhancement";
 import { addFlagshipFacilitatorPack } from "./mainCourseFacilitatorEnhancement";
 import { structureFlagshipCourse } from "./flagshipCourseMaterials";
@@ -65,6 +66,7 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(addAdvancedSafeguarding2026)
   .map(addSafeguardingPractice2026)
   .map(addSafeguardingGuidedStudy2026)
+  .map(addSafeguardingPresentationDepth2026)
   .map(enhanceMainCourse)
   .map(addFlagshipFacilitatorPack)
   .map(structureFlagshipCourse)
