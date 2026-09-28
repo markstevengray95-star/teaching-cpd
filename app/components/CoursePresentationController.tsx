@@ -26,6 +26,10 @@ function decoratePresentation(modal: HTMLElement) {
   const buttons = Array.from(nav.querySelectorAll<HTMLButtonElement>("button"));
   const currentIndex = buttons.findIndex(button => button.classList.contains("current"));
   if (currentIndex < 0) return;
+  const moduleType = (article.querySelector(".moduleType")?.textContent || "CONTENT").trim().toUpperCase();
+  const stateSignature = `${currentIndex}|${moduleType}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
+  if (modal.dataset.presentationSignature === stateSignature) return;
+  modal.dataset.presentationSignature = stateSignature;
 
   buttons.forEach((button, index) => {
     const current = button.classList.contains("current");
@@ -40,7 +44,6 @@ function decoratePresentation(modal: HTMLElement) {
     button.setAttribute("aria-label", `${unlocked ? "" : "Locked. "}Slide ${index + 1} of ${buttons.length}: ${title}`);
   });
 
-  const moduleType = (article.querySelector(".moduleType")?.textContent || "CONTENT").trim().toUpperCase();
   const stage = STAGE_LABELS[moduleType] || "Learn";
   article.dataset.presentationStage = stage;
   article.dataset.slideNumber = String(currentIndex + 1);
@@ -96,8 +99,14 @@ function decoratePresentation(modal: HTMLElement) {
 
 export default function CoursePresentationController() {
   useEffect(() => {
+    let scheduled = false;
     const apply = () => {
-      document.querySelectorAll<HTMLElement>(".courseModal").forEach(decoratePresentation);
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(() => {
+        scheduled = false;
+        document.querySelectorAll<HTMLElement>(".courseModal").forEach(decoratePresentation);
+      });
     };
 
     apply();
