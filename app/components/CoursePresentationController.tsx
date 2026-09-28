@@ -45,8 +45,17 @@ function decoratePresentation(modal: HTMLElement) {
   if (currentIndex < 0) return;
 
   const moduleType = (article.querySelector(".moduleType")?.textContent || "CONTENT").trim().toUpperCase();
+  const stage = STAGE_LABELS[moduleType] || "Learn";
   const progressText = modal.querySelector<HTMLElement>(".courseProgress span")?.textContent || "";
   const completedPreviously = /completed previously/i.test(progressText);
+
+  // These attributes are the single source of truth for presentation styling.
+  // Re-apply them every pass because React can recreate the slide DOM between modules.
+  article.classList.add("presentationSlide");
+  article.dataset.presentationStage = stage;
+  article.dataset.moduleType = moduleType.toLowerCase();
+  article.dataset.slideNumber = String(currentIndex + 1);
+  modal.dataset.currentPresentationStage = stage;
 
   // Always re-apply the actual control state. React may recreate these buttons without
   // changing the visible presentation state, so this must not sit behind the signature guard.
@@ -68,10 +77,6 @@ function decoratePresentation(modal: HTMLElement) {
   const stateSignature = `${currentIndex}|${moduleType}|${completedPreviously ? 1 : 0}|${buttons.map(button => `${button.classList.contains("done") ? 1 : 0}${button.classList.contains("current") ? 1 : 0}`).join("")}`;
   if (modal.dataset.presentationSignature === stateSignature) return;
   modal.dataset.presentationSignature = stateSignature;
-
-  const stage = STAGE_LABELS[moduleType] || "Learn";
-  article.dataset.presentationStage = stage;
-  article.dataset.slideNumber = String(currentIndex + 1);
 
   let meta = article.querySelector<HTMLElement>(".presentationSlideMeta");
   if (!meta) {
