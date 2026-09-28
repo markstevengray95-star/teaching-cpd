@@ -1,11 +1,11 @@
 import type { Course, Module } from "./data";
 
 export const NEXT_FIVE_COURSE_IDS = [
-  "effective-feedback",
   "curriculum-sequencing",
-  "metacognition-self-regulation",
   "supporting-anxious-pupils",
   "online-safety",
+  "difficult-conversations",
+  "effective-tutoring",
 ] as const;
 
 type NextFiveId = (typeof NEXT_FIVE_COURSE_IDS)[number];
@@ -15,26 +15,11 @@ type ScenarioModule = Extract<Module, { type: "scenario" }>;
 const nextFiveIds = new Set<string>(NEXT_FIVE_COURSE_IDS);
 
 const bespokePractice: Record<NextFiveId, ActivityModule> = {
-  "effective-feedback": {
-    id: "qa15-feedback-action-cycle",
-    type: "activity",
-    title: "Practice studio: design a feedback-response cycle",
-    prompt: "Choose one recurring pupil error or misconception and design a feedback routine that ends with pupil action rather than teacher comments alone.",
-    instructions: [
-      "State the learning goal and the specific error or gap the feedback should address.",
-      "Write one concise feedback prompt, cue or model that tells the pupil what to improve without completing the thinking for them.",
-      "Design the response task pupils will complete immediately after receiving the feedback.",
-      "State how you will check whether the response improved the underlying learning rather than just the piece of work.",
-      "Decide what you would reteach, adapt or stop if the same error remains common.",
-    ],
-    placeholder: "Learning goal…\nError/gap…\nFeedback prompt…\nPupil response task…\nCheck for improvement…\nNext teaching move…",
-    minimumCharacters: 220,
-  },
   "curriculum-sequencing": {
     id: "qa15-curriculum-sequence-map",
     type: "activity",
     title: "Practice studio: map the route to an endpoint",
-    prompt: "Choose one important curriculum endpoint and work backwards to make the prerequisite knowledge, practice and planned revisiting explicit.",
+    prompt: "Choose one important curriculum endpoint and work backwards to make prerequisite knowledge, practice and planned revisiting explicit.",
     instructions: [
       "State the final concept, performance or outcome pupils should reach.",
       "Identify the prerequisite knowledge pupils must already have for that endpoint to make sense.",
@@ -44,21 +29,6 @@ const bespokePractice: Record<NextFiveId, ActivityModule> = {
     ],
     placeholder: "Endpoint…\nPrerequisites…\nSequence/dependencies…\nPlanned revisiting…\nEvidence the sequence is working…",
     minimumCharacters: 240,
-  },
-  "metacognition-self-regulation": {
-    id: "qa15-metacognition-thinkaloud",
-    type: "activity",
-    title: "Practice studio: script an expert think-aloud",
-    prompt: "Choose one authentic subject task and make the normally hidden planning, monitoring and checking decisions visible to pupils.",
-    instructions: [
-      "State the task and the strategy an expert would select first.",
-      "Write what you would say aloud to explain why that strategy fits the task.",
-      "Add one monitoring question you would ask yourself while working.",
-      "Show how you would respond if the strategy was not working as expected.",
-      "Plan how the prompt or scaffold will fade so pupils increasingly make the decisions themselves.",
-    ],
-    placeholder: "Task…\nInitial strategy and why…\nMonitoring question…\nAdjustment if stuck…\nHow support will fade…",
-    minimumCharacters: 220,
   },
   "supporting-anxious-pupils": {
     id: "qa15-anxiety-predictability-plan",
@@ -88,6 +58,36 @@ const bespokePractice: Record<NextFiveId, ActivityModule> = {
       "Identify one follow-up action within your role and one action that should remain with safeguarding or other authorised staff.",
     ],
     placeholder: "Observable concern…\nImmediate response…\nRecord/preserve…\nReporting route…\nFollow-up within role…",
+    minimumCharacters: 220,
+  },
+  "difficult-conversations": {
+    id: "qa15-difficult-conversation-plan",
+    type: "activity",
+    title: "Practice studio: plan a difficult professional conversation",
+    prompt: "Use a real but non-sensitive professional issue, or a fictional example, and structure the conversation around observable evidence, listening and clear next steps rather than judgement about motive.",
+    instructions: [
+      "State the agreed expectation and the specific observable evidence you need to discuss.",
+      "Write a neutral opening sentence that explains the issue without exaggeration or personal labelling.",
+      "Add two questions that help you understand relevant barriers or context before deciding the next step.",
+      "Write the concrete action, support and review point you would aim to agree.",
+      "State what should be documented after the conversation and how you will keep the record factual and proportionate.",
+    ],
+    placeholder: "Expectation…\nEvidence…\nNeutral opening…\nQuestions…\nAgreed action/support…\nReview/record…",
+    minimumCharacters: 220,
+  },
+  "effective-tutoring": {
+    id: "qa15-tutoring-routine-plan",
+    type: "activity",
+    title: "Practice studio: design a purposeful tutor routine",
+    prompt: "Choose one recurring tutor-time need—organisation, attendance follow-up, belonging, academic habits or a brief pastoral check-in—and design a repeatable routine that stays within the tutor role.",
+    instructions: [
+      "State the purpose of the routine and what pupils should experience consistently.",
+      "Write the short sequence pupils and the tutor will follow each time.",
+      "Identify one sign or pattern that would trigger a private follow-up rather than a public conversation.",
+      "State when the issue should move through the school's pastoral, SEND or safeguarding route instead of remaining with the tutor alone.",
+      "Choose one simple indicator that will tell you whether the routine is improving consistency, belonging or organisation.",
+    ],
+    placeholder: "Purpose…\nRoutine steps…\nPrivate follow-up trigger…\nEscalation route…\nEvidence of impact…",
     minimumCharacters: 220,
   },
 };
@@ -121,31 +121,23 @@ const bespokeKnowledge: Partial<Record<NextFiveId, QuizModule>> = {
     answer: 1,
     feedback: "Staff can reduce avoidable uncertainty and use agreed support while remaining within role boundaries and involving the school's appropriate support systems when needed.",
   },
+  "difficult-conversations": {
+    id: "qa15-difficult-conversations-knowledge",
+    type: "quiz",
+    title: "Check: keep the conversation evidence-led",
+    question: "Which opening is most likely to support a clear and fair professional conversation about an agreed process that has not been followed?",
+    options: [
+      "Everyone thinks you are unreliable",
+      "The agreed process was missed on these specific occasions. I want to understand what got in the way and agree what should happen next",
+      "You clearly do not care about the team",
+      "I will avoid the issue for now so the conversation never feels uncomfortable",
+    ],
+    answer: 1,
+    feedback: "A strong opening separates observable evidence from assumptions about motive, creates space to understand context and keeps the conversation focused on an agreed next step.",
+  },
 };
 
 const bespokeDecision: Partial<Record<NextFiveId, ScenarioModule>> = {
-  "effective-feedback": {
-    id: "qa15-feedback-decision",
-    type: "scenario",
-    title: "Decision point: make feedback usable",
-    prompt: "A pupil receives the same written comment on several pieces of work but continues to make the same conceptual error. What is the strongest next move?",
-    options: [
-      { label: "Write a longer version of the same comment and move on", feedback: "More wording does not guarantee that the pupil understands the gap or acts on it." },
-      { label: "Clarify the specific gap, give a focused cue or model, require the pupil to improve or reattempt the relevant part, then check whether the understanding changed", feedback: "This turns feedback into a learning cycle: information, pupil action and a check on whether the gap has actually reduced." },
-      { label: "Replace all feedback with a grade only", feedback: "A grade alone is unlikely to show the pupil what to do differently next." },
-    ],
-  },
-  "metacognition-self-regulation": {
-    id: "qa15-metacognition-decision",
-    type: "scenario",
-    title: "Decision point: reveal the strategy",
-    prompt: "Pupils can complete a familiar worked example but become stuck when a problem changes slightly. What is the strongest teaching response?",
-    options: [
-      { label: "Tell pupils the answer to the new problem", feedback: "This may finish the task without making the planning and monitoring decisions visible." },
-      { label: "Model a brief think-aloud showing how to identify the task, select a strategy, monitor progress and change approach when needed, then let pupils rehearse those decisions", feedback: "Metacognitive teaching makes strategic decisions explicit and then gradually transfers responsibility to pupils." },
-      { label: "Remove all prompts immediately so pupils discover a strategy independently", feedback: "Abruptly removing support can leave novices practising unproductive approaches rather than learning how experts regulate their thinking." },
-    ],
-  },
   "online-safety": {
     id: "qa15-online-safety-decision",
     type: "scenario",
@@ -155,6 +147,17 @@ const bespokeDecision: Partial<Record<NextFiveId, ScenarioModule>> = {
       { label: "Promise secrecy so the pupil keeps talking", feedback: "Staff should not promise confidentiality they may be unable to keep when safeguarding information needs to be shared." },
       { label: "Listen calmly, avoid investigating, explain that you may need to share the concern, and follow the school's safeguarding/reporting procedure promptly", feedback: "This supports the pupil while keeping the response within the school's safeguarding system and the staff member's professional role." },
       { label: "Contact the other person yourself to establish exactly what happened before reporting it", feedback: "Independent investigation can interfere with the appropriate safeguarding response and is outside the normal classroom staff role." },
+    ],
+  },
+  "effective-tutoring": {
+    id: "qa15-tutoring-decision",
+    type: "scenario",
+    title: "Decision point: notice a pattern, use the system",
+    prompt: "Over several tutor sessions you notice a sustained change in a pupil's attendance, organisation and presentation. What is the strongest next response?",
+    options: [
+      { label: "Discuss the pattern publicly with the whole form so others can explain it", feedback: "Public discussion risks breaching privacy and may discourage the pupil from engaging with support." },
+      { label: "Check in appropriately and privately, record relevant facts, and use the school's agreed pastoral or safeguarding route if the pattern raises concern", feedback: "Tutors can notice patterns and offer appropriate support, but concerns should move through the school's established systems rather than being managed in isolation." },
+      { label: "Diagnose the reason for the change yourself and create a treatment plan", feedback: "Diagnosis and clinical planning are outside the normal tutor role. Use observable information and the school's support routes." },
     ],
   },
 };
@@ -301,6 +304,7 @@ export function validateNextFiveCourseQuality(course: Course) {
   assert(types.has("content") && types.has("visual") && types.has("quiz") && types.has("scenario") && types.has("activity") && types.has("checklist") && types.has("reflection"), `${prefix} missing a required presentation interaction type`);
   assert(!course.modules.some(module => isRedundantGenericSlide(course, module) || isGenericEngagementSlide(course, module)), `${prefix} redundant generic filler remains`);
   assert(!course.modules.some(module => module.id === `presentation-${course.id}-practice`), `${prefix} generic practice fallback remains`);
+  assert(!course.modules.some(module => module.id === `presentation-${course.id}-knowledge` || module.id === `presentation-${course.id}-decision`), `${prefix} generic core quiz/scenario fallback remains`);
 
   const firstInteraction = course.modules.findIndex((module, index) => index > 1 && ["quiz", "scenario"].includes(module.type));
   assert(firstInteraction >= 2 && firstInteraction <= 7, `${prefix} learners go too long before the first active decision/check`);
