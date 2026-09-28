@@ -36,22 +36,26 @@ export default function DevelopmentDock() {
   if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
 
   const learn: LinkItem[] = [
+    ["/development", "Development cycle"],
+    ["/pathways", "Pathways"],
+    ["/adaptive", "Adaptive pre-check"],
+    ["/subject-cpd", "Subject-specific CPD"],
     ["/reading", "Course reading"],
     ["/micro-cpd", "Micro-CPD"],
     ["/training", "My training"],
-    ["/pathways", "Pathways"],
-    ["/portfolio", "Portfolio"],
-    ["/external-cpd", "External CPD"],
     ["/recommendations", "Recommendations"],
   ];
 
   const apply: LinkItem[] = [
+    ["/simulator", "Practice simulator"],
     ["/actions", "Action plans"],
     ["/coach", "CPD Coach"],
     ["/coaching", "Coaching"],
     ["/needs-audit", "Needs audit"],
+    ["/portfolio", "Portfolio"],
     ["/impact", "CPD impact"],
-    ["/improvement", "School improvement"],
+    ["/standards", "Standards map"],
+    ["/external-cpd", "External CPD"],
   ];
 
   const school: LinkItem[] = [
@@ -60,26 +64,28 @@ export default function DevelopmentDock() {
     ["/safeguarding/documents", "Safeguarding documents"],
     ["/safety", "Safety & compliance"],
     ["/certificates", "Certificates"],
-    ["/reminders", "Reminders"],
+    ["/reminders", "Spaced follow-up"],
+    ["/improvement", "School improvement"],
   ];
 
   const more: LinkItem[] = [
     ["/course-studio", "Course Studio"],
     ["/course-packs", "Course packs"],
     ["/help", "Help"],
-    ["/accessibility", "App settings"],
+    ["/accessibility", "Accessibility & reading"],
   ];
 
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) {
-    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership"]);
+    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
     more.push(
+      ["/policy-training", "Policy training"],
+      ["/builder", "Course creator"],
       ["/launch-readiness", "Launch readiness"],
       ["/school-access", "School access"],
       ["/quality", "Annual CPD & QA"],
       ["/admin", "CPD admin"],
-      ["/builder", "Course creator"],
     );
   }
   if (role === "Admin") more.push(["/staff-access", "Staff access"], ["/staff-sync", "Staff sync"]);
