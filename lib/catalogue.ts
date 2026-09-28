@@ -35,6 +35,7 @@ import { qualityAssureNextFiveCourse, validateNextFiveCatalogueOrder, validateNe
 import { qualityAssureCourses16To20, validateCourses16To20Order, validateCourses16To20Quality } from "./courses16To20Quality";
 import { qualityAssureCourses21To25, validateCourses21To25Order, validateCourses21To25Quality } from "./courses21To25Quality";
 import { qualityAssureCourses26To30, validateCourses26To30Order, validateCourses26To30Quality } from "./courses26To30Quality";
+import { qualityAssureRemainingCourse, validateRemainingCatalogue, validateRemainingCourseQuality } from "./remainingCourseQuality";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -94,7 +95,8 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(qualityAssureNextFiveCourse)
   .map(qualityAssureCourses16To20)
   .map(qualityAssureCourses21To25)
-  .map(qualityAssureCourses26To30);
+  .map(qualityAssureCourses26To30)
+  .map(qualityAssureRemainingCourse);
 
 courses.forEach(validateCourse);
 courses.forEach(validateFirstTenCourseQuality);
@@ -103,9 +105,11 @@ courses.forEach(validateNextFiveCourseQuality);
 courses.forEach(validateCourses16To20Quality);
 courses.forEach(validateCourses21To25Quality);
 courses.forEach(validateCourses26To30Quality);
+courses.forEach(validateRemainingCourseQuality);
 validateFirstTenCatalogueOrder(courses);
 validateFirstTenOrderAfterFlow(courses);
 validateNextFiveCatalogueOrder(courses);
 validateCourses16To20Order(courses);
 validateCourses21To25Order(courses);
 validateCourses26To30Order(courses);
+validateRemainingCatalogue(courses);
