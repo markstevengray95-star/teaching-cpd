@@ -15,6 +15,7 @@ import "./course-visuals-plus.css";
 import "./course-motion-plus.css";
 import "./course-lab.css";
 import "./course-engagement.css";
+import "./course-navigation.css";
 import "./course-studio.css";
 import "./course-packs.css";
 import "./course-reading.css";
