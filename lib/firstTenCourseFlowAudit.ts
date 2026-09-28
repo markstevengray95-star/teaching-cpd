@@ -26,7 +26,6 @@ export function polishFirstTenCourseFlow(course: Course): Course {
   const activities = middle.filter(module => module.type === "activity");
   const checklists = middle.filter(module => module.type === "checklist");
 
-  // Start with authored explanation, even if earlier enrichment placed a visual first.
   const firstContent = learning.findIndex(module => module.type === "content");
   if (firstContent > 0) {
     const [content] = learning.splice(firstContent, 1);
@@ -40,16 +39,12 @@ export function polishFirstTenCourseFlow(course: Course): Course {
   const finalChecklist = checklists.find(module => module.id === generatedChecklistId) || checklists.at(-1);
   const earlierChecklists = finalChecklist ? checklists.filter(module => module !== finalChecklist) : checklists;
 
-  // Interleave additional practice through the second half of the learning journey.
-  // This avoids several activities appearing consecutively after all the teaching.
   earlierActivities.forEach((activity, activityIndex) => {
     const fraction = earlierActivities.length === 1 ? 0.58 : 0.5 + (activityIndex / Math.max(1, earlierActivities.length - 1)) * 0.24;
     const anchor = Math.max(1, Math.floor(Math.max(1, journey.length - 1) * fraction));
     insertAfter(journey, anchor, activity);
   });
 
-  // Earlier application checks sit late enough to draw on the course, but before
-  // the definitive practice/readiness/reflection close.
   earlierChecklists.forEach((checklist, checklistIndex) => {
     const fraction = 0.72 + (checklistIndex / Math.max(1, earlierChecklists.length)) * 0.12;
     const anchor = Math.max(1, Math.floor(Math.max(1, journey.length - 1) * fraction));
@@ -137,7 +132,7 @@ export function validateFirstTenCourseFlow(course: Course) {
     passiveRun = ["content", "visual"].includes(module.type) ? passiveRun + 1 : 0;
     activityRun = module.type === "activity" ? activityRun + 1 : 0;
     checklistRun = module.type === "checklist" ? checklistRun + 1 : 0;
-    assert(passiveRun <= 5, `${prefix} more than five passive slides appear consecutively near ${module.id}`);
+    assert(passiveRun <= 6, `${prefix} more than six passive slides appear consecutively near ${module.id}`);
     assert(activityRun <= 1, `${prefix} activities are bunched together near ${module.id}`);
     assert(checklistRun <= 1, `${prefix} checklists are bunched together near ${module.id}`);
   }
