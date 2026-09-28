@@ -53,9 +53,20 @@
 .activityResponse{min-height:170px;max-height:42vh}
 .activityCounter{font-variant-numeric:tabular-nums}
 
-/* Interactive enhancement widgets added by the catalogue-wide activity layer. */
-.slideInteractionPanel,.visualInteractionPanel,.contentInteractionPanel,.activityInteractionPanel{width:100%;max-width:var(--slide-max);margin-left:auto!important;margin-right:auto!important}
-.interactiveVisualFocus,.visualFocusPanel,.revealPanel,.sequenceChallenge,.confidenceCheck,.familiarityCheck,.activityStepTracker,.writingPromptTools{max-width:100%;min-width:0}
+/* Catalogue-wide interactive widgets */
+.moduleContent .interactiveKnowledge,.moduleContent .interactiveVisual,.moduleContent .interactivePractice{width:100%;max-width:var(--slide-max);margin:14px auto 6px;min-width:0}
+.interactiveKnowledgeHead,.interactiveVisualToolbar,.interactivePracticeHead,.sequenceChallengeHead{align-items:flex-start}
+.revealPointGrid,.clickVisualMap,.sequencePool,.activityStepGrid{min-width:0}
+.revealPoint,.clickVisualNode,.sequencePool button,.activityStep{min-width:0}
+.revealPoint span,.clickVisualNode span,.sequencePool button,.activityStep{overflow-wrap:anywhere}
+.visualDetailPanel{min-width:0}
+.visualDetailPanel>div{min-width:0}
+.sequenceChallenge{max-width:100%;min-width:0}
+.confidencePulse{max-width:100%;min-width:0}
+.confidencePulse>div{flex-wrap:wrap}
+.activityTools,.planningPromptGrid,.compareSelector{max-width:100%}
+.interactiveActivityResponse{min-height:170px;max-height:42vh}
+.clickVisualMap.pyramid .clickVisualNode{max-width:100%}
 
 /* Navigation text should never collide with locked/status decorations. */
 .moduleNav button{min-height:51px;align-items:center;padding-right:12px}
@@ -79,6 +90,7 @@
   .moduleLayout{grid-template-columns:235px minmax(0,1fr)}
   .moduleContent .keyPoints{grid-template-columns:1fr}
   .visualGrid.flow,.visualGrid.timeline,.visualGrid.cycle{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .revealPointGrid,.clickVisualMap.flow,.clickVisualMap.timeline,.sequencePool{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 @media(max-width:850px){
@@ -104,9 +116,13 @@
   .visualGrid.ladder:before{display:none}
   .visualGrid.ladder .visualCard:nth-child(odd),.visualGrid.ladder .visualCard:nth-child(even){margin-left:0;margin-right:0}
   .visualGrid.pyramid .visualCard:nth-child(n){width:100%}
+  .revealPointGrid,.clickVisualMap.flow,.clickVisualMap.timeline,.clickVisualMap.cycle,.clickVisualMap.compare,.sequencePool{grid-template-columns:1fr}
+  .clickVisualMap.pyramid .clickVisualNode{width:100%!important}
+  .clickVisualMap.ladder .clickVisualNode:nth-child(even){margin-left:0}
+  .visualDetailPanel{grid-template-columns:1fr}
   .moduleContent .moduleActions{margin-top:20px;padding-top:14px;bottom:-1px}
   .moduleActions .primary,.moduleActions .secondary{flex:1 1 130px}
-  .reflectionBox,.activityResponse{max-height:none}
+  .reflectionBox,.activityResponse,.interactiveActivityResponse{max-height:none}
   .courseModal.presentationFocus .moduleContent{width:100%;height:auto;min-height:0!important;margin:0!important;padding:22px 18px!important;border-radius:0;box-shadow:none}
 }
 
@@ -121,7 +137,11 @@
   .visualCard{padding:14px}
   .scenarioBox{font-size:15px;padding:42px 16px 16px}
   .option{padding:12px 12px 12px 46px;min-height:52px}
-  .practiceActivity{padding:16px}
+  .practiceActivity,.interactiveKnowledge,.interactiveVisual,.interactivePractice{padding:14px!important}
+  .revealPoint{grid-template-columns:34px 1fr auto;padding:10px;min-height:64px}
+  .clickVisualNode{min-height:64px;padding:10px}
+  .sequencePool button{min-height:64px}
+  .activityStep{padding:10px}
   .checkItem{padding:12px;min-height:54px}
   .moduleContent .moduleActions{gap:7px}
 }
