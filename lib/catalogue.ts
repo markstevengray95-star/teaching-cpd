@@ -33,7 +33,7 @@ import { qualityAssureFirstTenCourse, validateFirstTenCatalogueOrder, validateFi
 import { polishFirstTenCourseFlow, validateFirstTenCourseFlow, validateFirstTenOrderAfterFlow } from "./firstTenCourseFlowAudit";
 import { qualityAssureNextFiveCourse, validateNextFiveCatalogueOrder, validateNextFiveCourseQuality } from "./nextFiveCourseQuality";
 import { qualityAssureCourses16To20, validateCourses16To20Order, validateCourses16To20Quality } from "./courses16To20Quality";
-import { validateCourses21To25Order } from "./courses21To25Quality";
+import { qualityAssureCourses21To25, validateCourses21To25Order, validateCourses21To25Quality } from "./courses21To25Quality";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -91,13 +91,15 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(qualityAssureFirstTenCourse)
   .map(polishFirstTenCourseFlow)
   .map(qualityAssureNextFiveCourse)
-  .map(qualityAssureCourses16To20);
+  .map(qualityAssureCourses16To20)
+  .map(qualityAssureCourses21To25);
 
 courses.forEach(validateCourse);
 courses.forEach(validateFirstTenCourseQuality);
 courses.forEach(validateFirstTenCourseFlow);
 courses.forEach(validateNextFiveCourseQuality);
 courses.forEach(validateCourses16To20Quality);
+courses.forEach(validateCourses21To25Quality);
 validateFirstTenCatalogueOrder(courses);
 validateFirstTenOrderAfterFlow(courses);
 validateNextFiveCatalogueOrder(courses);
