@@ -22,6 +22,7 @@ import { structureFlagshipCourse } from "./flagshipCourseMaterials";
 import { addCourseVisualDepth } from "./courseVisualDepth";
 import { addCourseVisualStoryboards } from "./courseVisualStoryboards";
 import { addCourseSpecificVisualStoryboards } from "./courseVisualStoryboards2";
+import { addCourseDeepPractice } from "./courseDeepPractice";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -67,6 +68,7 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(structureFlagshipCourse)
   .map(addCourseVisualDepth)
   .map(addCourseVisualStoryboards)
-  .map(addCourseSpecificVisualStoryboards);
+  .map(addCourseSpecificVisualStoryboards)
+  .map(addCourseDeepPractice);
 
 courses.forEach(validateCourse);
