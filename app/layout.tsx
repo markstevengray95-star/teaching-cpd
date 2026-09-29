@@ -7,6 +7,7 @@ import CoursePracticePhase4Controller from "./components/CoursePracticePhase4Con
 import CourseAssessmentPhase5Controller from "./components/CourseAssessmentPhase5Controller";
 import CourseAssessmentPhase5Sync from "./components/CourseAssessmentPhase5Sync";
 import CourseFollowThroughPhase6Controller from "./components/CourseFollowThroughPhase6Controller";
+import CourseFacilitatorPhase7Controller from "./components/CourseFacilitatorPhase7Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -55,6 +56,7 @@ import "./phase3-presentation.css";
 import "./course-practice-phase4.css";
 import "./phase5-assessment.css";
 import "./course-followthrough-phase6.css";
+import "./phase7-facilitator.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
@@ -73,6 +75,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseAssessmentPhase5Controller />
         <CourseAssessmentPhase5Sync />
         <CourseFollowThroughPhase6Controller />
+        <CourseFacilitatorPhase7Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
