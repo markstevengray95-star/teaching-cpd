@@ -85,6 +85,8 @@ export default function DevelopmentDock() {
       ["/launch-readiness", "Launch readiness"],
       ["/school-access", "School access"],
       ["/quality", "Annual CPD & QA"],
+      ["/course-audit", "Course audit"],
+      ["/course-quality-dashboard", "Final course QA"],
       ["/admin", "CPD admin"],
     );
   }
