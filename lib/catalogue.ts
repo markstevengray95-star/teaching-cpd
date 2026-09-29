@@ -75,6 +75,25 @@ function validateCourse(course: Course) {
   if (!(course.modules[0].id.startsWith("presentation-") && course.modules[0].id.endsWith("-map"))) throw new Error(`CPD course ${course.id} must open with its presentation overview`);
 }
 
+function standardiseCourseObjectives(course: Course): Course {
+  const objectives: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: string) => {
+    const clean = value.trim();
+    const key = clean.toLowerCase();
+    if (!clean || seen.has(key) || objectives.length >= 6) return;
+    seen.add(key);
+    objectives.push(clean);
+  };
+  course.objectives.forEach(add);
+  [
+    `Apply the core principles of ${course.title} to a realistic school context`,
+    "Identify appropriate evidence to judge whether the approach is working",
+    "Plan a specific next step and review whether it should be kept, adapted or stopped",
+  ].forEach(add);
+  return { ...course, objectives: objectives.slice(0, Math.max(3, Math.min(6, objectives.length))) };
+}
+
 const qualityAssuredCourses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
   .map(enrichCourseWithVisuals)
   .map(deepenSafeguarding2026)
@@ -122,7 +141,9 @@ validateCourses21To25Order(qualityAssuredCourses);
 validateCourses26To30Order(qualityAssuredCourses);
 validateRemainingCatalogue(qualityAssuredCourses);
 
-export const courses = qualityAssuredCourses.map(applyCourseTemplateFoundation);
+export const courses = qualityAssuredCourses
+  .map(standardiseCourseObjectives)
+  .map(applyCourseTemplateFoundation);
 
 courses.forEach(validateCourse);
 courses.forEach(validateCourseAgainstQualityFramework);
