@@ -44,6 +44,7 @@ import { enhanceCoursePresentationPhase3, validateCoursePresentationPhase3, audi
 import { addAdvancedPracticePhase4, validateAdvancedPracticePhase4, auditAdvancedPracticePhase4 } from "./coursePracticePhase4";
 import { addCourseAssessmentPhase5, validateCourseAssessmentPhase5, auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
 import { validateCourseFollowThroughPhase6, auditCourseFollowThroughPhase6 } from "./courseFollowThroughPhase6";
+import { validateCourseFacilitatorPhase7, auditCourseFacilitatorPhase7 } from "./courseFacilitatorPhase7";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -53,6 +54,8 @@ export { auditCoursePresentationPhase3 } from "./coursePresentationPhase3";
 export { auditAdvancedPracticePhase4 } from "./coursePracticePhase4";
 export { auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
 export { auditCourseFollowThroughPhase6, getPhase6RetrievalQuestions, PHASE6_REVIEW_STAGES } from "./courseFollowThroughPhase6";
+export { auditCourseFacilitatorPhase7, getPhase7FacilitatorPlan, getPhase7SlideGuide, PHASE7_SESSION_ROUTES } from "./courseFacilitatorPhase7";
+export type { Phase7FacilitatorPlan, Phase7SlideGuide, Phase7RouteMinutes } from "./courseFacilitatorPhase7";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -165,9 +168,11 @@ courses.forEach(validateCoursePresentationPhase3);
 courses.forEach(validateAdvancedPracticePhase4);
 courses.forEach(validateCourseAssessmentPhase5);
 courses.forEach(validateCourseFollowThroughPhase6);
+courses.forEach(validateCourseFacilitatorPhase7);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
 export const coursePracticeAudit = courses.map(auditAdvancedPracticePhase4);
 export const courseAssessmentAudit = courses.map(auditCourseAssessmentPhase5);
 export const courseFollowThroughAudit = courses.map(auditCourseFollowThroughPhase6);
+export const courseFacilitatorAudit = courses.map(auditCourseFacilitatorPhase7);
