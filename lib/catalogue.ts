@@ -43,6 +43,7 @@ import { deepenCourseContent2026, validateCourseContentDepth2026 } from "./cours
 import { enhanceCoursePresentationPhase3, validateCoursePresentationPhase3, auditCoursePresentationPhase3 } from "./coursePresentationPhase3";
 import { addAdvancedPracticePhase4, validateAdvancedPracticePhase4, auditAdvancedPracticePhase4 } from "./coursePracticePhase4";
 import { addCourseAssessmentPhase5, validateCourseAssessmentPhase5, auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
+import { validateCourseFollowThroughPhase6, auditCourseFollowThroughPhase6 } from "./courseFollowThroughPhase6";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -51,6 +52,7 @@ export { auditCourse, COURSE_TEMPLATE_STAGES, COURSE_TEMPLATE_VERSION } from "./
 export { auditCoursePresentationPhase3 } from "./coursePresentationPhase3";
 export { auditAdvancedPracticePhase4 } from "./coursePracticePhase4";
 export { auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
+export { auditCourseFollowThroughPhase6, getPhase6RetrievalQuestions, PHASE6_REVIEW_STAGES } from "./courseFollowThroughPhase6";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -162,8 +164,10 @@ courses.forEach(validateCourseContentDepth2026);
 courses.forEach(validateCoursePresentationPhase3);
 courses.forEach(validateAdvancedPracticePhase4);
 courses.forEach(validateCourseAssessmentPhase5);
+courses.forEach(validateCourseFollowThroughPhase6);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
 export const coursePracticeAudit = courses.map(auditAdvancedPracticePhase4);
 export const courseAssessmentAudit = courses.map(auditCourseAssessmentPhase5);
+export const courseFollowThroughAudit = courses.map(auditCourseFollowThroughPhase6);
