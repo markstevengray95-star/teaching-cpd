@@ -5,6 +5,7 @@ import CoursePresentationController from "./components/CoursePresentationControl
 import CoursePresenterPhase3Controller from "./components/CoursePresenterPhase3Controller";
 import CoursePracticePhase4Controller from "./components/CoursePracticePhase4Controller";
 import CourseAssessmentPhase5Controller from "./components/CourseAssessmentPhase5Controller";
+import CourseAssessmentPhase5Sync from "./components/CourseAssessmentPhase5Sync";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CoursePresenterPhase3Controller />
         <CoursePracticePhase4Controller />
         <CourseAssessmentPhase5Controller />
+        <CourseAssessmentPhase5Sync />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
