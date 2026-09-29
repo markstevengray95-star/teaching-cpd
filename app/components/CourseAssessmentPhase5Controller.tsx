@@ -2,37 +2,14 @@
 
 import { useEffect } from "react";
 
-type Question = {
-  topic: string;
-  prompt: string;
-  options: string[];
-  answer: number;
-  explanation: string;
-  reteach: string;
-};
-
-type AttemptRecord = {
-  attempts: number;
-  latestPercent: number;
-  bestPercent: number;
-  latestScore: number;
-  latestTotal: number;
-  passed: boolean;
-  weakTopics: string[];
-  updatedAt: string;
-};
-
 type AssessmentKind = "diagnostic" | "retrieval" | "scenario" | "mastery" | "application";
-
+type Question = { topic: string; prompt: string; options: string[]; answer: number; explanation: string; reteach: string };
+type AttemptRecord = { attempts: number; latestPercent: number; bestPercent: number; latestScore: number; latestTotal: number; passed: boolean; weakTopics: string[]; updatedAt: string };
 const SEP = "§";
 
-function clean(value: string | null | undefined) {
-  return (value || "").replace(/\s+/g, " ").trim();
-}
-
-function escapeHtml(value: string) {
-  return value.replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char] || char));
-}
+function clean(value: string | null | undefined) { return (value || "").replace(/\s+/g, " ").trim(); }
+function escapeHtml(value: string) { return value.replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char] || char)); }
+function makeButton(label: string, className: string) { const button = document.createElement("button"); button.type = "button"; button.className = className; button.textContent = label; return button; }
 
 function parseQuestion(button: HTMLButtonElement): Question | null {
   const raw = clean(button.textContent);
@@ -41,17 +18,9 @@ function parseQuestion(button: HTMLButtonElement): Question | null {
   const match = encoded.match(/^\[q\|([^|]+)\|(\d+)\]\s*(.*)$/);
   if (!match) return null;
   const parts = match[3].split(SEP);
-  if (parts.length < 7) return null;
   const answer = Number(match[2]);
-  if (!Number.isInteger(answer) || answer < 0 || answer > 3) return null;
-  return {
-    topic: match[1],
-    prompt: parts[0],
-    options: parts.slice(1, 5),
-    answer,
-    explanation: parts[5],
-    reteach: parts[6],
-  };
+  if (parts.length < 7 || !Number.isInteger(answer) || answer < 0 || answer > 3) return null;
+  return { topic: match[1], prompt: parts[0], options: parts.slice(1, 5), answer, explanation: parts[5], reteach: parts[6] };
 }
 
 function kindFromTitle(title: string): AssessmentKind | null {
@@ -63,63 +32,42 @@ function kindFromTitle(title: string): AssessmentKind | null {
   return null;
 }
 
-function config(kind: AssessmentKind) {
+function assessmentConfig(kind: AssessmentKind) {
   if (kind === "diagnostic") return { count: 5, threshold: 0, label: "Baseline", help: "No pass mark — use the result to identify what to revisit before the mastery checks." };
-  if (kind === "retrieval") return { count: 5, threshold: 0.75, label: "Retrieval", help: "Reach at least 75%. A new attempt rotates the question set." };
-  if (kind === "scenario") return { count: 4, threshold: 0.75, label: "Application", help: "Reach at least 75% by applying the course ideas to professional decisions." };
-  if (kind === "mastery") return { count: 6, threshold: 0.8, label: "Mastery", help: "Reach at least 80% across purpose, evidence, inclusion, implementation and review." };
+  if (kind === "retrieval") return { count: 5, threshold: .75, label: "Retrieval", help: "Reach at least 75%. A new attempt rotates the question set." };
+  if (kind === "scenario") return { count: 4, threshold: .75, label: "Application", help: "Reach at least 75% by applying the course ideas to professional decisions." };
+  if (kind === "mastery") return { count: 6, threshold: .8, label: "Mastery", help: "Reach at least 80% across purpose, evidence, inclusion, implementation and review." };
   return { count: 3, threshold: 1, label: "Application gate", help: "Secure all three professional judgement questions before moving to your implementation commitment." };
 }
 
 function selectQuestions(bank: Question[], count: number, attempt: number, kind: AssessmentKind) {
-  if (!bank.length) return [];
   const offset = { diagnostic: 0, retrieval: 2, scenario: 4, mastery: 1, application: 3 }[kind];
-  const start = (attempt * 2 + offset) % bank.length;
+  const start = bank.length ? (attempt * 2 + offset) % bank.length : 0;
   let rotated = [...bank.slice(start), ...bank.slice(0, start)];
-  if (attempt % 2 === 1) rotated = [...rotated.slice(0, 1), ...rotated.slice(1).reverse()];
+  if (attempt % 2) rotated = [...rotated.slice(0, 1), ...rotated.slice(1).reverse()];
   return rotated.slice(0, Math.min(count, rotated.length));
 }
 
-function optionView(question: Question, attempt: number, questionIndex: number) {
-  const shift = (attempt + questionIndex) % 4;
-  const options = [...question.options.slice(shift), ...question.options.slice(0, shift)];
-  const answer = (question.answer - shift + 4) % 4;
-  return { options, answer };
-}
-
-function makeButton(label: string, className: string) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = className;
-  button.textContent = label;
-  return button;
+function optionView(question: Question, attempt: number, index: number) {
+  const shift = (attempt + index) % 4;
+  return { options: [...question.options.slice(shift), ...question.options.slice(0, shift)], answer: (question.answer - shift + 4) % 4 };
 }
 
 function readRecord(key: string): AttemptRecord | null {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as AttemptRecord : null;
-  } catch {
-    return null;
-  }
+  try { const raw = window.localStorage.getItem(key); return raw ? JSON.parse(raw) as AttemptRecord : null; } catch { return null; }
 }
 
 function saveRecord(key: string, value: AttemptRecord, courseTitle: string, kind: AssessmentKind) {
   try { window.localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  window.dispatchEvent(new CustomEvent("cpd:phase5-assessment", {
-    detail: {
-      courseTitle,
-      key: `phase5:${kind}`,
-      value: JSON.stringify(value),
-    },
-  }));
+  window.dispatchEvent(new CustomEvent("cpd:phase5-assessment", { detail: { courseTitle, key: `phase5:${kind}`, value: JSON.stringify(value) } }));
 }
 
 function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys: Set<string>) {
   const title = clean(article.querySelector("h2")?.textContent);
   if (!title.startsWith("Phase 5 ·")) return;
-  const kind = kindFromTitle(title);
-  if (!kind) return;
+  const maybeKind = kindFromTitle(title);
+  if (!maybeKind) return;
+  const kind: AssessmentKind = maybeKind;
   const optionList = article.querySelector<HTMLElement>(".optionList");
   if (!optionList) return;
   const originalButtons = Array.from(optionList.querySelectorAll<HTMLButtonElement>(".option"));
@@ -129,9 +77,9 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
   const courseTitle = clean(modal.querySelector(".courseModalHead h2")?.textContent) || "Course";
   const key = `${courseTitle}|${title}`;
   const storageKey = `cpd-phase5:${key}`;
+  const existing = readRecord(storageKey);
   const currentNav = modal.querySelector<HTMLElement>(".moduleNav button.current");
   const previouslyCompleted = completedKeys.has(key) || Boolean(currentNav?.classList.contains("done"));
-  const existing = readRecord(storageKey);
 
   article.classList.add("phase5AssessmentSlide");
   optionList.style.display = "none";
@@ -144,14 +92,13 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
   const lab = document.createElement("section");
   lab.className = "phase5AssessmentLab";
   optionList.insertAdjacentElement("beforebegin", lab);
-
+  const cfg = assessmentConfig(kind);
   let attempt = Math.max(0, existing?.attempts || 0);
   let questions: Question[] = [];
   let current = 0;
   let score = 0;
   let answered = false;
   const misses: Question[] = [];
-  const cfg = config(kind);
 
   function header() {
     const best = readRecord(storageKey)?.bestPercent;
@@ -161,10 +108,7 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
   function begin(nextAttempt = false) {
     if (nextAttempt) attempt += 1;
     questions = selectQuestions(bank, cfg.count, attempt, kind);
-    current = 0;
-    score = 0;
-    answered = false;
-    misses.length = 0;
+    current = 0; score = 0; answered = false; misses.length = 0;
     lab.innerHTML = `${header()}<div class="phase5Progress"><span></span><b></b></div><div class="phase5Question"></div><div class="phase5AssessmentFeedback" aria-live="polite"></div>`;
     renderQuestion();
   }
@@ -190,8 +134,7 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
         if (answered) return;
         answered = true;
         const correct = optionIndex === view.answer;
-        if (correct) score += 1;
-        else misses.push(question);
+        if (correct) score += 1; else misses.push(question);
         Array.from(choices.querySelectorAll<HTMLButtonElement>("button")).forEach((node, index) => {
           node.disabled = true;
           node.classList.toggle("correct", index === view.answer);
@@ -213,14 +156,9 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
     const passed = kind === "diagnostic" || score >= required;
     const previous = readRecord(storageKey);
     const record: AttemptRecord = {
-      attempts: Math.max((previous?.attempts || 0) + 1, attempt + 1),
-      latestPercent: percent,
-      bestPercent: Math.max(previous?.bestPercent || 0, percent),
-      latestScore: score,
-      latestTotal: questions.length,
-      passed: Boolean(previous?.passed || passed),
-      weakTopics: [...new Set(misses.map(question => question.topic))],
-      updatedAt: new Date().toISOString(),
+      attempts: Math.max((previous?.attempts || 0) + 1, attempt + 1), latestPercent: percent,
+      bestPercent: Math.max(previous?.bestPercent || 0, percent), latestScore: score, latestTotal: questions.length,
+      passed: Boolean(previous?.passed || passed), weakTopics: [...new Set(misses.map(question => question.topic))], updatedAt: new Date().toISOString(),
     };
     saveRecord(storageKey, record, courseTitle, kind);
     const progress = lab.querySelector<HTMLElement>(".phase5Progress span")!;
@@ -235,7 +173,7 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
       completedKeys.add(key);
       if (!originalButtons.some(button => button.classList.contains("selected"))) originalButtons[0]?.click();
       feedback.className = "phase5AssessmentFeedback good";
-      feedback.innerHTML = `<strong>${kind === "diagnostic" ? "Baseline captured" : "Assessment passed"}</strong><p>${kind === "diagnostic" ? "Use the weak-area summary below to decide what deserves extra attention during the course." : `You reached the required standard. Best score: ${record.bestPercent}%. The underlying course module is now unlocked for completion.`}</p>`;
+      feedback.innerHTML = `<strong>${kind === "diagnostic" ? "Baseline captured" : "Assessment passed"}</strong><p>${kind === "diagnostic" ? "Use the weak-area summary below to decide what deserves extra attention during the course." : `You reached the required standard. Best score: ${record.bestPercent}%. The course module is now unlocked for completion.`}</p>`;
     } else {
       feedback.className = "phase5AssessmentFeedback retry";
       feedback.innerHTML = `<strong>Targeted reteach required</strong><p>You need ${required}/${questions.length}. Review the missed ideas, then retry. The next attempt rotates the question set.</p>`;
@@ -248,20 +186,12 @@ function buildAssessment(modal: HTMLElement, article: HTMLElement, completedKeys
       reteach.innerHTML = unique.map(question => `<article><span>${escapeHtml(question.topic.replaceAll("-", " "))}</span><p>${escapeHtml(question.reteach)}</p></article>`).join("");
       feedback.appendChild(reteach);
     }
-
-    if (!passed) {
-      const retry = makeButton("Reteach complete — try a new set", "primary phase5Retry");
-      retry.addEventListener("click", () => begin(true));
-      feedback.appendChild(retry);
-    } else {
-      const repeat = makeButton("Practise with another set", "secondary phase5Retry");
-      repeat.addEventListener("click", () => begin(true));
-      feedback.appendChild(repeat);
-    }
+    const retry = makeButton(passed ? "Practise with another set" : "Reteach complete — try a new set", passed ? "secondary phase5Retry" : "primary phase5Retry");
+    retry.addEventListener("click", () => begin(true));
+    feedback.appendChild(retry);
   }
 
   begin(false);
-
   if (previouslyCompleted) {
     lab.classList.add("previouslyCompleted");
     const badge = document.createElement("div");
