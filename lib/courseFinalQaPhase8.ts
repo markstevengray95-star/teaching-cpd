@@ -28,10 +28,11 @@ const PLACEHOLDERS = [
   /\blorem ipsum\b/i,
   /\bcoming soon\b/i,
   /\bplaceholder\b/i,
-  /\bto be added\b/i,
   /\btodo\b/i,
   /\btbc\b/i,
   /\bfixme\b/i,
+  /\[\s*to be added\s*\]/i,
+  /\[\s*add (?:content|text|detail|example|image)\s*\]/i,
 ];
 
 function clean(value: string | undefined | null) {
