@@ -38,6 +38,7 @@ export default function DevelopmentDock() {
   const learn: LinkItem[] = [
     ["/development", "Development cycle"],
     ["/pathways", "Pathways"],
+    ["/pathways/personal", "Personal pathway"],
     ["/adaptive", "Adaptive pre-check"],
     ["/subject-cpd", "Subject-specific CPD"],
     ["/reading", "Course reading"],
@@ -49,7 +50,8 @@ export default function DevelopmentDock() {
   const apply: LinkItem[] = [
     ["/simulator", "Practice simulator"],
     ["/actions", "Action plans"],
-    ["/coach", "CPD Coach"],
+    ["/coach", "CPD Coach plan"],
+    ["/ai-coach", "AI CPD Coach"],
     ["/coaching", "Coaching"],
     ["/needs-audit", "Needs audit"],
     ["/portfolio", "Portfolio"],
@@ -60,12 +62,14 @@ export default function DevelopmentDock() {
 
   const school: LinkItem[] = [
     ["/school-hub", "School hub"],
+    ["/learning-walks", "Learning walks"],
     ["/safeguarding", "Safeguarding"],
     ["/safeguarding/documents", "Safeguarding documents"],
     ["/safety", "Safety & compliance"],
     ["/certificates", "Certificates"],
     ["/reminders", "Spaced follow-up"],
     ["/improvement", "School improvement"],
+    ["/improvement/programmes", "Improvement → CPD"],
   ];
 
   const more: LinkItem[] = [
@@ -76,7 +80,7 @@ export default function DevelopmentDock() {
   ];
 
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) {
-    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"], ["/facilitator", "Facilitator packs"]);
+    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"], ["/live-presenter", "Presenter 2.0"], ["/facilitator", "Facilitator packs"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
     more.push(
