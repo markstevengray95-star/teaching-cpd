@@ -42,7 +42,7 @@ function sectionDivider(course: Course, section: "understand" | "practise" | "tr
     type: "visual",
     title: "Section 1 · Understand the idea before using the technique",
     layout: "compare",
-    caption: "The presentation now separates professional reasoning from the visible routine so staff understand why an approach works, not just what it looks like.",
+    caption: "The presentation separates professional reasoning from the visible routine so staff understand why an approach works, not just what it looks like.",
     items: [
       { heading: "Core purpose", text: objective, icon: "A" },
       { heading: "Professional lens", text: "Link every technique to the problem it is intended to solve and the evidence that would justify using it.", icon: "B" },
@@ -109,6 +109,43 @@ function recap(course: Course): VisualModule {
   };
 }
 
+function pacingBreak(course: Course, index: number, previous: Module[]): VisualModule {
+  const recent = previous.filter(module => module.type === "content").slice(-3);
+  const ideas = recent.map(module => module.title).slice(0, 3);
+  return {
+    id: `${PREFIX}${safeId(course.id)}-pace-${index}`,
+    type: "visual",
+    title: "Pause and process: connect the learning",
+    layout: "flow",
+    caption: "Before adding more information, make the previous ideas usable.",
+    items: [
+      { heading: "Explain", text: ideas[0] ? `Summarise the main idea from “${ideas[0]}” in one sentence.` : "Summarise the strongest idea so far.", icon: "1" },
+      { heading: "Connect", text: ideas[1] ? `Explain how “${ideas[1]}” connects to the course purpose.` : "Connect the idea to the course purpose.", icon: "2" },
+      { heading: "Test", text: ideas[2] ? `Give a situation where “${ideas[2]}” would need adapting rather than copying directly.` : "Name a situation where the approach would need adapting.", icon: "3" },
+    ],
+  };
+}
+
+function addPacingBreaks(course: Course, modules: Module[]) {
+  const paced: Module[] = [];
+  let contentRun = 0;
+  let breakNumber = 1;
+  modules.forEach(module => {
+    if (module.type === "content") {
+      if (contentRun >= 3) {
+        paced.push(pacingBreak(course, breakNumber++, paced));
+        contentRun = 0;
+      }
+      paced.push(module);
+      contentRun += 1;
+    } else {
+      paced.push(module);
+      contentRun = 0;
+    }
+  });
+  return paced;
+}
+
 export function enhanceCoursePresentationPhase3(course: Course): Course {
   const id = safeId(course.id);
   const modules = course.modules.filter(module => !module.id.startsWith(`${PREFIX}${id}-`));
@@ -128,7 +165,8 @@ export function enhanceCoursePresentationPhase3(course: Course): Course {
   const transferAt = commitmentIndex >= 0 ? commitmentIndex : modules.length;
   modules.splice(transferAt, 0, sectionDivider(course, "transfer"), recap(course));
 
-  return { ...course, duration: course.duration + 12, modules };
+  const pacedModules = addPacingBreaks(course, modules);
+  return { ...course, duration: course.duration + 12 + Math.max(0, pacedModules.length - modules.length) * 2, modules: pacedModules };
 }
 
 export function validateCoursePresentationPhase3(course: Course) {
