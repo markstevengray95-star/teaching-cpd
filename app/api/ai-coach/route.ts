@@ -5,6 +5,18 @@ export const runtime="nodejs";
 type Message={role:"user"|"assistant";content:string};
 type Body={goal?:string;context?:Record<string,unknown>;messages?:Message[]};
 
+function geminiKey(){return process.env.GEMINI_API_KEY||process.env.GOOGLE_GEMINI_API_KEY||process.env.GOOGLE_API_KEY||"";}
+function geminiModel(){return process.env.GEMINI_COACH_MODEL||process.env.GEMINI_MODEL||"gemini-3.8-flash";}
+
+export async function GET(){
+  return Response.json({
+    geminiConfigured:Boolean(geminiKey()),
+    geminiModel:geminiModel(),
+    openaiFallbackConfigured:Boolean(process.env.OPENAI_API_KEY),
+    fallback:"smart-coach"
+  });
+}
+
 function fallbackReply(body:Body){
   const goal=(body.goal||"").trim();
   const context=body.context||{};
@@ -39,7 +51,7 @@ function extractOpenAiText(payload:any){
 }
 
 async function tryGemini(body:Body,key:string){
-  const model=process.env.GEMINI_COACH_MODEL||process.env.GEMINI_MODEL||"gemini-3.8-flash";
+  const model=geminiModel();
   const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
     method:"POST",
     headers:{"Content-Type":"application/json","x-goog-api-key":key},
@@ -75,12 +87,12 @@ async function tryOpenAi(body:Body,key:string){
 export async function POST(request:NextRequest){
   let body:Body; try{body=await request.json();}catch{return Response.json({error:"Invalid request."},{status:400});}
 
-  const geminiKey=process.env.GEMINI_API_KEY||process.env.GOOGLE_GEMINI_API_KEY||process.env.GOOGLE_API_KEY||"";
+  const key=geminiKey();
   const openAiKey=process.env.OPENAI_API_KEY||"";
 
   try{
-    if(geminiKey){
-      const gemini=await tryGemini(body,geminiKey);
+    if(key){
+      const gemini=await tryGemini(body,key);
       if(gemini)return Response.json(gemini);
     }
     if(openAiKey){
