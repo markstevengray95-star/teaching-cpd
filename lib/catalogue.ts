@@ -38,10 +38,12 @@ import { qualityAssureCourses26To30, validateCourses26To30Order, validateCourses
 import { deepenRemainingCourse, validateRemainingCourseDepth } from "./remainingCourseDepth";
 import { addRemainingPracticeStudio, validateRemainingPracticeStudio } from "./remainingCoursePracticeStudio";
 import { qualityAssureRemainingCourse, validateRemainingCatalogue, validateRemainingCourseQuality } from "./remainingCourseQuality";
+import { applyCourseTemplateFoundation, auditCatalogue, validateCourseAgainstQualityFramework } from "./courseQualityFramework";
 import type { Course } from "./data";
 
 export { categoryOrder };
 export type { Course, Module, Role, CourseCategory } from "./data";
+export { auditCourse, COURSE_QUALITY_STANDARD, COURSE_TEMPLATE_STAGES, COURSE_TEMPLATE_VERSION } from "./courseQualityFramework";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -73,7 +75,7 @@ function validateCourse(course: Course) {
   if (!(course.modules[0].id.startsWith("presentation-") && course.modules[0].id.endsWith("-map"))) throw new Error(`CPD course ${course.id} must open with its presentation overview`);
 }
 
-export const courses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
+const qualityAssuredCourses = [...seededCourses.filter(course => !replacementIds.has(course.id)), ...replacements]
   .map(enrichCourseWithVisuals)
   .map(deepenSafeguarding2026)
   .map(addAdvancedSafeguarding2026)
@@ -102,20 +104,32 @@ export const courses = [...seededCourses.filter(course => !replacementIds.has(co
   .map(deepenRemainingCourse)
   .map(addRemainingPracticeStudio);
 
+// Keep the detailed batch-specific validators as regression protection for the
+// bespoke course work already completed before the library-wide Phase 1 standard.
+qualityAssuredCourses.forEach(validateCourse);
+qualityAssuredCourses.forEach(validateFirstTenCourseQuality);
+qualityAssuredCourses.forEach(validateFirstTenCourseFlow);
+qualityAssuredCourses.forEach(validateNextFiveCourseQuality);
+qualityAssuredCourses.forEach(validateCourses16To20Quality);
+qualityAssuredCourses.forEach(validateCourses21To25Quality);
+qualityAssuredCourses.forEach(validateCourses26To30Quality);
+qualityAssuredCourses.forEach(validateRemainingCourseDepth);
+qualityAssuredCourses.forEach(validateRemainingPracticeStudio);
+qualityAssuredCourses.forEach(validateRemainingCourseQuality);
+validateFirstTenCatalogueOrder(qualityAssuredCourses);
+validateFirstTenOrderAfterFlow(qualityAssuredCourses);
+validateNextFiveCatalogueOrder(qualityAssuredCourses);
+validateCourses16To20Order(qualityAssuredCourses);
+validateCourses21To25Order(qualityAssuredCourses);
+validateCourses26To30Order(qualityAssuredCourses);
+validateRemainingCatalogue(qualityAssuredCourses);
+
+// Phase 1: every course now receives the same orientation, baseline and
+// implementation-close frame after its bespoke learning content has been QA'd.
+export const courses = qualityAssuredCourses.map(applyCourseTemplateFoundation);
+
 courses.forEach(validateCourse);
-courses.forEach(validateFirstTenCourseQuality);
-courses.forEach(validateFirstTenCourseFlow);
-courses.forEach(validateNextFiveCourseQuality);
-courses.forEach(validateCourses16To20Quality);
-courses.forEach(validateCourses21To25Quality);
-courses.forEach(validateCourses26To30Quality);
-courses.forEach(validateRemainingCourseDepth);
-courses.forEach(validateRemainingPracticeStudio);
-courses.forEach(validateRemainingCourseQuality);
-validateFirstTenCatalogueOrder(courses);
-validateFirstTenOrderAfterFlow(courses);
-validateNextFiveCatalogueOrder(courses);
-validateCourses16To20Order(courses);
-validateCourses21To25Order(courses);
-validateCourses26To30Order(courses);
-validateRemainingCatalogue(courses);
+courses.forEach(validateCourseAgainstQualityFramework);
+
+// Build-time catalogue audit used by the Quality dashboard and later improvement phases.
+export const courseQualityAudit = auditCatalogue(courses);
