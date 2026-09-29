@@ -57,6 +57,7 @@ import "./course-practice-phase4.css";
 import "./phase5-assessment.css";
 import "./course-followthrough-phase6.css";
 import "./phase7-facilitator.css";
+import "./five-feature-suite.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
