@@ -41,7 +41,7 @@ function clean(value: string | undefined | null) {
 function moduleStrings(module: Module) {
   const values = [module.id, module.title];
   if (module.type === "content") values.push(module.body, ...(module.keyPoints || []));
-  if (module.type === "quiz") values.push(module.question, ...module.options, module.explanation || "");
+  if (module.type === "quiz") values.push(module.question, ...module.options, module.feedback || "");
   if (module.type === "scenario") values.push(module.prompt, ...module.options.flatMap(option => [option.label, option.feedback]));
   if (module.type === "reflection") values.push(module.prompt);
   if (module.type === "visual") values.push(module.caption || "", ...module.items.flatMap(item => [item.heading, item.text]));
