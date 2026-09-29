@@ -10,16 +10,20 @@ function statusLabel(status: string) {
 export default function CourseAuditPage() {
   const audit = courseQualityAudit;
   const topPriorities = audit.weakestDimensions.slice(0, 5);
+  const depthReady = audit.reports.filter(report => report.estimatedKnowledgeWords >= 700 && report.checks.find(check => check.id === "knowledge")?.passed).length;
+  const averageWords = audit.reports.length
+    ? Math.round(audit.reports.reduce((sum, report) => sum + report.estimatedKnowledgeWords, 0) / audit.reports.length)
+    : 0;
 
   return (
     <main className="stagePage">
       <section className="stageHero">
-        <span className="eyebrow">PHASE 1 · LIBRARY-WIDE COURSE QUALITY</span>
-        <h1>Every CPD course now uses one quality standard.</h1>
+        <span className="eyebrow">PHASES 1–2 · LIBRARY-WIDE COURSE QUALITY</span>
+        <h1>Every CPD course now has a common structure and a deeper knowledge layer.</h1>
         <p>
-          This automated audit scores the live course catalogue against the same 100-point framework. It checks purpose,
-          learning objectives, presentation structure, diagnostic baseline, knowledge depth, visuals, practical rehearsal,
-          scenarios, assessment, reflection, implementation and presentation balance.
+          Phase 1 standardised the learning journey. Phase 2 expands the substance of every live course with connected
+          explanations, misconceptions and non-examples, worked application, inclusive SEND/EAL considerations and an
+          evidence-and-implementation section. The same automated audit continues to score the whole catalogue.
         </p>
         <div className="stageHeroActions">
           <a className="primary phaseLinkButton" href="/">Open CPD library</a>
@@ -29,9 +33,9 @@ export default function CourseAuditPage() {
 
       <section className="stageStatGrid">
         <div className="stageStat"><strong>{audit.courseCount}</strong><span>courses audited</span></div>
-        <div className="stageStat"><strong>{audit.averagePercent}%</strong><span>library average</span></div>
-        <div className="stageStat"><strong>{audit.phaseOneReady}</strong><span>Phase 1 ready</span></div>
-        <div className="stageStat"><strong>{audit.templateVersion}</strong><span>template version</span></div>
+        <div className="stageStat"><strong>{audit.averagePercent}%</strong><span>library quality average</span></div>
+        <div className="stageStat"><strong>{depthReady}/{audit.courseCount}</strong><span>Phase 2 depth ready</span></div>
+        <div className="stageStat"><strong>{averageWords.toLocaleString("en-GB")}</strong><span>average audit words/course</span></div>
       </section>
 
       <section className="stageGrid">
@@ -47,7 +51,7 @@ export default function CourseAuditPage() {
         </article>
 
         <article className="stageCard stageSpan7">
-          <span className="eyebrow">PHASE 2 TARGETS</span>
+          <span className="eyebrow">NEXT QUALITY TARGETS</span>
           <h2>Weakest dimensions across the whole catalogue</h2>
           <div className="stageList">
             {topPriorities.map(row => (
@@ -61,6 +65,26 @@ export default function CourseAuditPage() {
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="stageCard">
+        <span className="eyebrow">PHASE 2 CONTENT DEPTH</span>
+        <h2>Five deeper sections have been added to every course</h2>
+        <div className="stageGrid">
+          {[
+            ["1", "Connect the ideas", "Explains how the course principles, objectives and existing key knowledge fit together."],
+            ["2", "Misconceptions & limits", "Uses existing quiz/scenario feedback to surface non-examples, weak reasoning and boundary cases."],
+            ["3", "Worked application", "Turns the principle into a five-step professional decision and review cycle."],
+            ["4", "Inclusive application", "Builds SEND, EAL, language, access and independence considerations into application."],
+            ["5", "Evidence & follow-through", "Separates implementation evidence from impact evidence and supports keep/adapt/fade/stop review decisions."],
+          ].map(([n, title, text]) => (
+            <div className="stageCard stageSpan4" key={title}>
+              <span className="eyebrow">DEPTH {n}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="stageCard">
@@ -101,7 +125,7 @@ export default function CourseAuditPage() {
               <div style={{ width: "100%", paddingTop: 12 }}>
                 <div className="priorityPills">
                   <span className={`stageBadge ${report.passed ? "good" : "warn"}`}>{statusLabel(report.status)}</span>
-                  <span className="stageBadge">{report.estimatedKnowledgeWords.toLocaleString("en-GB")} audit words</span>
+                  <span className={`stageBadge ${report.estimatedKnowledgeWords >= 700 ? "good" : "warn"}`}>{report.estimatedKnowledgeWords.toLocaleString("en-GB")} audit words</span>
                   <span className="stageBadge">{report.score}/{report.maxScore}</span>
                 </div>
                 <div className="stageList" style={{ marginTop: 10 }}>
