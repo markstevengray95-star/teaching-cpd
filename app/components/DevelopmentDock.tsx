@@ -36,6 +36,7 @@ export default function DevelopmentDock() {
   if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
 
   const learn: LinkItem[] = [
+    ["/dashboard", "My dashboard"],
     ["/development", "Development cycle"],
     ["/pathways", "Pathways"],
     ["/pathways/personal", "Personal pathway"],
@@ -62,6 +63,7 @@ export default function DevelopmentDock() {
 
   const school: LinkItem[] = [
     ["/school-hub", "School hub"],
+    ["/knowledge-base", "School knowledge"],
     ["/learning-walks", "Learning walks"],
     ["/safeguarding", "Safeguarding"],
     ["/safeguarding/documents", "Safeguarding documents"],
@@ -84,6 +86,7 @@ export default function DevelopmentDock() {
   }
   if (["CPD Lead", "Admin"].includes(role)) {
     more.push(
+      ["/ai-course-builder", "AI course builder"],
       ["/policy-training", "Policy training"],
       ["/builder", "Course creator"],
       ["/launch-readiness", "Launch readiness"],
