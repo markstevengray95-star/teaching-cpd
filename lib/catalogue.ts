@@ -43,7 +43,7 @@ import type { Course } from "./data";
 
 export { categoryOrder };
 export type { Course, Module, Role, CourseCategory } from "./data";
-export { auditCourse, COURSE_QUALITY_STANDARD, COURSE_TEMPLATE_STAGES, COURSE_TEMPLATE_VERSION } from "./courseQualityFramework";
+export { auditCourse, COURSE_TEMPLATE_STAGES, COURSE_TEMPLATE_VERSION } from "./courseQualityFramework";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -104,8 +104,6 @@ const qualityAssuredCourses = [...seededCourses.filter(course => !replacementIds
   .map(deepenRemainingCourse)
   .map(addRemainingPracticeStudio);
 
-// Keep the detailed batch-specific validators as regression protection for the
-// bespoke course work already completed before the library-wide Phase 1 standard.
 qualityAssuredCourses.forEach(validateCourse);
 qualityAssuredCourses.forEach(validateFirstTenCourseQuality);
 qualityAssuredCourses.forEach(validateFirstTenCourseFlow);
@@ -124,12 +122,9 @@ validateCourses21To25Order(qualityAssuredCourses);
 validateCourses26To30Order(qualityAssuredCourses);
 validateRemainingCatalogue(qualityAssuredCourses);
 
-// Phase 1: every course now receives the same orientation, baseline and
-// implementation-close frame after its bespoke learning content has been QA'd.
 export const courses = qualityAssuredCourses.map(applyCourseTemplateFoundation);
 
 courses.forEach(validateCourse);
 courses.forEach(validateCourseAgainstQualityFramework);
 
-// Build-time catalogue audit used by the Quality dashboard and later improvement phases.
 export const courseQualityAudit = auditCatalogue(courses);
