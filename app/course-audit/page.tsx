@@ -1,4 +1,4 @@
-import { coursePresentationAudit, courseQualityAudit } from "@/lib/catalogue";
+import { coursePracticeAudit, coursePresentationAudit, courseQualityAudit } from "@/lib/catalogue";
 
 function statusLabel(status: string) {
   if (status === "excellent") return "Excellent";
@@ -11,23 +11,21 @@ export default function CourseAuditPage() {
   const audit = courseQualityAudit;
   const topPriorities = audit.weakestDimensions.slice(0, 5);
   const depthReady = audit.reports.filter(report => report.estimatedKnowledgeWords >= 700 && report.checks.find(check => check.id === "knowledge")?.passed).length;
-  const averageWords = audit.reports.length
-    ? Math.round(audit.reports.reduce((sum, report) => sum + report.estimatedKnowledgeWords, 0) / audit.reports.length)
-    : 0;
   const presentationReady = coursePresentationAudit.filter(row => row.phase3Slides >= 6 && row.visualSlides >= 6).length;
-  const averageVisuals = coursePresentationAudit.length
-    ? Math.round(coursePresentationAudit.reduce((sum, row) => sum + row.visualSlides, 0) / coursePresentationAudit.length)
+  const practiceReady = coursePracticeAudit.filter(row => row.phase4Modules >= 6).length;
+  const averageAdvancedDecisions = coursePracticeAudit.length
+    ? Math.round(coursePracticeAudit.reduce((sum, row) => sum + row.advancedDecisions, 0) / coursePracticeAudit.length)
     : 0;
 
   return (
     <main className="stagePage">
       <section className="stageHero">
-        <span className="eyebrow">PHASES 1–3 · LIBRARY-WIDE COURSE QUALITY</span>
-        <h1>Every course now has a common structure, deeper content and a presentation-first delivery layer.</h1>
+        <span className="eyebrow">PHASES 1–4 · LIBRARY-WIDE COURSE QUALITY</span>
+        <h1>Every course now combines deep professional learning with presentation-quality delivery and advanced practice.</h1>
         <p>
-          Phase 1 standardised the learning journey, Phase 2 deepened the professional knowledge, and Phase 3 rebuilds
-          presentation delivery with visual hooks, section dividers, worked examples, concise presenter mode, facilitator
-          notes, fullscreen controls and visual recaps.
+          Phase 1 standardised the learning journey, Phase 2 deepened the knowledge, Phase 3 rebuilt presentation delivery,
+          and Phase 4 turns the course into a practice environment with sorting, ranking, hotspots, evidence analysis,
+          branching decisions and implementation simulations.
         </p>
         <div className="stageHeroActions">
           <a className="primary phaseLinkButton" href="/">Open CPD library</a>
@@ -39,7 +37,7 @@ export default function CourseAuditPage() {
         <div className="stageStat"><strong>{audit.courseCount}</strong><span>courses audited</span></div>
         <div className="stageStat"><strong>{depthReady}/{audit.courseCount}</strong><span>Phase 2 depth ready</span></div>
         <div className="stageStat"><strong>{presentationReady}/{audit.courseCount}</strong><span>Phase 3 presentation ready</span></div>
-        <div className="stageStat"><strong>{averageVisuals}</strong><span>average visual slides/course</span></div>
+        <div className="stageStat"><strong>{practiceReady}/{audit.courseCount}</strong><span>Phase 4 practice ready</span></div>
       </section>
 
       <section className="stageGrid">
@@ -55,33 +53,48 @@ export default function CourseAuditPage() {
         </article>
 
         <article className="stageCard stageSpan7">
-          <span className="eyebrow">NEXT QUALITY TARGETS</span>
-          <h2>Weakest dimensions across the whole catalogue</h2>
+          <span className="eyebrow">PHASE 4 PRACTICE SCALE</span>
+          <h2>Advanced decisions across every course</h2>
           <div className="stageList">
-            {topPriorities.map(row => (
-              <div className="stageRow" key={row.id}>
-                <div className="stageRowMain">
-                  <strong>{row.label}</strong>
-                  <span>{row.failingCourses} course{row.failingCourses === 1 ? "" : "s"} below the standard</span>
-                </div>
-                <span className={`stageBadge ${row.averagePercent >= 78 ? "good" : "warn"}`}>{row.averagePercent}%</span>
-              </div>
-            ))}
+            <div className="stageRow"><div className="stageRowMain"><strong>Advanced practice suite</strong><span>Six higher-order activities are required in every course.</span></div><span className="stageBadge good">6 types</span></div>
+            <div className="stageRow"><div className="stageRowMain"><strong>Average decision opportunities</strong><span>Individual evidence cards, rankings, hotspots and branching choices per course.</span></div><span className="stageBadge good">{averageAdvancedDecisions}</span></div>
+            <div className="stageRow"><div className="stageRowMain"><strong>Practice-ready courses</strong><span>Courses passing the full Phase 4 practice validator.</span></div><span className="stageBadge good">{practiceReady}</span></div>
           </div>
         </article>
       </section>
 
       <section className="stageCard">
-        <span className="eyebrow">PHASE 3 PRESENTATION OVERHAUL</span>
-        <h2>Six presentation slides and a facilitator layer are added to every course</h2>
+        <span className="eyebrow">PHASE 4 ADVANCED PRACTICE</span>
+        <h2>Six different practice environments are built into every course</h2>
         <div className="stageGrid">
           {[
-            ["1", "Opening challenge", "A visual Notice → Interpret → Act → Review hook starts the presentation with a professional problem rather than a paragraph."],
-            ["2", "Section dividers", "Understand, Practise and Transfer sections give every presentation deliberate pacing and clearer transitions."],
-            ["3", "Worked visual model", "A four-stage worked example makes professional reasoning visible rather than only presenting the final answer."],
-            ["4", "Presenter mode", "Full reading remains in learner mode; presentation mode replaces long text with a concise on-screen takeaway."],
+            ["1", "Evidence sorting", "Drag or tap evidence into stronger evidence and weak/assumption groups, with corrective feedback."],
+            ["2", "Response ranking", "Rebuild the professional decision sequence from purpose and diagnosis through action, evidence and review."],
+            ["3", "Hotspot investigation", "Inspect a realistic situation and identify the three most diagnostic areas before making a judgement."],
+            ["4", "Evidence analyst", "Separate implementation evidence from impact evidence and weak proxy measures."],
+            ["5", "Branching case", "Make three linked decisions, see the consequence of each choice and achieve a threshold score before completion."],
+            ["6", "Implementation simulator", "Run a mini implementation cycle covering clarity, support, evidence and the final keep/adapt/fade/stop decision."],
+          ].map(([n, title, text]) => (
+            <div className="stageCard stageSpan4" key={title}>
+              <span className="eyebrow">PRACTICE {n}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="stageCard">
+        <span className="eyebrow">PHASE 3 PRESENTATION OVERHAUL</span>
+        <h2>Presentation-first delivery remains across the whole catalogue</h2>
+        <div className="stageGrid">
+          {[
+            ["1", "Opening challenge", "A visual Notice → Interpret → Act → Review hook starts with a professional problem rather than a paragraph."],
+            ["2", "Section dividers", "Understand, Practise and Transfer sections create deliberate pacing and clearer transitions."],
+            ["3", "Worked visual model", "A four-stage worked example makes professional reasoning visible."],
+            ["4", "Presenter mode", "Learner reading stays detailed while projected slides use concise on-screen takeaways."],
             ["5", "Presenter notes", "Facilitator move, discussion prompt, purpose and suggested timing are generated for the active slide."],
-            ["6", "Visual recap", "The course ends with an explain/apply/check/transfer recap before the implementation commitment."],
+            ["6", "Visual recap", "The course ends with an explain/apply/check/transfer recap before implementation."],
           ].map(([n, title, text]) => (
             <div className="stageCard stageSpan4" key={title}>
               <span className="eyebrow">PRESENTATION {n}</span>
@@ -94,11 +107,11 @@ export default function CourseAuditPage() {
 
       <section className="stageCard">
         <span className="eyebrow">PHASE 2 CONTENT DEPTH</span>
-        <h2>Five deeper sections remain in every course</h2>
+        <h2>Five deeper knowledge sections remain in every course</h2>
         <div className="stageGrid">
           {[
-            ["1", "Connect the ideas", "Explains how the course principles, objectives and existing key knowledge fit together."],
-            ["2", "Misconceptions & limits", "Uses existing quiz/scenario feedback to surface non-examples, weak reasoning and boundary cases."],
+            ["1", "Connect the ideas", "Explains how the course principles, objectives and key knowledge fit together."],
+            ["2", "Misconceptions & limits", "Surfaces non-examples, weak reasoning and boundary cases."],
             ["3", "Worked application", "Turns the principle into a five-step professional decision and review cycle."],
             ["4", "Inclusive application", "Builds SEND, EAL, language, access and independence considerations into application."],
             ["5", "Evidence & follow-through", "Separates implementation evidence from impact evidence and supports keep/adapt/fade/stop review decisions."],
@@ -114,21 +127,26 @@ export default function CourseAuditPage() {
 
       <section className="stageCard">
         <span className="eyebrow">COURSE-BY-COURSE AUDIT</span>
-        <h2>Presentation and content quality by course</h2>
+        <h2>Content, presentation and advanced-practice quality by course</h2>
         <div className="stageList">
           {audit.reports.map(report => {
             const presentation = coursePresentationAudit.find(row => row.courseId === report.courseId);
+            const practice = coursePracticeAudit.find(row => row.courseId === report.courseId);
             return (
               <details className="stageRow" key={report.courseId}>
                 <summary className="stageRowMain" style={{ cursor: "pointer" }}>
                   <strong>{report.title}</strong>
                   <span>{report.category} · {report.level} · {report.moduleCount} slides/modules · {report.percent}%</span>
-                  <small>{presentation ? `${presentation.visualSlides} visual slides · ${presentation.interactiveSlides} interactive slides · ${presentation.phase3Slides} Phase 3 presentation slides` : "Presentation audit unavailable"}</small>
+                  <small>
+                    {presentation ? `${presentation.visualSlides} visuals · ${presentation.interactiveSlides} interactive slides` : "Presentation audit unavailable"}
+                    {practice ? ` · ${practice.phase4Modules} advanced practice modules · ${practice.advancedDecisions} practice decisions` : " · Practice audit unavailable"}
+                  </small>
                 </summary>
                 <div style={{ width: "100%", paddingTop: 12 }}>
                   <div className="priorityPills">
                     <span className={`stageBadge ${report.passed ? "good" : "warn"}`}>{statusLabel(report.status)}</span>
                     <span className={`stageBadge ${report.estimatedKnowledgeWords >= 700 ? "good" : "warn"}`}>{report.estimatedKnowledgeWords.toLocaleString("en-GB")} audit words</span>
+                    <span className={`stageBadge ${practice?.phase4Modules === 6 ? "good" : "warn"}`}>{practice?.phase4Modules || 0}/6 Phase 4 activities</span>
                     <span className="stageBadge">{report.score}/{report.maxScore}</span>
                   </div>
                   <div className="stageList" style={{ marginTop: 10 }}>
