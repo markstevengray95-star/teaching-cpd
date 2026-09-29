@@ -55,6 +55,10 @@ function isRouteAnchor(module: Module) {
   return /presentation-.*-map|phase3-present-.*-(hook|section-understand|section-practise|section-transfer|worked-model|recap)|implementation-commitment/i.test(module.id);
 }
 
+function isTransferModule(module: Module) {
+  return /transfer|recap|implementation|reflect/i.test(`${module.id} ${module.title}`) || module.type === "reflection";
+}
+
 function livePriority(module: Module, index: number, total: number) {
   let score = 0;
   if (index === 0) score += 12;
@@ -123,19 +127,19 @@ function guideFor(course: Course, module: Module, suggestedMinutes: number, rout
 
   if (module.type === "visual") {
     move = "Use the visual as the explanation. Ask staff to predict or interpret before you reveal your own summary.";
-    question = `What do you notice first in this model, and which part would matter most in your context?`;
+    question = "What do you notice first in this model, and which part would matter most in your context?";
     extension = "Ask pairs to redraw the model for a different subject, phase, team or pupil context.";
   } else if (module.type === "quiz") {
     move = "Commit everyone to an answer before discussing it. Probe the reasoning, not just the option chosen.";
-    question = `What makes the strongest option stronger than the most tempting alternative?`;
+    question = "What makes the strongest option stronger than the most tempting alternative?";
     extension = "Ask staff to write a new distractor that represents a plausible professional misconception.";
   } else if (module.type === "scenario") {
     move = "Give silent decision time first, then compare choices before revealing or discussing feedback.";
-    question = `Which evidence in the scenario should drive the decision, and what assumption still needs checking?`;
+    question = "Which evidence in the scenario should drive the decision, and what assumption still needs checking?";
     extension = "Change one feature of the scenario and ask whether the preferred response should change.";
   } else if (module.type === "activity") {
     move = "Protect rehearsal time. Circulate for reasoning and evidence rather than turning the task into another explanation.";
-    question = `What would a strong attempt look or sound like, and how would you know it was improving?`;
+    question = "What would a strong attempt look or sound like, and how would you know it was improving?";
     extension = "Repeat the task with a harder constraint, reduced scaffold or different audience.";
   } else if (module.type === "reflection") {
     move = "Allow quiet writing before paired discussion. Ask for one concrete change rather than a broad intention.";
@@ -170,23 +174,21 @@ function chooseModules(course: Course, routeMinutes: Phase7RouteMinutes) {
   if (!live.length) return [] as Module[];
   const target = Math.min(ROUTE_SLIDE_TARGET[routeMinutes], live.length);
   const chosen = new Set<number>();
+  const add = (item: { module: Module; index: number } | undefined) => {
+    if (item && chosen.size < target) chosen.add(item.index);
+  };
 
-  const first = live[0];
-  const last = live[live.length - 1];
-  chosen.add(first.index);
-  chosen.add(last.index);
+  add(live[0]);
+  add(live.find(item => /phase3-present-.*-hook/i.test(item.module.id)));
+  add(live.find(item => item.module.type === "content" && !isRouteAnchor(item.module)) || live.find(item => item.module.type === "visual" && !isRouteAnchor(item.module)));
+  add(live.find(item => item.module.type === "scenario" || item.module.type === "quiz"));
+  add(live.find(item => item.module.type === "activity" || item.module.id.startsWith("phase4-practice-")));
+  add([...live].reverse().find(item => isTransferModule(item.module)) || live[live.length - 1]);
 
   const anchors = live.filter(item => isRouteAnchor(item.module));
   for (const item of anchors) {
     if (chosen.size >= target) break;
     chosen.add(item.index);
-  }
-
-  const interactiveTypes = ["scenario", "activity", "quiz"];
-  for (const type of interactiveTypes) {
-    if (chosen.size >= target) break;
-    const item = live.find(candidate => candidate.module.type === type);
-    if (item) chosen.add(item.index);
   }
 
   const ranked = live
@@ -225,7 +227,6 @@ function allocateMinutes(modules: Module[], routeMinutes: Phase7RouteMinutes) {
 export function getPhase7FacilitatorPlan(course: Course, routeMinutes: Phase7RouteMinutes = 60): Phase7FacilitatorPlan {
   const selected = chooseModules(course, routeMinutes);
   const timings = allocateMinutes(selected, routeMinutes);
-  const selectedIds = new Set(selected.map(module => module.id));
   return {
     courseId: course.id,
     courseTitle: course.title,
@@ -250,7 +251,14 @@ export function auditCourseFacilitatorPhase7(course: Course) {
     const module = course.modules.find(item => item.id === slide.moduleId);
     return module ? ["quiz", "scenario", "activity", "reflection", "checklist"].includes(module.type) : false;
   }));
-  const transferReady = routes.every(route => route.slides.some(slide => /transfer|recap|implementation|reflect/i.test(`${slide.moduleId} ${slide.title}`)));
+  const transferReady = routes.every(route => route.slides.some(slide => {
+    const module = course.modules.find(item => item.id === slide.moduleId);
+    return module ? isTransferModule(module) : false;
+  }));
+  const substantiveReady = routes.every(route => route.slides.some(slide => {
+    const module = course.modules.find(item => item.id === slide.moduleId);
+    return module ? ["content", "visual"].includes(module.type) && !isRouteAnchor(module) : false;
+  }));
   const routeTimingReady = routes.every(route => route.estimatedMinutes === route.routeMinutes);
   const notesReady = course.modules.length > 0;
   return {
@@ -260,6 +268,7 @@ export function auditCourseFacilitatorPhase7(course: Course) {
     routeTimingReady,
     interactiveReady,
     transferReady,
+    substantiveReady,
     notesReady,
     printableReady: true,
     routeSlides: Object.fromEntries(routes.map(route => [String(route.routeMinutes), route.slides.length])),
@@ -272,5 +281,6 @@ export function validateCourseFacilitatorPhase7(course: Course) {
   if (!audit.routeTimingReady) throw new Error(`CPD course ${course.id} has a Phase 7 delivery route with invalid timing`);
   if (!audit.interactiveReady) throw new Error(`CPD course ${course.id} needs interaction in every Phase 7 delivery route`);
   if (!audit.transferReady) throw new Error(`CPD course ${course.id} needs transfer or implementation in every Phase 7 route`);
+  if (!audit.substantiveReady) throw new Error(`CPD course ${course.id} needs substantive learning in every Phase 7 route`);
   if (!audit.notesReady) throw new Error(`CPD course ${course.id} needs Phase 7 presenter guidance`);
 }
