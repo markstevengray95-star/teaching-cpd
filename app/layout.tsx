@@ -3,6 +3,7 @@ import DevelopmentDock from "./components/DevelopmentDock";
 import AppShellEnhancements from "./components/AppShellEnhancements";
 import CoursePresentationController from "./components/CoursePresentationController";
 import CoursePresenterPhase3Controller from "./components/CoursePresenterPhase3Controller";
+import CoursePracticePhase4Controller from "./components/CoursePracticePhase4Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -48,6 +49,7 @@ import "./impact.css";
 import "./department-cpd.css";
 import "./course-slide-formatting.css";
 import "./phase3-presentation.css";
+import "./course-practice-phase4.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
@@ -62,6 +64,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <AppShellEnhancements />
         <CoursePresentationController />
         <CoursePresenterPhase3Controller />
+        <CoursePracticePhase4Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
