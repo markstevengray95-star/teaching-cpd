@@ -45,6 +45,7 @@ import { addAdvancedPracticePhase4, validateAdvancedPracticePhase4, auditAdvance
 import { addCourseAssessmentPhase5, validateCourseAssessmentPhase5, auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
 import { validateCourseFollowThroughPhase6, auditCourseFollowThroughPhase6 } from "./courseFollowThroughPhase6";
 import { validateCourseFacilitatorPhase7, auditCourseFacilitatorPhase7 } from "./courseFacilitatorPhase7";
+import { validateCourseFinalQaPhase8, auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -56,6 +57,8 @@ export { auditCourseAssessmentPhase5 } from "./courseAssessmentPhase5";
 export { auditCourseFollowThroughPhase6, getPhase6RetrievalQuestions, PHASE6_REVIEW_STAGES } from "./courseFollowThroughPhase6";
 export { auditCourseFacilitatorPhase7, getPhase7FacilitatorPlan, getPhase7SlideGuide, PHASE7_SESSION_ROUTES } from "./courseFacilitatorPhase7";
 export type { Phase7FacilitatorPlan, Phase7SlideGuide, Phase7RouteMinutes } from "./courseFacilitatorPhase7";
+export { auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
+export type { Phase8Check, Phase8CourseAudit } from "./courseFinalQaPhase8";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -169,6 +172,7 @@ courses.forEach(validateAdvancedPracticePhase4);
 courses.forEach(validateCourseAssessmentPhase5);
 courses.forEach(validateCourseFollowThroughPhase6);
 courses.forEach(validateCourseFacilitatorPhase7);
+courses.forEach(validateCourseFinalQaPhase8);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -176,3 +180,5 @@ export const coursePracticeAudit = courses.map(auditAdvancedPracticePhase4);
 export const courseAssessmentAudit = courses.map(auditCourseAssessmentPhase5);
 export const courseFollowThroughAudit = courses.map(auditCourseFollowThroughPhase6);
 export const courseFacilitatorAudit = courses.map(auditCourseFacilitatorPhase7);
+export const courseFinalQaAudit = courses.map(auditCourseFinalQaPhase8);
+export const courseFinalQaSummary = summarisePhase8Quality(courses);
