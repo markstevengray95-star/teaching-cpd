@@ -39,6 +39,7 @@ import { deepenRemainingCourse, validateRemainingCourseDepth } from "./remaining
 import { addRemainingPracticeStudio, validateRemainingPracticeStudio } from "./remainingCoursePracticeStudio";
 import { qualityAssureRemainingCourse, validateRemainingCatalogue, validateRemainingCourseQuality } from "./remainingCourseQuality";
 import { applyCourseTemplateFoundation, auditCatalogue, validateCourseAgainstQualityFramework } from "./courseQualityFramework";
+import { deepenCourseContent2026, validateCourseContentDepth2026 } from "./courseContentDepth2026";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -143,9 +144,11 @@ validateRemainingCatalogue(qualityAssuredCourses);
 
 export const courses = qualityAssuredCourses
   .map(standardiseCourseObjectives)
-  .map(applyCourseTemplateFoundation);
+  .map(applyCourseTemplateFoundation)
+  .map(deepenCourseContent2026);
 
 courses.forEach(validateCourse);
 courses.forEach(validateCourseAgainstQualityFramework);
+courses.forEach(validateCourseContentDepth2026);
 
 export const courseQualityAudit = auditCatalogue(courses);
