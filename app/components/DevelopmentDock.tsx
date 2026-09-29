@@ -76,7 +76,7 @@ export default function DevelopmentDock() {
   ];
 
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) {
-    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"]);
+    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"], ["/facilitator", "Facilitator packs"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
     more.push(
