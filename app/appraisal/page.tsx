@@ -27,7 +27,7 @@ export default function AppraisalPage(){
       client.from("appraisal_objectives").select("*").order("updated_at",{ascending:false}),
       client.from("appraisal_evidence").select("*").order("created_at",{ascending:false}),
       client.from("appraisal_reviews").select("*").order("scheduled_on",{ascending:false}),
-      client.from("staff_development_course_progress").select("course_id,completed_at").eq("user_id",auth.user.id),
+      client.from("course_progress").select("course_id,completed_at").eq("user_id",auth.user.id),
       p&&["CPD Lead","Admin"].includes(p.role)&&p.organisation_id?client.from("staff_profiles").select("id,full_name,role,department,organisation_id").eq("organisation_id",p.organisation_id).order("full_name"):Promise.resolve({data:[],error:null}),
     ]);
     setObjectives((o.data||[]) as Objective[]);setEvidence((e.data||[]) as Evidence[]);setReviews((r.data||[]) as Review[]);setProgress((pr.data||[]) as Progress[]);setStaff((s.data||[]) as Profile[]);
