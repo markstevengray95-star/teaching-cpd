@@ -53,6 +53,7 @@ import { validateWorkshopActivityPhase3CycleAware } from "./courseWorkshopActivi
 import { applyProgressiveCasePhase4, validateProgressiveCasePhase4, auditProgressiveCasePhase4, getProgressiveCasePhase4ModulePack, isProgressiveCasePhase4Module, PHASE4_CASE_STEPS, PRESENTATION_OVERHAUL_PHASE4_VERSION } from "./courseProgressiveCasePhase4";
 import { validateLivePresenterPhase5, auditLivePresenterPhase5 } from "./courseLivePresenterPhase5";
 import { repairPresentationEngagementPhase6, validatePresentationEngagementPhase6, auditPresentationEngagementPhase6, summarisePresentationEngagementPhase6, PRESENTATION_OVERHAUL_PHASE6_VERSION } from "./courseEngagementQaPhase6";
+import { applyInstructionalVisualPhase7, applyAdaptivePathwayPhase8, applySynthesisPhase9, applyArchetypePolishPhase10, validateFinalPresentationPhases7to10, auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to10, getAdaptivePathwayPhase8Pack, isAdaptivePathwayPhase8Module, PRESENTATION_OVERHAUL_PHASE7_VERSION, PRESENTATION_OVERHAUL_PHASE8_VERSION, PRESENTATION_OVERHAUL_PHASE9_VERSION, PRESENTATION_OVERHAUL_PHASE10_VERSION } from "./coursePresentationFinishPhase7to10";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -77,23 +78,23 @@ export { auditLivePresenterPhase5, getCourseLivePresenterPhase5Moments, getLiveP
 export type { Phase5LiveMoment, Phase5LiveMomentKind } from "./courseLivePresenterPhase5";
 export { auditPresentationEngagementPhase6, summarisePresentationEngagementPhase6, PRESENTATION_OVERHAUL_PHASE6_VERSION } from "./courseEngagementQaPhase6";
 export type { Phase6EngagementAudit, Phase6EngagementCheck } from "./courseEngagementQaPhase6";
+export { auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to10, getAdaptivePathwayPhase8Pack, isAdaptivePathwayPhase8Module, PRESENTATION_OVERHAUL_PHASE7_VERSION, PRESENTATION_OVERHAUL_PHASE8_VERSION, PRESENTATION_OVERHAUL_PHASE9_VERSION, PRESENTATION_OVERHAUL_PHASE10_VERSION } from "./coursePresentationFinishPhase7to10";
+export type { Phase8PathRoute, Phase8AdaptivePack, FinalPresentationAudit } from "./coursePresentationFinishPhase7to10";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
-const replacementMap = new Map(
-  [
-    ...expandedCourses,
-    ...expandedCoursesBatch2,
-    ...additionalCourses,
-    ...schoolCoursesBatch1,
-    ...schoolCoursesBatch2,
-    ...schoolCoursesBatch3,
-    ...schoolCoursesBatch4,
-    ...schoolCoursesBatch5,
-    ...deepTeachingCourses,
-    ...deepTeachingCourses2,
-    safeguardingIntegratedCourse,
-  ].map(course => [course.id, course] as const),
-);
+const replacementMap = new Map([
+  ...expandedCourses,
+  ...expandedCoursesBatch2,
+  ...additionalCourses,
+  ...schoolCoursesBatch1,
+  ...schoolCoursesBatch2,
+  ...schoolCoursesBatch3,
+  ...schoolCoursesBatch4,
+  ...schoolCoursesBatch5,
+  ...deepTeachingCourses,
+  ...deepTeachingCourses2,
+  safeguardingIntegratedCourse,
+].map(course => [course.id, course] as const));
 const replacementIds = new Set(replacementMap.keys());
 const replacements = [...replacementMap.values()];
 
@@ -185,6 +186,10 @@ export const courses = qualityAssuredCourses
   .map(applyProfessionalReadingPhase2)
   .map(applyWorkshopActivityPhase3)
   .map(applyProgressiveCasePhase4)
+  .map(applyInstructionalVisualPhase7)
+  .map(applyAdaptivePathwayPhase8)
+  .map(applySynthesisPhase9)
+  .map(applyArchetypePolishPhase10)
   .map(repairPresentationEngagementPhase6);
 
 courses.forEach(validateCourse);
@@ -202,6 +207,7 @@ courses.forEach(validateWorkshopActivityPhase3CycleAware);
 courses.forEach(validateProgressiveCasePhase4);
 courses.forEach(validateLivePresenterPhase5);
 courses.forEach(validatePresentationEngagementPhase6);
+courses.forEach(validateFinalPresentationPhases7to10);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -218,3 +224,5 @@ export const courseProgressiveCasePhase4Audit = courses.map(auditProgressiveCase
 export const courseLivePresenterPhase5Audit = courses.map(auditLivePresenterPhase5);
 export const coursePresentationEngagementPhase6Audit = courses.map(auditPresentationEngagementPhase6);
 export const coursePresentationEngagementPhase6Summary = summarisePresentationEngagementPhase6(courses);
+export const courseFinalPresentationPhases7to10Audit = courses.map(auditFinalPresentationPhases7to10);
+export const courseFinalPresentationPhases7to10Summary = summariseFinalPresentationPhases7to10(courses);
