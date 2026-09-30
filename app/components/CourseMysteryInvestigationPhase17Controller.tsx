@@ -99,9 +99,10 @@ function renderMystery(modal: HTMLElement, force = false) {
     const open = evidenceIndex < unlocked;
     const note = notes[item.id] || "";
     const logged = clean(note).length >= 25;
+    const buttonLabel = evidenceIndex < 3 ? (evidenceIndex + 1 < unlocked ? "Evidence logged ✓" : "Log clue & unlock next") : "Log final clue & judge";
     return `<article class="phase17Evidence ${open ? "unlocked" : "locked"} ${logged ? "logged" : ""}" data-phase17-evidence="${escapeHtml(item.id)}">
       <div class="phase17EvidenceHead"><span>${evidenceIndex + 1}</span><div><small>${escapeHtml(item.source)}</small><strong>${escapeHtml(item.label)}</strong></div><b>${open ? (logged ? "✓" : "OPEN") : "LOCKED"}</b></div>
-      ${open ? `<div class="phase17EvidenceBody"><p>${escapeHtml(item.content)}</p><label>${escapeHtml(item.prompt)}<textarea rows="3" data-phase17-note="${escapeHtml(item.id)}" placeholder="Record how this evidence changes your thinking…">${escapeHtml(note)}</textarea></label><div class="phase17EvidenceFoot"><small data-phase17-count="${escapeHtml(item.id)}">${clean(note).length} / 25 characters</small>${evidenceIndex < 3 ? `<button type="button" data-phase17-unlock="${escapeHtml(item.id)}" ${logged ? "" : "disabled"}>${evidenceIndex + 1 < unlocked ? "Evidence logged ✓" : "Log clue & unlock next"}</button>` : ""}</div></div>` : `<div class="phase17LockedBody"><span>?</span><p>Process the previous evidence before this source is revealed.</p></div>`}
+      ${open ? `<div class="phase17EvidenceBody"><p>${escapeHtml(item.content)}</p><label>${escapeHtml(item.prompt)}<textarea rows="3" data-phase17-note="${escapeHtml(item.id)}" placeholder="Record how this evidence changes your thinking…">${escapeHtml(note)}</textarea></label><div class="phase17EvidenceFoot"><small data-phase17-count="${escapeHtml(item.id)}">${clean(note).length} / 25 characters</small><button type="button" data-phase17-unlock="${escapeHtml(item.id)}" ${logged ? "" : "disabled"}>${buttonLabel}</button></div></div>` : `<div class="phase17LockedBody"><span>?</span><p>Process the previous evidence before this source is revealed.</p></div>`}
     </article>`;
   }).join("");
 
