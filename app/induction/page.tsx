@@ -23,7 +23,7 @@ export default function InductionPage(){
     const [a,t,pr,s]=await Promise.all([
       client.from("staff_induction_assignments").select("*").order("created_at",{ascending:false}),
       client.from("staff_induction_tasks").select("*").order("sort_order"),
-      client.from("staff_development_course_progress").select("course_id,completed_at").eq("user_id",auth.user.id),
+      client.from("course_progress").select("course_id,completed_at").eq("user_id",auth.user.id),
       admin&&p?.organisation_id?client.from("staff_profiles").select("id,full_name,role,department,organisation_id").eq("organisation_id",p.organisation_id).order("full_name"):Promise.resolve({data:p?[p]:[],error:null}),
     ]);
     setAssignments((a.data||[]) as Assignment[]);setTasks((t.data||[]) as Task[]);setProgress((pr.data||[]) as Progress[]);setStaff((s.data||[]) as Profile[]);if(!newUser&&admin&&(s.data||[])[0])setNewUser((s.data||[])[0].id);setNotice([pe,a.error,t.error,pr.error,s.error].filter(Boolean).map(x=>x!.message).join(" · "));setLoading(false);
