@@ -12,6 +12,7 @@ import CourseReadingPhase2Controller from "./components/CourseReadingPhase2Contr
 import CourseWorkshopPhase3Controller from "./components/CourseWorkshopPhase3Controller";
 import CourseProgressiveCasePhase4Controller from "./components/CourseProgressiveCasePhase4Controller";
 import CourseLivePresenterPhase5Controller from "./components/CourseLivePresenterPhase5Controller";
+import CourseAdaptivePathPhase8Controller from "./components/CourseAdaptivePathPhase8Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -41,6 +42,7 @@ import "./course-reading-phase2.css";
 import "./course-workshop-phase3.css";
 import "./course-progressive-case-phase4.css";
 import "./course-live-presenter-phase5.css";
+import "./course-finish-phase7-10.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
@@ -90,6 +92,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseWorkshopPhase3Controller />
         <CourseProgressiveCasePhase4Controller />
         <CourseLivePresenterPhase5Controller />
+        <CourseAdaptivePathPhase8Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
