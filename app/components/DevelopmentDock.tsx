@@ -60,6 +60,10 @@ export default function DevelopmentDock() {
   const school: LinkItem[] = [
     ["/school-hub", "School hub"],
     ["/knowledge-base", "School knowledge"],
+    ["/appraisal", "Appraisal & review"],
+    ["/compliance", "Training compliance"],
+    ["/induction", "New staff induction"],
+    ["/departments", "Department development"],
     ["/learning-walks", "Learning walks"],
     ["/safeguarding", "Safeguarding"],
     ["/safety", "Safety & compliance"],
