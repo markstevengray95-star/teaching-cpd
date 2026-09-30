@@ -85,6 +85,7 @@ import "./course-implementation-challenge-phase30.css";
 import "./course-certification-exam-phase31.css";
 import "./school-access.css";
 import "./school-hub.css";
+import "./school-workflows.css";
 import "./platform.css";
 import "./owner-portal.css";
 import "./staff-sync.css";
