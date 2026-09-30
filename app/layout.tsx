@@ -17,6 +17,7 @@ import CourseMissionSimulationPhase11to12Controller from "./components/CourseMis
 import CourseEscapePhase13Controller from "./components/CourseEscapePhase13Controller";
 import CourseTimedChallengePhase14Controller from "./components/CourseTimedChallengePhase14Controller";
 import CourseSpotProblemPhase15Controller from "./components/CourseSpotProblemPhase15Controller";
+import CourseBranchingAdventurePhase16Controller from "./components/CourseBranchingAdventurePhase16Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -51,6 +52,7 @@ import "./course-mission-simulation-phase11-12.css";
 import "./course-escape-phase13.css";
 import "./course-timed-phase14.css";
 import "./course-spot-problem-phase15.css";
+import "./course-branching-phase16.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
@@ -105,6 +107,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseEscapePhase13Controller />
         <CourseTimedChallengePhase14Controller />
         <CourseSpotProblemPhase15Controller />
+        <CourseBranchingAdventurePhase16Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
