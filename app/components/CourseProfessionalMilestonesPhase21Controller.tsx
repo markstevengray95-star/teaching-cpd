@@ -41,6 +41,8 @@ function scanCandidates(): EvidenceCandidate[] {
       [23, "team_quiz", "Completed live team quiz", false],
       [24, "expert_challenge", "Completed unlockable expert challenge set", true],
       [25, "interactive_model", "Completed interactive professional model", true],
+      [26, "video_decision", "Completed video decision-point scenario", true],
+      [27, "audio_scenario", "Completed audio professional scenario", true],
     ];
     direct.forEach(([phase, type, label, deep]) => {
       const record = parse(`cpd-phase${phase}:${course.id}`);
