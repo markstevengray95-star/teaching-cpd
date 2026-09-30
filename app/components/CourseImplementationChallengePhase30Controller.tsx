@@ -20,7 +20,9 @@ async function syncCloud(courseId:string,courseTitle:string,answers:Answers){
   try{
     const client=getSupabaseBrowserClient();const {data:auth}=await client.auth.getUser();if(!auth.user)return{signedIn:false,scheduled:false,message:"Saved on this device. Sign in to add the 7/30/90-day follow-up to your CPD record."};
     const {data:progress}=await client.from("course_progress").select("reflections,completed_at").eq("user_id",auth.user.id).eq("course_id",courseId).maybeSingle();
-    const reflections={...((progress?.reflections||{}) as Record<string,unknown>),phase30_implementation_challenge:answers};
+    const previous=((progress?.reflections||{}) as Record<string,string>);
+    const commitment=[`Problem: ${answers.problem||""}`,`Action: ${answers.action||""}`,`Context: ${answers.context||""}`,`Barrier: ${answers.barrier||""}`,`Evidence: ${answers.evidence||""}`,`Review: ${answers.review||""}`].join("\n");
+    const reflections={...previous,phase30_implementation_commitment:commitment,phase30_problem:answers.problem||"",phase30_action:answers.action||"",phase30_context:answers.context||"",phase30_barrier:answers.barrier||"",phase30_evidence:answers.evidence||"",phase30_review:answers.review||""};
     await client.from("course_progress").update({reflections}).eq("user_id",auth.user.id).eq("course_id",courseId);
     const result=await schedulePhase6CourseReviews(client,auth.user.id,{id:courseId,title:courseTitle},progress?.completed_at||new Date().toISOString());
     return{signedIn:true,scheduled:!result.error,message:result.error?"Plan saved, but the follow-up schedule could not be updated yet.":result.created?`${result.created} follow-up checkpoint${result.created===1?"":"s"} scheduled for 7, 30 and 90-day review.`:"Your 7, 30 and 90-day follow-up checkpoints are already scheduled."};
