@@ -38,6 +38,9 @@ function scanCandidates(): EvidenceCandidate[] {
       [18, "improvement", "Completed before/after improvement", true],
       [19, "ai_critique", "Completed Staff vs AI critique", true],
       [22, "team_challenge", "Completed collaborative team challenge", true],
+      [23, "team_quiz", "Completed live team quiz", false],
+      [24, "expert_challenge", "Completed unlockable expert challenge set", true],
+      [25, "interactive_model", "Completed interactive professional model", true],
     ];
     direct.forEach(([phase, type, label, deep]) => {
       const record = parse(`cpd-phase${phase}:${course.id}`);
