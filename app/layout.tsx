@@ -27,6 +27,8 @@ import CourseTeamChallengesPhase22Controller from "./components/CourseTeamChalle
 import CourseLiveTeamQuizPhase23Controller from "./components/CourseLiveTeamQuizPhase23Controller";
 import CourseExpertChallengesPhase24Controller from "./components/CourseExpertChallengesPhase24Controller";
 import CourseInteractiveModelsPhase25Controller from "./components/CourseInteractiveModelsPhase25Controller";
+import CourseVideoDecisionPointsPhase26Controller from "./components/CourseVideoDecisionPointsPhase26Controller";
+import CourseAudioProfessionalScenariosPhase27Controller from "./components/CourseAudioProfessionalScenariosPhase27Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -71,6 +73,8 @@ import "./course-team-challenges-phase22.css";
 import "./course-live-team-quiz-phase23.css";
 import "./course-expert-challenges-phase24.css";
 import "./course-interactive-models-phase25.css";
+import "./course-video-decision-phase26.css";
+import "./course-audio-scenarios-phase27.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
@@ -135,6 +139,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseLiveTeamQuizPhase23Controller />
         <CourseExpertChallengesPhase24Controller />
         <CourseInteractiveModelsPhase25Controller />
+        <CourseVideoDecisionPointsPhase26Controller />
+        <CourseAudioProfessionalScenariosPhase27Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
