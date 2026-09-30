@@ -8,7 +8,7 @@ import { addMonths, complianceStatus, formatWorkflowDate } from "@/lib/schoolWor
 type Profile={id:string;full_name:string;role:string;department:string;organisation_id:string|null};
 type Requirement={id:string;title:string;description:string;target_type:"catalogue"|"custom";target_id:string;frequency_months:number|null;mandatory:boolean;audience_type:string;audience_value:string|null;active:boolean;organisation_id:string|null;created_at:string};
 type RecordRow={user_id:string;requirement_id:string;completed_at:string;expires_at:string|null;source_course_id:string|null;verified_by:string|null;evidence_reference:string|null;note:string};
-type Progress={user_id:string;course_id:string;completed_at:string|null;organization_id:string|null};
+type Progress={user_id:string;course_id:string;completed_at:string|null};
 type Status="current"|"due_soon"|"expired"|"missing";
 
 export default function CompliancePage(){
@@ -24,7 +24,7 @@ export default function CompliancePage(){
     const [rq,rr,pr,sp]=await Promise.all([
       client.from("training_requirements").select("*").eq("active",true).order("title"),
       client.from("training_records").select("*"),
-      admin?client.from("staff_development_course_progress").select("user_id,course_id,completed_at,organization_id"):client.from("staff_development_course_progress").select("user_id,course_id,completed_at,organization_id").eq("user_id",auth.user.id),
+      client.from("course_progress").select("user_id,course_id,completed_at").eq("user_id",auth.user.id),
       admin&&p?.organisation_id?client.from("staff_profiles").select("id,full_name,role,department,organisation_id").eq("organisation_id",p.organisation_id).order("full_name"):Promise.resolve({data:p?[p]:[],error:null}),
     ]);
     setRequirements((rq.data||[]) as Requirement[]);setRecords((rr.data||[]) as RecordRow[]);setProgress((pr.data||[]) as Progress[]);setStaff((sp.data||[]) as Profile[]);setNotice([pe,rq.error,rr.error,pr.error,sp.error].filter(Boolean).map(x=>x!.message).join(" · "));setLoading(false);
