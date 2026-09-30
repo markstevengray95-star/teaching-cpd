@@ -20,6 +20,8 @@ import CourseSpotProblemPhase15Controller from "./components/CourseSpotProblemPh
 import CourseBranchingAdventurePhase16Controller from "./components/CourseBranchingAdventurePhase16Controller";
 import CourseMysteryInvestigationPhase17Controller from "./components/CourseMysteryInvestigationPhase17Controller";
 import CourseBeforeAfterPhase18Controller from "./components/CourseBeforeAfterPhase18Controller";
+import CourseStaffVsAiPhase19Controller from "./components/CourseStaffVsAiPhase19Controller";
+import CourseMeaningfulXpPhase20Controller from "./components/CourseMeaningfulXpPhase20Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -57,6 +59,8 @@ import "./course-spot-problem-phase15.css";
 import "./course-branching-phase16.css";
 import "./course-mystery-phase17.css";
 import "./course-before-after-phase18.css";
+import "./course-staff-vs-ai-phase19.css";
+import "./course-meaningful-xp-phase20.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
@@ -114,6 +118,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseBranchingAdventurePhase16Controller />
         <CourseMysteryInvestigationPhase17Controller />
         <CourseBeforeAfterPhase18Controller />
+        <CourseStaffVsAiPhase19Controller />
+        <CourseMeaningfulXpPhase20Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
