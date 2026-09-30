@@ -46,6 +46,7 @@ function scanCandidates(): EvidenceCandidate[] {
       [28, "personalised_route", "Selected personalised professional learning route", false],
       [29, "professional_toolkit", "Saved a reusable professional toolkit resource", false],
       [30, "implementation_challenge", "Completed final implementation challenge", true],
+      [31, "certification_exam", "Passed final certification exam", true],
     ];
     direct.forEach(([phase, type, label, deep]) => {
       const record = parse(`cpd-phase${phase}:${course.id}`);
