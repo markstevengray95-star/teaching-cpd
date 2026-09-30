@@ -43,6 +43,9 @@ function scanCandidates(): EvidenceCandidate[] {
       [25, "interactive_model", "Completed interactive professional model", true],
       [26, "video_decision", "Completed video decision-point scenario", true],
       [27, "audio_scenario", "Completed audio professional scenario", true],
+      [28, "personalised_route", "Selected personalised professional learning route", false],
+      [29, "professional_toolkit", "Saved a reusable professional toolkit resource", false],
+      [30, "implementation_challenge", "Completed final implementation challenge", true],
     ];
     direct.forEach(([phase, type, label, deep]) => {
       const record = parse(`cpd-phase${phase}:${course.id}`);
