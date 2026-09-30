@@ -51,6 +51,7 @@ import { applyProfessionalReadingPhase2, validateProfessionalReadingPhase2, audi
 import { applyWorkshopActivityPhase3, auditWorkshopActivityPhase3, getWorkshopActivityPhase3Pack, isWorkshopActivityPhase3Module, PHASE3_WORKSHOP_KINDS, PRESENTATION_OVERHAUL_PHASE3_VERSION } from "./courseWorkshopActivityPhase3";
 import { validateWorkshopActivityPhase3CycleAware } from "./courseWorkshopActivityPhase3Validation";
 import { applyProgressiveCasePhase4, validateProgressiveCasePhase4, auditProgressiveCasePhase4, getProgressiveCasePhase4ModulePack, isProgressiveCasePhase4Module, PHASE4_CASE_STEPS, PRESENTATION_OVERHAUL_PHASE4_VERSION } from "./courseProgressiveCasePhase4";
+import { validateLivePresenterPhase5, auditLivePresenterPhase5 } from "./courseLivePresenterPhase5";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -71,6 +72,8 @@ export { auditWorkshopActivityPhase3, getWorkshopActivityPhase3Pack, isWorkshopA
 export type { Phase3WorkshopKind, Phase3WorkshopPack, Phase3WorkshopOption, Phase3BranchStage } from "./courseWorkshopActivityPhase3";
 export { auditProgressiveCasePhase4, getProgressiveCasePhase4ModulePack, isProgressiveCasePhase4Module, PHASE4_CASE_STEPS, PRESENTATION_OVERHAUL_PHASE4_VERSION } from "./courseProgressiveCasePhase4";
 export type { Phase4ProgressiveCasePack, Phase4ProgressiveCaseModulePack, Phase4CaseStep, Phase4CaseNumber, Phase4RoleLens, Phase4Choice } from "./courseProgressiveCasePhase4";
+export { auditLivePresenterPhase5, getCourseLivePresenterPhase5Moments, getLivePresenterPhase5MomentForModule, getNextLivePresenterPhase5Moment, phase5LiveMomentActivityType, PHASE5_LIVE_MOMENT_KINDS, PRESENTATION_OVERHAUL_PHASE5_VERSION } from "./courseLivePresenterPhase5";
+export type { Phase5LiveMoment, Phase5LiveMomentKind } from "./courseLivePresenterPhase5";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -193,6 +196,7 @@ courses.forEach(validatePresentationOverhaulPhase1);
 courses.forEach(validateProfessionalReadingPhase2);
 courses.forEach(validateWorkshopActivityPhase3CycleAware);
 courses.forEach(validateProgressiveCasePhase4);
+courses.forEach(validateLivePresenterPhase5);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -206,3 +210,4 @@ export const coursePresentationOverhaulPhase1Audit = courses.map(auditPresentati
 export const courseProfessionalReadingPhase2Audit = courses.map(auditProfessionalReadingPhase2);
 export const courseWorkshopActivityPhase3Audit = courses.map(auditWorkshopActivityPhase3);
 export const courseProgressiveCasePhase4Audit = courses.map(auditProgressiveCasePhase4);
+export const courseLivePresenterPhase5Audit = courses.map(auditLivePresenterPhase5);
