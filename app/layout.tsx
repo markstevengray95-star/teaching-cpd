@@ -32,6 +32,7 @@ import CourseAudioProfessionalScenariosPhase27Controller from "./components/Cour
 import CoursePersonalisedEntryPhase28Controller from "./components/CoursePersonalisedEntryPhase28Controller";
 import CourseProfessionalToolkitPhase29Controller from "./components/CourseProfessionalToolkitPhase29Controller";
 import CourseImplementationChallengePhase30Controller from "./components/CourseImplementationChallengePhase30Controller";
+import CourseCertificationExamPhase31Controller from "./components/CourseCertificationExamPhase31Controller";
 import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
@@ -81,6 +82,7 @@ import "./course-audio-scenarios-phase27.css";
 import "./course-personalised-entry-phase28.css";
 import "./course-professional-toolkit-phase29.css";
 import "./course-implementation-challenge-phase30.css";
+import "./course-certification-exam-phase31.css";
 import "./school-access.css";
 import "./school-hub.css";
 import "./platform.css";
@@ -150,6 +152,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CoursePersonalisedEntryPhase28Controller />
         <CourseProfessionalToolkitPhase29Controller />
         <CourseImplementationChallengePhase30Controller />
+        <CourseCertificationExamPhase31Controller />
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
