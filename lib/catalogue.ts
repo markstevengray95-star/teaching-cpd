@@ -46,6 +46,7 @@ import { addCourseAssessmentPhase5, validateCourseAssessmentPhase5, auditCourseA
 import { validateCourseFollowThroughPhase6, auditCourseFollowThroughPhase6 } from "./courseFollowThroughPhase6";
 import { validateCourseFacilitatorPhase7, auditCourseFacilitatorPhase7 } from "./courseFacilitatorPhase7";
 import { validateCourseFinalQaPhase8, auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
+import { applyPresentationOverhaulPhase1, validatePresentationOverhaulPhase1, auditPresentationOverhaulPhase1, PRESENTATION_LEARNING_CYCLE, PRESENTATION_OVERHAUL_PHASE1_VERSION } from "./courseLearningCycleOverhaulPhase1";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -59,6 +60,7 @@ export { auditCourseFacilitatorPhase7, getPhase7FacilitatorPlan, getPhase7SlideG
 export type { Phase7FacilitatorPlan, Phase7SlideGuide, Phase7RouteMinutes } from "./courseFacilitatorPhase7";
 export { auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
 export type { Phase8Check, Phase8CourseAudit } from "./courseFinalQaPhase8";
+export { auditPresentationOverhaulPhase1, PRESENTATION_LEARNING_CYCLE, PRESENTATION_OVERHAUL_PHASE1_VERSION } from "./courseLearningCycleOverhaulPhase1";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -162,7 +164,8 @@ export const courses = qualityAssuredCourses
   .map(deepenCourseContent2026)
   .map(enhanceCoursePresentationPhase3)
   .map(addAdvancedPracticePhase4)
-  .map(addCourseAssessmentPhase5);
+  .map(addCourseAssessmentPhase5)
+  .map(applyPresentationOverhaulPhase1);
 
 courses.forEach(validateCourse);
 courses.forEach(validateCourseAgainstQualityFramework);
@@ -173,6 +176,7 @@ courses.forEach(validateCourseAssessmentPhase5);
 courses.forEach(validateCourseFollowThroughPhase6);
 courses.forEach(validateCourseFacilitatorPhase7);
 courses.forEach(validateCourseFinalQaPhase8);
+courses.forEach(validatePresentationOverhaulPhase1);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -182,3 +186,4 @@ export const courseFollowThroughAudit = courses.map(auditCourseFollowThroughPhas
 export const courseFacilitatorAudit = courses.map(auditCourseFacilitatorPhase7);
 export const courseFinalQaAudit = courses.map(auditCourseFinalQaPhase8);
 export const courseFinalQaSummary = summarisePhase8Quality(courses);
+export const coursePresentationOverhaulPhase1Audit = courses.map(auditPresentationOverhaulPhase1);
