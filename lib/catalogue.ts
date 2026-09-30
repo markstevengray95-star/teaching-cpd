@@ -47,6 +47,7 @@ import { validateCourseFollowThroughPhase6, auditCourseFollowThroughPhase6 } fro
 import { validateCourseFacilitatorPhase7, auditCourseFacilitatorPhase7 } from "./courseFacilitatorPhase7";
 import { validateCourseFinalQaPhase8, auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
 import { applyPresentationOverhaulPhase1, validatePresentationOverhaulPhase1, auditPresentationOverhaulPhase1, PRESENTATION_LEARNING_CYCLE, PRESENTATION_OVERHAUL_PHASE1_VERSION } from "./courseLearningCycleOverhaulPhase1";
+import { applyProfessionalReadingPhase2, validateProfessionalReadingPhase2, auditProfessionalReadingPhase2, getProfessionalReadingPhase2Pack, isProfessionalReadingPhase2Module, countProfessionalReadingWords, PHASE2_READING_DEPTHS, PRESENTATION_OVERHAUL_PHASE2_VERSION } from "./courseProfessionalReadingPhase2";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -61,6 +62,8 @@ export type { Phase7FacilitatorPlan, Phase7SlideGuide, Phase7RouteMinutes } from
 export { auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
 export type { Phase8Check, Phase8CourseAudit } from "./courseFinalQaPhase8";
 export { auditPresentationOverhaulPhase1, PRESENTATION_LEARNING_CYCLE, PRESENTATION_OVERHAUL_PHASE1_VERSION } from "./courseLearningCycleOverhaulPhase1";
+export { auditProfessionalReadingPhase2, getProfessionalReadingPhase2Pack, isProfessionalReadingPhase2Module, countProfessionalReadingWords, PHASE2_READING_DEPTHS, PRESENTATION_OVERHAUL_PHASE2_VERSION } from "./courseProfessionalReadingPhase2";
+export type { Phase2ReadingDepth, Phase2ReadingPack, Phase2GlossaryItem, Phase2ReadingSection } from "./courseProfessionalReadingPhase2";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map(
@@ -165,7 +168,8 @@ export const courses = qualityAssuredCourses
   .map(enhanceCoursePresentationPhase3)
   .map(addAdvancedPracticePhase4)
   .map(addCourseAssessmentPhase5)
-  .map(applyPresentationOverhaulPhase1);
+  .map(applyPresentationOverhaulPhase1)
+  .map(applyProfessionalReadingPhase2);
 
 courses.forEach(validateCourse);
 courses.forEach(validateCourseAgainstQualityFramework);
@@ -177,6 +181,7 @@ courses.forEach(validateCourseFollowThroughPhase6);
 courses.forEach(validateCourseFacilitatorPhase7);
 courses.forEach(validateCourseFinalQaPhase8);
 courses.forEach(validatePresentationOverhaulPhase1);
+courses.forEach(validateProfessionalReadingPhase2);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -187,3 +192,4 @@ export const courseFacilitatorAudit = courses.map(auditCourseFacilitatorPhase7);
 export const courseFinalQaAudit = courses.map(auditCourseFinalQaPhase8);
 export const courseFinalQaSummary = summarisePhase8Quality(courses);
 export const coursePresentationOverhaulPhase1Audit = courses.map(auditPresentationOverhaulPhase1);
+export const courseProfessionalReadingPhase2Audit = courses.map(auditProfessionalReadingPhase2);
