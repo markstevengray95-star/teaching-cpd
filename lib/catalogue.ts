@@ -48,7 +48,8 @@ import { validateCourseFacilitatorPhase7, auditCourseFacilitatorPhase7 } from ".
 import { validateCourseFinalQaPhase8, auditCourseFinalQaPhase8, summarisePhase8Quality } from "./courseFinalQaPhase8";
 import { applyPresentationOverhaulPhase1, validatePresentationOverhaulPhase1, auditPresentationOverhaulPhase1, PRESENTATION_LEARNING_CYCLE, PRESENTATION_OVERHAUL_PHASE1_VERSION } from "./courseLearningCycleOverhaulPhase1";
 import { applyProfessionalReadingPhase2, validateProfessionalReadingPhase2, auditProfessionalReadingPhase2, getProfessionalReadingPhase2Pack, isProfessionalReadingPhase2Module, countProfessionalReadingWords, PHASE2_READING_DEPTHS, PRESENTATION_OVERHAUL_PHASE2_VERSION } from "./courseProfessionalReadingPhase2";
-import { applyWorkshopActivityPhase3, validateWorkshopActivityPhase3, auditWorkshopActivityPhase3, getWorkshopActivityPhase3Pack, isWorkshopActivityPhase3Module, PHASE3_WORKSHOP_KINDS, PRESENTATION_OVERHAUL_PHASE3_VERSION } from "./courseWorkshopActivityPhase3";
+import { applyWorkshopActivityPhase3, auditWorkshopActivityPhase3, getWorkshopActivityPhase3Pack, isWorkshopActivityPhase3Module, PHASE3_WORKSHOP_KINDS, PRESENTATION_OVERHAUL_PHASE3_VERSION } from "./courseWorkshopActivityPhase3";
+import { validateWorkshopActivityPhase3CycleAware } from "./courseWorkshopActivityPhase3Validation";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -186,7 +187,7 @@ courses.forEach(validateCourseFacilitatorPhase7);
 courses.forEach(validateCourseFinalQaPhase8);
 courses.forEach(validatePresentationOverhaulPhase1);
 courses.forEach(validateProfessionalReadingPhase2);
-courses.forEach(validateWorkshopActivityPhase3);
+courses.forEach(validateWorkshopActivityPhase3CycleAware);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
