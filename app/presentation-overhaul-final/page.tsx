@@ -9,6 +9,9 @@ import { summariseStaffVsAiPhase19 } from "../../lib/courseStaffVsAiPhase19";
 import { summariseMeaningfulXpPhase20 } from "../../lib/courseMeaningfulXpPhase20";
 import { summariseProfessionalMilestonesPhase21 } from "../../lib/courseProfessionalMilestonesPhase21";
 import { summariseTeamChallengesPhase22 } from "../../lib/courseTeamChallengesPhase22";
+import { summariseLiveTeamQuizPhase23 } from "../../lib/courseLiveTeamQuizPhase23";
+import { summariseExpertChallengesPhase24 } from "../../lib/courseExpertChallengesPhase24";
+import { summariseInteractiveModelsPhase25 } from "../../lib/courseInteractiveModelsPhase25";
 
 export default function PresentationOverhaulFinalPage(){
   const final=courseFinalPresentationPhases7to10Summary;
@@ -24,56 +27,57 @@ export default function PresentationOverhaulFinalPage(){
   const xp=summariseMeaningfulXpPhase20(courses);
   const milestones=summariseProfessionalMilestonesPhase21(courses);
   const teams=summariseTeamChallengesPhase22(courses);
+  const liveQuiz=summariseLiveTeamQuizPhase23(courses);
+  const expert=summariseExpertChallengesPhase24(courses);
+  const models=summariseInteractiveModelsPhase25(courses);
 
   const phaseCards=[
+    ["PHASE 25 READY",`${models.ready}/${models.courseCount}`,"interactive diagrams and models passing QA"],
+    ["PHASE 24 READY",`${expert.ready}/${expert.courseCount}`,"mastery-gated expert challenges passing QA"],
+    ["PHASE 23 READY",`${liveQuiz.ready}/${liveQuiz.courseCount}`,"live team quiz packs passing QA"],
     ["PHASE 22 READY",`${teams.ready}/${teams.courseCount}`,"department/team challenge packs passing QA"],
     ["PHASE 21 READY",`${milestones.ready}/${milestones.courseCount}`,"professional-learning milestones passing QA"],
     ["PHASE 20 READY",`${xp.ready}/${xp.courseCount}`,"meaningful XP model passing QA"],
     ["PHASE 19 READY",`${ai.ready}/${ai.courseCount}`,"Staff vs AI challenges passing QA"],
     ["PHASE 18 READY",`${studio.ready}/${studio.courseCount}`,"before/after studios passing QA"],
-    ["PHASE 17 READY",`${mystery.ready}/${mystery.courseCount}`,"mystery investigations passing QA"],
-    ["PHASE 16 READY",`${adventure.ready}/${adventure.courseCount}`,"branching adventures passing QA"],
-    ["PHASE 15 READY",`${spot.ready}/${spot.courseCount}`,"inspection scenes passing QA"],
   ];
 
   return <main className="stagePage">
-    <section className="stageHero">
-      <span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span>
-      <h1>Course presentation quality across all twenty-two overhaul phases.</h1>
-      <p>The catalogue now combines active learning, professional reading, workshop interaction, progressive rehearsal, live facilitation, instructional visuals, adaptive routes, synthesis products, missions, branching simulations, escape challenges, timed practice, spot-the-problem inspections, consequence-led adventures, mystery investigations, before/after improvement studios, Staff vs AI critical-thinking challenges, meaningful evidence-based XP, sustainable professional-learning milestones and collaborative department/team challenges.</p>
+    <section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all twenty-five overhaul phases.</h1><p>The catalogue now combines active learning, professional reading, workshop interaction, live facilitation, adaptive routes, simulations, professional challenges, consequence adventures, investigations, improvement studios, Staff vs AI critique, meaningful XP, sustainable milestones, collaborative team challenges, live team quiz rounds, unlockable expert tasks and explorable interactive models.</p></section>
+
+    <section className="stageGrid">{phaseCards.map(([label,value,detail])=><div className="stageCard stageSpan3" key={label}><span className="eyebrow">{label}</span><h2>{value}</h2><p>{detail}</p></div>)}</section>
+
+    <section className="stageGrid">
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 25</span><h2>{models.totalStages}</h2><p>interactive model stages · {models.totalDecisions} mini decisions</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 24</span><h2>{expert.totalChallenges}</h2><p>expert problems · {expert.masteryGated}/{expert.courseCount} courses mastery-gated</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 23</span><h2>{liveQuiz.totalRounds}</h2><p>team quiz rounds · {liveQuiz.individualLeaderboards} individual leaderboards</p></div>
+    </section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 25 · INTERACTIVE MODELS</span><div className="featureLiveResults">{models.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.stages} clickable stages · {r.decisions} mini decisions · anchor {r.anchorFound?"found":"missing"} · {r.score}/100</span></div>)}</div></section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 24 · UNLOCKABLE EXPERT CHALLENGES</span><div className="featureLiveResults">{expert.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.challenges} optional expert tasks · {r.kinds} challenge types · mastery gate {r.masteryGated?"on":"off"} · {r.score}/100</span></div>)}</div></section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 23 · LIVE TEAM QUIZ</span><div className="featureLiveResults">{liveQuiz.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.rounds} rounds · {r.kinds} interaction types · {r.discussionRounds} discussion/reveal round · {r.individualLeaderboards} individual leaderboards · {r.score}/100</span></div>)}</div></section>
+
+    <section className="stageGrid">
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 22</span><h2>{teams.averageScore}/100</h2><p>{teams.totalChallenges} team challenges</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 21</span><h2>{milestones.averageScore}/100</h2><p>{milestones.milestones} sustainable milestones</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 20</span><h2>{xp.averageScore}/100</h2><p>{xp.achievementsPerCourse} meaningful achievements</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 19</span><h2>{ai.averageScore}/100</h2><p>{ai.totalChallenges} Staff vs AI challenges</p></div>
     </section>
 
     <section className="stageGrid">
-      {phaseCards.map(([label,value,detail])=><div className="stageCard stageSpan3" key={label}><span className="eyebrow">{label}</span><h2>{value}</h2><p>{detail}</p></div>)}
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 18</span><h2>{studio.averageScore}/100</h2><p>{studio.totalStudios} improvement studios</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 17</span><h2>{mystery.averageScore}/100</h2><p>{mystery.totalMysteries} mystery cases</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 16</span><h2>{adventure.averageScore}/100</h2><p>{adventure.totalChoices} consequence decisions</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 15</span><h2>{spot.averageScore}/100</h2><p>{spot.totalHotspots} inspection hotspots</p></div>
     </section>
 
     <section className="stageGrid">
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 22</span><h2>{teams.totalChallenges}</h2><p>collaborative challenges · {teams.rolesPerChallenge} shared roles · {teams.individualLeaderboards} individual leaderboards</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 21</span><h2>{milestones.milestones}</h2><p>{milestones.halfTermMilestones} half-term + {milestones.termMilestones} term milestones · {milestones.dailyStreaks} daily streaks</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 20</span><h2>{xp.achievementsPerCourse}</h2><p>meaningful achievements · {xp.totalAvailableXpPerCourse} XP available per course</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 19</span><h2>{ai.totalChallenges}</h2><p>Staff vs AI challenges · {ai.totalTrueIssues} genuine critique points</p></div>
-    </section>
-
-    <section className="stageCard"><span className="eyebrow">PHASE 22 · DEPARTMENT / TEAM CHALLENGES</span><div className="featureLiveResults">{teams.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.challenges} team challenges · {report.challengeKinds} challenge types · {report.roles} collaborative roles · {report.successChecks} success checks · {report.individualLeaderboards} individual leaderboards · {report.score}/100</span></div>)}</div></section>
-
-    <section className="stageCard"><span className="eyebrow">PHASE 21 · PROFESSIONAL-LEARNING MILESTONES</span><div className="featureLiveResults">{milestones.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.milestones} milestones · {report.halfTermMilestones} half-term · {report.termMilestones} term · {report.dailyStreaks} daily streaks · {report.leaderboards} leaderboards · {report.score}/100</span></div>)}</div></section>
-
-    <section className="stageCard"><span className="eyebrow">PHASE 20 · MEANINGFUL XP</span><div className="featureLiveResults">{xp.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.achievements} achievements · {report.totalAvailableXp} XP · {report.evidenceTypes} evidence types · {report.clickAwards} superficial awards · {report.score}/100</span></div>)}</div></section>
-
-    <section className="stageCard"><span className="eyebrow">PHASE 19 · STAFF VS AI</span><div className="featureLiveResults">{ai.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.challenges} challenge · {report.issueOptions} critique options · {report.trueIssues} genuine weaknesses · {report.issueKinds} required weakness types · {report.score}/100</span></div>)}</div></section>
-
-    <section className="stageGrid">
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 18</span><h2>{studio.averageScore}/100</h2><p>{studio.totalStudios} studios · {studio.totalAnnotations} annotations</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 17</span><h2>{mystery.averageScore}/100</h2><p>{mystery.totalMysteries} mystery cases · {mystery.totalEvidenceItems} evidence sources</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 16</span><h2>{adventure.averageScore}/100</h2><p>{adventure.totalStates} states · {adventure.totalChoices} consequence decisions</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 15</span><h2>{spot.averageScore}/100</h2><p>{spot.totalScenes} inspection scenes · {spot.totalHotspots} hotspots</p></div>
-    </section>
-
-    <section className="stageGrid">
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 14</span><h2>{timed.averageScore}/100</h2><p>{timed.totalChallenges} timed bursts · {timed.totalChoicePoints} decisions</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 13</span><h2>{escape.averageScore}/100</h2><p>{escape.totalLocks} locks · {escape.totalChoiceOptions} decisions</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 11–12</span><h2>{mission.totalSimulations}</h2><p>simulations · {mission.totalDecisionOptions} decision options</p></div>
-      <div className="stageCard stageSpan3"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>{final.averageActiveShare}% average active share · {final.archetypes.length} archetypes</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 14</span><h2>{timed.averageScore}/100</h2><p>{timed.totalChallenges} timed bursts</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 13</span><h2>{escape.averageScore}/100</h2><p>{escape.totalLocks} escape locks</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 11–12</span><h2>{mission.totalSimulations}</h2><p>{mission.totalDecisionOptions} decision options</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>{final.averageActiveShare}% average active share</p></div>
     </section>
   </main>;
 }
