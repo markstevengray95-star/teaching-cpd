@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import DevelopmentDock from "./components/DevelopmentDock";
 import AppShellEnhancements from "./components/AppShellEnhancements";
 import CoursePresentationController from "./components/CoursePresentationController";
+import AdminSlideUnlockController from "./components/AdminSlideUnlockController";
 import CoursePresenterPhase3Controller from "./components/CoursePresenterPhase3Controller";
 import CoursePracticePhase4Controller from "./components/CoursePracticePhase4Controller";
 import CourseAssessmentPhase5Controller from "./components/CourseAssessmentPhase5Controller";
@@ -100,6 +101,7 @@ import "./help.css";
 import "./launch-readiness.css";
 import "./recommendations.css";
 import "./micro-cpd.css";
+import "./cpd-refreshers.css";
 import "./impact.css";
 import "./department-cpd.css";
 import "./course-slide-formatting.css";
@@ -123,6 +125,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <AppShellEnhancements />
         <CoursePresentationController />
+        <AdminSlideUnlockController />
         <CoursePresenterPhase3Controller />
         <CoursePracticePhase4Controller />
         <CourseAssessmentPhase5Controller />
