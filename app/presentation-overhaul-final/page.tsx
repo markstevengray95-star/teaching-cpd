@@ -1,0 +1,9 @@
+import { courseFinalPresentationPhases7to10Summary, coursePresentationEngagementPhase6Summary } from "@/lib/catalogue";
+
+export default function PresentationOverhaulFinalPage(){
+  const final=courseFinalPresentationPhases7to10Summary; const engagement=coursePresentationEngagementPhase6Summary;
+  return <main className="stagePage"><section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all ten overhaul phases.</h1><p>This dashboard confirms that the catalogue combines active learning, substantial reading, workshop interaction, progressive cases, live facilitation, instructional visuals, adaptive routes, synthesis products and category-specific presentation archetypes.</p></section>
+    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">READY</span><h2>{final.ready}/{final.courseCount}</h2><p>courses passing Phases 7–10</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ACTIVE</span><h2>{final.averageActiveShare}%</h2><p>average active-slide share</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>Phase 1–6 engagement score</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ARCHETYPES</span><h2>{final.archetypes.length}</h2><p>distinct course presentation modes</p></div></section>
+    <section className="stageCard"><span className="eyebrow">FINAL CATALOGUE CHECK</span><div className="featureLiveResults">{final.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.archetype} · {report.activeShare}% active · {report.instructionalVisuals} visuals · {report.adaptivePathways} adaptive routes · {report.synthesisModules} synthesis modules</span></div>)}</div></section>
+  </main>;
+}
