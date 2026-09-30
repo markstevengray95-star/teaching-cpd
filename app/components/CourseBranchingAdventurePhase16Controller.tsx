@@ -2,10 +2,14 @@
 
 import { useEffect } from "react";
 import { courses } from "@/lib/catalogue";
-import { getPhase16AdventureModulePack, type Phase16AdventurePack, type Phase16Effects } from "../../lib/courseBranchingAdventurePhase16";
+import { getPhase16AdventurePack, type Phase16AdventurePack, type Phase16Effects } from "../../lib/courseBranchingAdventurePhase16";
 
 function clean(value: string | null | undefined) {
   return (value || "").replace(/\s+/g, " ").trim();
+}
+
+function safeId(value: string) {
+  return value.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 }
 
 function escapeHtml(value: string) {
@@ -111,7 +115,8 @@ function renderAdventure(modal: HTMLElement, force = false) {
   const content = modal.querySelector<HTMLElement>(".moduleContent");
   if (!course || !module || !content) return;
 
-  const pack = getPhase16AdventureModulePack(course as never, module as never);
+  const anchorId = `overhaul9-synthesis-${safeId(course.id)}-commit`;
+  const pack = module.id === anchorId ? getPhase16AdventurePack(course as never) : null;
   if (!pack) {
     restoreGate(modal);
     content.classList.remove("phase16AdventureSlide");
