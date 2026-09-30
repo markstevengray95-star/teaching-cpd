@@ -55,6 +55,7 @@ import { validateLivePresenterPhase5, auditLivePresenterPhase5 } from "./courseL
 import { repairPresentationEngagementPhase6, validatePresentationEngagementPhase6, auditPresentationEngagementPhase6, summarisePresentationEngagementPhase6, PRESENTATION_OVERHAUL_PHASE6_VERSION } from "./courseEngagementQaPhase6";
 import { applyInstructionalVisualPhase7, applyAdaptivePathwayPhase8, applySynthesisPhase9, applyArchetypePolishPhase10, validateFinalPresentationPhases7to10, auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to10, getAdaptivePathwayPhase8Pack, isAdaptivePathwayPhase8Module, PRESENTATION_OVERHAUL_PHASE7_VERSION, PRESENTATION_OVERHAUL_PHASE8_VERSION, PRESENTATION_OVERHAUL_PHASE9_VERSION, PRESENTATION_OVERHAUL_PHASE10_VERSION } from "./coursePresentationFinishPhase7to10";
 import { applyMissionPhase11, applySimulationPhase12, validateMissionSimulationPhases11to12, auditMissionSimulationPhases11to12, summariseMissionSimulationPhases11to12, getPhase11MissionPack, getPhase12SimulationPack, getPhase12SimulationModulePack, isPhase11MissionModule, isPhase12SimulationModule, PRESENTATION_OVERHAUL_PHASE11_VERSION, PRESENTATION_OVERHAUL_PHASE12_VERSION } from "./courseMissionSimulationPhase11to12";
+import { shortenCourseJourney, summariseCourseLengthOptimisation, COURSE_LENGTH_OPTIMISATION_VERSION } from "./courseLengthOptimisation";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -83,6 +84,8 @@ export { auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to1
 export type { Phase8PathRoute, Phase8AdaptivePack, FinalPresentationAudit } from "./coursePresentationFinishPhase7to10";
 export { auditMissionSimulationPhases11to12, summariseMissionSimulationPhases11to12, getPhase11MissionPack, getPhase12SimulationPack, getPhase12SimulationModulePack, isPhase11MissionModule, isPhase12SimulationModule, PRESENTATION_OVERHAUL_PHASE11_VERSION, PRESENTATION_OVERHAUL_PHASE12_VERSION } from "./courseMissionSimulationPhase11to12";
 export type { Phase11MissionStage, Phase11MissionPack, Phase12MeterEffects, Phase12SimulationChoice, Phase12SimulationState, Phase12SimulationPack, Phase11to12Audit } from "./courseMissionSimulationPhase11to12";
+export { COURSE_LENGTH_OPTIMISATION_VERSION } from "./courseLengthOptimisation";
+export type { CourseLengthAudit } from "./courseLengthOptimisation";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map([
@@ -178,7 +181,7 @@ validateCourses21To25Order(qualityAssuredCourses);
 validateCourses26To30Order(qualityAssuredCourses);
 validateRemainingCatalogue(qualityAssuredCourses);
 
-export const courses = qualityAssuredCourses
+const fullyEnhancedCourses = qualityAssuredCourses
   .map(standardiseCourseObjectives)
   .map(applyCourseTemplateFoundation)
   .map(deepenCourseContent2026)
@@ -197,40 +200,44 @@ export const courses = qualityAssuredCourses
   .map(applySimulationPhase12)
   .map(repairPresentationEngagementPhase6);
 
-courses.forEach(validateCourse);
-courses.forEach(validateCourseAgainstQualityFramework);
-courses.forEach(validateCourseContentDepth2026);
-courses.forEach(validateCoursePresentationPhase3);
-courses.forEach(validateAdvancedPracticePhase4);
-courses.forEach(validateCourseAssessmentPhase5);
-courses.forEach(validateCourseFollowThroughPhase6);
-courses.forEach(validateCourseFacilitatorPhase7);
-courses.forEach(validateCourseFinalQaPhase8);
-courses.forEach(validatePresentationOverhaulPhase1);
-courses.forEach(validateProfessionalReadingPhase2);
-courses.forEach(validateWorkshopActivityPhase3CycleAware);
-courses.forEach(validateProgressiveCasePhase4);
-courses.forEach(validateLivePresenterPhase5);
-courses.forEach(validatePresentationEngagementPhase6);
-courses.forEach(validateFinalPresentationPhases7to10);
-courses.forEach(validateMissionSimulationPhases11to12);
+fullyEnhancedCourses.forEach(validateCourse);
+fullyEnhancedCourses.forEach(validateCourseAgainstQualityFramework);
+fullyEnhancedCourses.forEach(validateCourseContentDepth2026);
+fullyEnhancedCourses.forEach(validateCoursePresentationPhase3);
+fullyEnhancedCourses.forEach(validateAdvancedPracticePhase4);
+fullyEnhancedCourses.forEach(validateCourseAssessmentPhase5);
+fullyEnhancedCourses.forEach(validateCourseFollowThroughPhase6);
+fullyEnhancedCourses.forEach(validateCourseFacilitatorPhase7);
+fullyEnhancedCourses.forEach(validateCourseFinalQaPhase8);
+fullyEnhancedCourses.forEach(validatePresentationOverhaulPhase1);
+fullyEnhancedCourses.forEach(validateProfessionalReadingPhase2);
+fullyEnhancedCourses.forEach(validateWorkshopActivityPhase3CycleAware);
+fullyEnhancedCourses.forEach(validateProgressiveCasePhase4);
+fullyEnhancedCourses.forEach(validateLivePresenterPhase5);
+fullyEnhancedCourses.forEach(validatePresentationEngagementPhase6);
+fullyEnhancedCourses.forEach(validateFinalPresentationPhases7to10);
+fullyEnhancedCourses.forEach(validateMissionSimulationPhases11to12);
 
-export const courseQualityAudit = auditCatalogue(courses);
-export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
-export const coursePracticeAudit = courses.map(auditAdvancedPracticePhase4);
-export const courseAssessmentAudit = courses.map(auditCourseAssessmentPhase5);
-export const courseFollowThroughAudit = courses.map(auditCourseFollowThroughPhase6);
-export const courseFacilitatorAudit = courses.map(auditCourseFacilitatorPhase7);
-export const courseFinalQaAudit = courses.map(auditCourseFinalQaPhase8);
-export const courseFinalQaSummary = summarisePhase8Quality(courses);
-export const coursePresentationOverhaulPhase1Audit = courses.map(auditPresentationOverhaulPhase1);
-export const courseProfessionalReadingPhase2Audit = courses.map(auditProfessionalReadingPhase2);
-export const courseWorkshopActivityPhase3Audit = courses.map(auditWorkshopActivityPhase3);
-export const courseProgressiveCasePhase4Audit = courses.map(auditProgressiveCasePhase4);
-export const courseLivePresenterPhase5Audit = courses.map(auditLivePresenterPhase5);
-export const coursePresentationEngagementPhase6Audit = courses.map(auditPresentationEngagementPhase6);
-export const coursePresentationEngagementPhase6Summary = summarisePresentationEngagementPhase6(courses);
-export const courseFinalPresentationPhases7to10Audit = courses.map(auditFinalPresentationPhases7to10);
-export const courseFinalPresentationPhases7to10Summary = summariseFinalPresentationPhases7to10(courses);
-export const courseMissionSimulationPhases11to12Audit = courses.map(auditMissionSimulationPhases11to12);
-export const courseMissionSimulationPhases11to12Summary = summariseMissionSimulationPhases11to12(courses);
+export const courses = fullyEnhancedCourses.map(shortenCourseJourney);
+courses.forEach(validateCourse);
+
+export const courseLengthOptimisationSummary = summariseCourseLengthOptimisation(fullyEnhancedCourses, courses);
+export const courseQualityAudit = auditCatalogue(fullyEnhancedCourses);
+export const coursePresentationAudit = fullyEnhancedCourses.map(auditCoursePresentationPhase3);
+export const coursePracticeAudit = fullyEnhancedCourses.map(auditAdvancedPracticePhase4);
+export const courseAssessmentAudit = fullyEnhancedCourses.map(auditCourseAssessmentPhase5);
+export const courseFollowThroughAudit = fullyEnhancedCourses.map(auditCourseFollowThroughPhase6);
+export const courseFacilitatorAudit = fullyEnhancedCourses.map(auditCourseFacilitatorPhase7);
+export const courseFinalQaAudit = fullyEnhancedCourses.map(auditCourseFinalQaPhase8);
+export const courseFinalQaSummary = summarisePhase8Quality(fullyEnhancedCourses);
+export const coursePresentationOverhaulPhase1Audit = fullyEnhancedCourses.map(auditPresentationOverhaulPhase1);
+export const courseProfessionalReadingPhase2Audit = fullyEnhancedCourses.map(auditProfessionalReadingPhase2);
+export const courseWorkshopActivityPhase3Audit = fullyEnhancedCourses.map(auditWorkshopActivityPhase3);
+export const courseProgressiveCasePhase4Audit = fullyEnhancedCourses.map(auditProgressiveCasePhase4);
+export const courseLivePresenterPhase5Audit = fullyEnhancedCourses.map(auditLivePresenterPhase5);
+export const coursePresentationEngagementPhase6Audit = fullyEnhancedCourses.map(auditPresentationEngagementPhase6);
+export const coursePresentationEngagementPhase6Summary = summarisePresentationEngagementPhase6(fullyEnhancedCourses);
+export const courseFinalPresentationPhases7to10Audit = fullyEnhancedCourses.map(auditFinalPresentationPhases7to10);
+export const courseFinalPresentationPhases7to10Summary = summariseFinalPresentationPhases7to10(fullyEnhancedCourses);
+export const courseMissionSimulationPhases11to12Audit = fullyEnhancedCourses.map(auditMissionSimulationPhases11to12);
+export const courseMissionSimulationPhases11to12Summary = summariseMissionSimulationPhases11to12(fullyEnhancedCourses);
