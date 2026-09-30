@@ -54,6 +54,7 @@ import { applyProgressiveCasePhase4, validateProgressiveCasePhase4, auditProgres
 import { validateLivePresenterPhase5, auditLivePresenterPhase5 } from "./courseLivePresenterPhase5";
 import { repairPresentationEngagementPhase6, validatePresentationEngagementPhase6, auditPresentationEngagementPhase6, summarisePresentationEngagementPhase6, PRESENTATION_OVERHAUL_PHASE6_VERSION } from "./courseEngagementQaPhase6";
 import { applyInstructionalVisualPhase7, applyAdaptivePathwayPhase8, applySynthesisPhase9, applyArchetypePolishPhase10, validateFinalPresentationPhases7to10, auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to10, getAdaptivePathwayPhase8Pack, isAdaptivePathwayPhase8Module, PRESENTATION_OVERHAUL_PHASE7_VERSION, PRESENTATION_OVERHAUL_PHASE8_VERSION, PRESENTATION_OVERHAUL_PHASE9_VERSION, PRESENTATION_OVERHAUL_PHASE10_VERSION } from "./coursePresentationFinishPhase7to10";
+import { applyMissionPhase11, applySimulationPhase12, validateMissionSimulationPhases11to12, auditMissionSimulationPhases11to12, summariseMissionSimulationPhases11to12, getPhase11MissionPack, getPhase12SimulationPack, getPhase12SimulationModulePack, isPhase11MissionModule, isPhase12SimulationModule, PRESENTATION_OVERHAUL_PHASE11_VERSION, PRESENTATION_OVERHAUL_PHASE12_VERSION } from "./courseMissionSimulationPhase11to12";
 import type { Course } from "./data";
 
 export { categoryOrder };
@@ -80,6 +81,8 @@ export { auditPresentationEngagementPhase6, summarisePresentationEngagementPhase
 export type { Phase6EngagementAudit, Phase6EngagementCheck } from "./courseEngagementQaPhase6";
 export { auditFinalPresentationPhases7to10, summariseFinalPresentationPhases7to10, getAdaptivePathwayPhase8Pack, isAdaptivePathwayPhase8Module, PRESENTATION_OVERHAUL_PHASE7_VERSION, PRESENTATION_OVERHAUL_PHASE8_VERSION, PRESENTATION_OVERHAUL_PHASE9_VERSION, PRESENTATION_OVERHAUL_PHASE10_VERSION } from "./coursePresentationFinishPhase7to10";
 export type { Phase8PathRoute, Phase8AdaptivePack, FinalPresentationAudit } from "./coursePresentationFinishPhase7to10";
+export { auditMissionSimulationPhases11to12, summariseMissionSimulationPhases11to12, getPhase11MissionPack, getPhase12SimulationPack, getPhase12SimulationModulePack, isPhase11MissionModule, isPhase12SimulationModule, PRESENTATION_OVERHAUL_PHASE11_VERSION, PRESENTATION_OVERHAUL_PHASE12_VERSION } from "./courseMissionSimulationPhase11to12";
+export type { Phase11MissionStage, Phase11MissionPack, Phase12MeterEffects, Phase12SimulationChoice, Phase12SimulationState, Phase12SimulationPack, Phase11to12Audit } from "./courseMissionSimulationPhase11to12";
 
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map([
@@ -190,6 +193,8 @@ export const courses = qualityAssuredCourses
   .map(applyAdaptivePathwayPhase8)
   .map(applySynthesisPhase9)
   .map(applyArchetypePolishPhase10)
+  .map(applyMissionPhase11)
+  .map(applySimulationPhase12)
   .map(repairPresentationEngagementPhase6);
 
 courses.forEach(validateCourse);
@@ -208,6 +213,7 @@ courses.forEach(validateProgressiveCasePhase4);
 courses.forEach(validateLivePresenterPhase5);
 courses.forEach(validatePresentationEngagementPhase6);
 courses.forEach(validateFinalPresentationPhases7to10);
+courses.forEach(validateMissionSimulationPhases11to12);
 
 export const courseQualityAudit = auditCatalogue(courses);
 export const coursePresentationAudit = courses.map(auditCoursePresentationPhase3);
@@ -226,3 +232,5 @@ export const coursePresentationEngagementPhase6Audit = courses.map(auditPresenta
 export const coursePresentationEngagementPhase6Summary = summarisePresentationEngagementPhase6(courses);
 export const courseFinalPresentationPhases7to10Audit = courses.map(auditFinalPresentationPhases7to10);
 export const courseFinalPresentationPhases7to10Summary = summariseFinalPresentationPhases7to10(courses);
+export const courseMissionSimulationPhases11to12Audit = courses.map(auditMissionSimulationPhases11to12);
+export const courseMissionSimulationPhases11to12Summary = summariseMissionSimulationPhases11to12(courses);
