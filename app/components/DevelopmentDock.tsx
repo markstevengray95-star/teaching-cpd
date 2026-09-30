@@ -35,25 +35,21 @@ export default function DevelopmentDock() {
 
   if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
 
-  const learn: LinkItem[] = [
-    ["/dashboard", "My dashboard"],
+  const learning: LinkItem[] = [
     ["/development", "Development cycle"],
-    ["/pathways", "Pathways"],
     ["/pathways/personal", "Personal pathway"],
-    ["/adaptive", "Adaptive pre-check"],
+    ["/recommendations", "Recommendations"],
+    ["/micro-cpd", "Micro-CPD"],
     ["/subject-cpd", "Subject-specific CPD"],
     ["/reading", "Course reading"],
-    ["/micro-cpd", "Micro-CPD"],
-    ["/training", "My training"],
-    ["/recommendations", "Recommendations"],
+    ["/adaptive", "Adaptive pre-check"],
   ];
 
-  const apply: LinkItem[] = [
-    ["/simulator", "Practice simulator"],
+  const practice: LinkItem[] = [
     ["/actions", "Action plans"],
     ["/coach", "CPD Coach plan"],
-    ["/ai-coach", "AI CPD Coach"],
     ["/coaching", "Coaching"],
+    ["/simulator", "Practice simulator"],
     ["/needs-audit", "Needs audit"],
     ["/portfolio", "Portfolio"],
     ["/impact", "CPD impact"],
@@ -66,51 +62,44 @@ export default function DevelopmentDock() {
     ["/knowledge-base", "School knowledge"],
     ["/learning-walks", "Learning walks"],
     ["/safeguarding", "Safeguarding"],
-    ["/safeguarding/documents", "Safeguarding documents"],
     ["/safety", "Safety & compliance"],
     ["/certificates", "Certificates"],
     ["/reminders", "Spaced follow-up"],
     ["/improvement", "School improvement"],
-    ["/improvement/programmes", "Improvement → CPD"],
   ];
 
-  const more: LinkItem[] = [
-    ["/course-studio", "Course Studio"],
-    ["/course-packs", "Course packs"],
-    ["/help", "Help"],
-    ["/accessibility", "Accessibility & reading"],
-  ];
-
+  const manage: LinkItem[] = [];
   if (["Department Lead", "CPD Lead", "Admin"].includes(role)) {
-    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"], ["/live", "Live CPD"], ["/live-presenter", "Presenter 2.0"], ["/facilitator", "Facilitator packs"]);
+    school.push(["/department-cpd", "Department CPD"], ["/leadership", "Leadership dashboard"]);
+    manage.push(["/live-presenter", "Presenter 2.0"], ["/facilitator", "Facilitator packs"], ["/improvement/programmes", "Improvement → CPD"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
-    more.push(
+    manage.push(
       ["/ai-course-builder", "AI course builder"],
       ["/policy-training", "Policy training"],
       ["/builder", "Course creator"],
-      ["/launch-readiness", "Launch readiness"],
-      ["/school-access", "School access"],
       ["/quality", "Annual CPD & QA"],
-      ["/course-audit", "Course audit"],
-      ["/presentation-engagement-audit", "Presentation engagement QA"],
-      ["/presentation-overhaul-final", "Final presentation overhaul"],
+      ["/presentation-overhaul-final", "Presentation QA"],
       ["/course-quality-dashboard", "Final course QA"],
+      ["/school-access", "School access"],
       ["/admin", "CPD admin"],
     );
   }
-  if (role === "Admin") more.push(["/staff-access", "Staff access"], ["/staff-sync", "Staff sync"]);
-  if (platformAdmin) more.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"]);
+  if (role === "Admin") manage.push(["/staff-access", "Staff access"], ["/staff-sync", "Staff sync"]);
+  if (platformAdmin) manage.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"]);
 
   const groups: LinkGroup[] = [
-    { label: "Learn", links: learn },
-    { label: "Apply", links: apply },
+    { label: "Learn", links: learning },
+    { label: "Apply", links: practice },
     { label: "School", links: school },
-    { label: "More", links: more },
+    ...(manage.length ? [{ label: "Manage", links: manage }] : []),
   ];
 
   return <nav className="developmentDock" aria-label="Professional development quick navigation">
-    <a href="/" className={`dockHome ${activePath(pathname, "/") ? "active" : ""}`}>Home</a>
+    <a href="/ai-coach" className={`dockAi ${activePath(pathname, "/ai-coach") ? "active" : ""}`}>✦ AI CPD Tutor</a>
+    <a href="/dashboard" className={activePath(pathname, "/dashboard") ? "active" : ""}>Dashboard</a>
+    <a href="/" className={`dockHome ${pathname === "/" ? "active" : ""}`}>Courses</a>
+    <a href="/training" className={activePath(pathname, "/training") ? "active" : ""}>My CPD</a>
     {groups.map(group => {
       const groupActive = group.links.some(([href]) => activePath(pathname, href));
       return <details className={`dockGroup ${groupActive ? "hasActive" : ""}`} key={group.label}>
