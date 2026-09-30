@@ -17,6 +17,7 @@ import { summariseAudioProfessionalScenariosPhase27 } from "../../lib/courseAudi
 import { summarisePersonalisedEntryPhase28 } from "../../lib/coursePersonalisedEntryPhase28";
 import { summariseProfessionalToolkitPhase29 } from "../../lib/courseProfessionalToolkitPhase29";
 import { summariseImplementationChallengePhase30 } from "../../lib/courseImplementationChallengePhase30";
+import { summariseCertificationExamPhase31 } from "../../lib/courseCertificationExamPhase31";
 
 export default function PresentationOverhaulFinalPage(){
   const final=courseFinalPresentationPhases7to10Summary;
@@ -40,8 +41,10 @@ export default function PresentationOverhaulFinalPage(){
   const entry=summarisePersonalisedEntryPhase28(courses);
   const toolkit=summariseProfessionalToolkitPhase29(courses);
   const implementation=summariseImplementationChallengePhase30(courses);
+  const certification=summariseCertificationExamPhase31(courses);
 
   const phaseCards=[
+    ["PHASE 31 READY",`${certification.ready}/${certification.courseCount}`,"certification exams passing QA"],
     ["PHASE 30 READY",`${implementation.ready}/${implementation.courseCount}`,"final implementation challenges passing QA"],
     ["PHASE 29 READY",`${toolkit.ready}/${toolkit.courseCount}`,"professional toolkit packs passing QA"],
     ["PHASE 28 READY",`${entry.ready}/${entry.courseCount}`,"personalised entry routes passing QA"],
@@ -49,19 +52,20 @@ export default function PresentationOverhaulFinalPage(){
     ["PHASE 26 READY",`${video.ready}/${video.courseCount}`,"video decision-point scenarios passing QA"],
     ["PHASE 25 READY",`${models.ready}/${models.courseCount}`,"interactive diagrams and models passing QA"],
     ["PHASE 24 READY",`${expert.ready}/${expert.courseCount}`,"mastery-gated expert challenges passing QA"],
-    ["PHASE 23 READY",`${liveQuiz.ready}/${liveQuiz.courseCount}`,"live team quiz packs passing QA"],
   ];
 
   return <main className="stagePage">
-    <section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all thirty overhaul phases.</h1><p>The catalogue now combines active learning, professional reading, workshop interaction, live facilitation, adaptive routes, simulations, professional challenges, consequence adventures, investigations, improvement studios, Staff vs AI critique, meaningful XP, sustainable milestones, collaborative team challenges, live quizzes, expert tasks, interactive models, video decisions, audio professional conversations, personalised entry routes, reusable professional toolkits and a final implementation challenge linked to 7/30/90-day follow-through.</p></section>
+    <section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all thirty-one overhaul phases.</h1><p>The complete sequence now ends with a certification exam that draws 10–15 randomized questions from a validated 25–40-question course bank, requires 80% to pass, allows unlimited resits and gates new certificate issuance behind demonstrated mastery.</p></section>
 
     <section className="stageGrid">{phaseCards.map(([label,value,detail])=><div className="stageCard stageSpan3" key={label}><span className="eyebrow">{label}</span><h2>{value}</h2><p>{detail}</p></div>)}</section>
 
     <section className="stageGrid">
-      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 30</span><h2>{implementation.totalFields}</h2><p>implementation fields across the catalogue · 7/30/90 follow-through on {implementation.followThroughReady}/{implementation.courseCount} courses</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 31</span><h2>{certification.totalBankQuestions}</h2><p>validated certification-bank questions · {certification.minAttempt}–{certification.maxAttempt} per attempt · {certification.passPercent}% pass mark</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 30</span><h2>{implementation.totalFields}</h2><p>implementation fields · 7/30/90 follow-through on {implementation.followThroughReady}/{implementation.courseCount} courses</p></div>
       <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 29</span><h2>{toolkit.totalTools}</h2><p>reusable professional tools · {toolkit.kinds} toolkit types</p></div>
-      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 28</span><h2>{entry.totalRoutes}</h2><p>personalised routes · {entry.routesPerCourse} entry choices per course</p></div>
     </section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 31 · CERTIFICATION EXAM</span><div className="featureLiveResults">{certification.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.bankSize} bank questions · {r.minAttempt}–{r.maxAttempt} randomized per attempt · {r.passPercent}% pass · unlimited resits {r.unlimitedResits?"yes":"no"} · certificate gate {r.certificateGated?"on":"off"} · {r.score}/100</span></div>)}</div></section>
 
     <section className="stageCard"><span className="eyebrow">PHASE 30 · FINAL IMPLEMENTATION CHALLENGE</span><div className="featureLiveResults">{implementation.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.fields} substantial fields · {r.reviewWindows} review windows · follow-through {r.followThrough?"ready":"missing"} · {r.score}/100</span></div>)}</div></section>
 
@@ -99,7 +103,7 @@ export default function PresentationOverhaulFinalPage(){
     <section className="stageGrid">
       <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 11–12</span><h2>{mission.totalSimulations}</h2><p>{mission.totalDecisionOptions} decision options</p></div>
       <div className="stageCard stageSpan4"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>{final.averageActiveShare}% average active share</p></div>
-      <div className="stageCard stageSpan4"><span className="eyebrow">PHASES COMPLETE</span><h2>30</h2><p>presentation-overhaul phases integrated</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASES COMPLETE</span><h2>31</h2><p>all numbered presentation-overhaul phases integrated</p></div>
     </section>
   </main>;
 }
