@@ -12,6 +12,8 @@ import { summariseTeamChallengesPhase22 } from "../../lib/courseTeamChallengesPh
 import { summariseLiveTeamQuizPhase23 } from "../../lib/courseLiveTeamQuizPhase23";
 import { summariseExpertChallengesPhase24 } from "../../lib/courseExpertChallengesPhase24";
 import { summariseInteractiveModelsPhase25 } from "../../lib/courseInteractiveModelsPhase25";
+import { summariseVideoDecisionPointsPhase26 } from "../../lib/courseVideoDecisionPointsPhase26";
+import { summariseAudioProfessionalScenariosPhase27 } from "../../lib/courseAudioProfessionalScenariosPhase27";
 
 export default function PresentationOverhaulFinalPage(){
   const final=courseFinalPresentationPhases7to10Summary;
@@ -30,28 +32,34 @@ export default function PresentationOverhaulFinalPage(){
   const liveQuiz=summariseLiveTeamQuizPhase23(courses);
   const expert=summariseExpertChallengesPhase24(courses);
   const models=summariseInteractiveModelsPhase25(courses);
+  const video=summariseVideoDecisionPointsPhase26(courses);
+  const audio=summariseAudioProfessionalScenariosPhase27(courses);
 
   const phaseCards=[
+    ["PHASE 27 READY",`${audio.ready}/${audio.courseCount}`,"audio professional scenarios passing QA"],
+    ["PHASE 26 READY",`${video.ready}/${video.courseCount}`,"video decision-point scenarios passing QA"],
     ["PHASE 25 READY",`${models.ready}/${models.courseCount}`,"interactive diagrams and models passing QA"],
     ["PHASE 24 READY",`${expert.ready}/${expert.courseCount}`,"mastery-gated expert challenges passing QA"],
     ["PHASE 23 READY",`${liveQuiz.ready}/${liveQuiz.courseCount}`,"live team quiz packs passing QA"],
     ["PHASE 22 READY",`${teams.ready}/${teams.courseCount}`,"department/team challenge packs passing QA"],
     ["PHASE 21 READY",`${milestones.ready}/${milestones.courseCount}`,"professional-learning milestones passing QA"],
     ["PHASE 20 READY",`${xp.ready}/${xp.courseCount}`,"meaningful XP model passing QA"],
-    ["PHASE 19 READY",`${ai.ready}/${ai.courseCount}`,"Staff vs AI challenges passing QA"],
-    ["PHASE 18 READY",`${studio.ready}/${studio.courseCount}`,"before/after studios passing QA"],
   ];
 
   return <main className="stagePage">
-    <section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all twenty-five overhaul phases.</h1><p>The catalogue now combines active learning, professional reading, workshop interaction, live facilitation, adaptive routes, simulations, professional challenges, consequence adventures, investigations, improvement studios, Staff vs AI critique, meaningful XP, sustainable milestones, collaborative team challenges, live team quiz rounds, unlockable expert tasks and explorable interactive models.</p></section>
+    <section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all twenty-seven overhaul phases.</h1><p>The catalogue now combines active learning, professional reading, workshop interaction, live facilitation, adaptive routes, simulations, professional challenges, consequence adventures, investigations, improvement studios, Staff vs AI critique, meaningful XP, sustainable milestones, collaborative team challenges, live team quiz rounds, unlockable expert tasks, explorable interactive models, video decision points and audio professional conversations.</p></section>
 
     <section className="stageGrid">{phaseCards.map(([label,value,detail])=><div className="stageCard stageSpan3" key={label}><span className="eyebrow">{label}</span><h2>{value}</h2><p>{detail}</p></div>)}</section>
 
     <section className="stageGrid">
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 27</span><h2>{audio.totalTurns}</h2><p>professional dialogue turns · {audio.totalAnalysisQuestions} analysis questions</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 26</span><h2>{video.totalDecisionPoints}</h2><p>video-style decision pauses · transcripts on {video.transcriptReady}/{video.courseCount} courses</p></div>
       <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 25</span><h2>{models.totalStages}</h2><p>interactive model stages · {models.totalDecisions} mini decisions</p></div>
-      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 24</span><h2>{expert.totalChallenges}</h2><p>expert problems · {expert.masteryGated}/{expert.courseCount} courses mastery-gated</p></div>
-      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 23</span><h2>{liveQuiz.totalRounds}</h2><p>team quiz rounds · {liveQuiz.individualLeaderboards} individual leaderboards</p></div>
     </section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 27 · AUDIO PROFESSIONAL SCENARIOS</span><div className="featureLiveResults">{audio.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.turns} conversation turns · {r.analysisQuestions} analysis questions · transcript {r.transcript?"ready":"missing"} · anchor {r.anchorFound?"found":"missing"} · {r.score}/100</span></div>)}</div></section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 26 · VIDEO DECISION POINTS</span><div className="featureLiveResults">{video.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.decisionPoints} timed pauses · video-style {r.videoStyle?"ready":"missing"} · transcript {r.transcript?"ready":"missing"} · anchor {r.anchorFound?"found":"missing"} · {r.score}/100</span></div>)}</div></section>
 
     <section className="stageCard"><span className="eyebrow">PHASE 25 · INTERACTIVE MODELS</span><div className="featureLiveResults">{models.reports.map(r=><div key={r.courseId} style={{alignItems:"flex-start"}}><strong>{r.ready?"✓":"!"}</strong><span><b>{r.title}</b><br/>{r.stages} clickable stages · {r.decisions} mini decisions · anchor {r.anchorFound?"found":"missing"} · {r.score}/100</span></div>)}</div></section>
 
