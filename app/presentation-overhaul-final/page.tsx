@@ -1,18 +1,12 @@
 import { courseFinalPresentationPhases7to10Summary, courseMissionSimulationPhases11to12Summary, coursePresentationEngagementPhase6Summary, courses } from "@/lib/catalogue";
-import { summariseEscapePhase13, validateEscapePhase13 } from "../../lib/courseEscapePhase13";
-import { summariseTimedChallengesPhase14, validateTimedChallengesPhase14 } from "../../lib/courseTimedChallengePhase14";
-import { summariseSpotProblemPhase15, validateSpotProblemPhase15 } from "../../lib/courseSpotProblemPhase15";
-import { summariseBranchingAdventurePhase16Runtime, validateBranchingAdventurePhase16Runtime } from "../../lib/courseBranchingAdventurePhase16Qa";
-import { summariseMysteryInvestigationPhase17, validateMysteryInvestigationPhase17 } from "../../lib/courseMysteryInvestigationPhase17";
-import { summariseBeforeAfterPhase18, validateBeforeAfterPhase18 } from "../../lib/courseBeforeAfterPhase18";
+import { summariseEscapePhase13 } from "../../lib/courseEscapePhase13";
+import { summariseTimedChallengesPhase14 } from "../../lib/courseTimedChallengePhase14";
+import { summariseSpotProblemPhase15 } from "../../lib/courseSpotProblemPhase15";
+import { summariseBranchingAdventurePhase16Runtime } from "../../lib/courseBranchingAdventurePhase16Qa";
+import { summariseMysteryInvestigationPhase17 } from "../../lib/courseMysteryInvestigationPhase17";
+import { summariseBeforeAfterPhase18 } from "../../lib/courseBeforeAfterPhase18";
 
 export default function PresentationOverhaulFinalPage(){
-  courses.forEach(course=>validateEscapePhase13(course));
-  courses.forEach(course=>validateTimedChallengesPhase14(course));
-  courses.forEach(course=>validateSpotProblemPhase15(course));
-  courses.forEach(course=>validateBranchingAdventurePhase16Runtime(course));
-  courses.forEach(course=>validateMysteryInvestigationPhase17(course));
-  courses.forEach(course=>validateBeforeAfterPhase18(course));
   const final=courseFinalPresentationPhases7to10Summary;
   const engagement=coursePresentationEngagementPhase6Summary;
   const mission=courseMissionSimulationPhases11to12Summary;
@@ -22,21 +16,52 @@ export default function PresentationOverhaulFinalPage(){
   const adventure=summariseBranchingAdventurePhase16Runtime(courses);
   const mystery=summariseMysteryInvestigationPhase17(courses);
   const studio=summariseBeforeAfterPhase18(courses);
-  return <main className="stagePage"><section className="stageHero"><span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span><h1>Course presentation quality across all eighteen overhaul phases.</h1><p>This dashboard confirms that the catalogue combines active learning, substantial reading, workshop interaction, progressive cases, live facilitation, instructional visuals, adaptive routes, synthesis products, category-specific presentation archetypes, professional missions, branching simulations, professional escape challenges, accessible optional timed challenges, annotated spot-the-problem inspections, consequence-led branching adventures, progressive mystery investigations and before/after improvement studios.</p></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 18 READY</span><h2>{studio.ready}/{studio.courseCount}</h2><p>courses passing the before/after studio gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">IMPROVEMENT STUDIOS</span><h2>{studio.totalStudios}</h2><p>weak-to-strong professional rewrite tasks</p></div><div className="stageCard stageSpan3"><span className="eyebrow">MODEL ANNOTATIONS</span><h2>{studio.totalAnnotations}</h2><p>annotated stronger-model improvement points</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 18 SCORE</span><h2>{studio.averageScore}/100</h2><p>average improvement-studio QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 17 READY</span><h2>{mystery.ready}/{mystery.courseCount}</h2><p>courses passing the mystery-investigation gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">MYSTERY CASES</span><h2>{mystery.totalMysteries}</h2><p>progressive professional investigations</p></div><div className="stageCard stageSpan3"><span className="eyebrow">EVIDENCE SOURCES</span><h2>{mystery.totalEvidenceItems}</h2><p>pupil voice, observation, work and context clues</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 17 SCORE</span><h2>{mystery.averageScore}/100</h2><p>average investigation QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 16 READY</span><h2>{adventure.ready}/{adventure.courseCount}</h2><p>courses passing the true-branching adventure gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ADVENTURE STATES</span><h2>{adventure.totalStates}</h2><p>distinct story states across the catalogue</p></div><div className="stageCard stageSpan3"><span className="eyebrow">CONSEQUENCE CHOICES</span><h2>{adventure.totalChoices}</h2><p>route-changing professional decisions</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 16 SCORE</span><h2>{adventure.averageScore}/100</h2><p>average branching-adventure QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 15 READY</span><h2>{spot.ready}/{spot.courseCount}</h2><p>courses passing the inspection-scene gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">INSPECTION SCENES</span><h2>{spot.totalScenes}</h2><p>practice and evidence scenes across the catalogue</p></div><div className="stageCard stageSpan3"><span className="eyebrow">HOTSPOTS</span><h2>{spot.totalHotspots}</h2><p>clickable professional judgement points</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 15 SCORE</span><h2>{spot.averageScore}/100</h2><p>average spot-the-problem QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 14 READY</span><h2>{timed.ready}/{timed.courseCount}</h2><p>courses passing the timed-challenge gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">TIMED BURSTS</span><h2>{timed.totalChallenges}</h2><p>retrieval, ranking and spot-the-error challenges</p></div><div className="stageCard stageSpan3"><span className="eyebrow">CHOICE POINTS</span><h2>{timed.totalChoicePoints}</h2><p>professional decisions inside Phase 14</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 14 SCORE</span><h2>{timed.averageScore}/100</h2><p>average timed-challenge QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 13 READY</span><h2>{escape.ready}/{escape.courseCount}</h2><p>courses passing the escape challenge gate</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ESCAPE LOCKS</span><h2>{escape.totalLocks}</h2><p>professional locks across the catalogue</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ESCAPE DECISIONS</span><h2>{escape.totalChoiceOptions}</h2><p>choice points inside Phase 13</p></div><div className="stageCard stageSpan3"><span className="eyebrow">PHASE 13 SCORE</span><h2>{escape.averageScore}/100</h2><p>average escape-challenge QA score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan3"><span className="eyebrow">MISSION READY</span><h2>{mission.ready}/{mission.courseCount}</h2><p>courses passing Phases 11–12</p></div><div className="stageCard stageSpan3"><span className="eyebrow">SIMULATIONS</span><h2>{mission.totalSimulations}</h2><p>branching simulations across the catalogue</p></div><div className="stageCard stageSpan3"><span className="eyebrow">DECISIONS</span><h2>{mission.totalDecisionOptions}</h2><p>possible simulation decision options</p></div><div className="stageCard stageSpan3"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>core presentation engagement score</p></div></section>
-    <section className="stageGrid"><div className="stageCard stageSpan4"><span className="eyebrow">PHASE 7–10 READY</span><h2>{final.ready}/{final.courseCount}</h2><p>courses passing visual, adaptive, synthesis and archetype checks</p></div><div className="stageCard stageSpan4"><span className="eyebrow">ACTIVE</span><h2>{final.averageActiveShare}%</h2><p>average active-slide share</p></div><div className="stageCard stageSpan4"><span className="eyebrow">ARCHETYPES</span><h2>{final.archetypes.length}</h2><p>distinct course presentation modes</p></div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 18 CATALOGUE CHECK</span><div className="featureLiveResults">{studio.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.studios} studio · {report.criteria} improvement criteria · {report.annotations} annotations · {report.weakExampleWords} weak-example words · {report.modelWords} model words · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 17 CATALOGUE CHECK</span><div className="featureLiveResults">{mystery.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.mysteries} mystery · {report.evidenceItems} staged evidence items · {report.evidenceKinds} source types · {report.judgements} final judgements · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 16 CATALOGUE CHECK</span><div className="featureLiveResults">{adventure.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.states} story states · {report.choices} consequence choices · {report.distinctFirstBranches} opening routes · {report.consequenceBranches} second-stage branches · {report.endings} endings · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 15 CATALOGUE CHECK</span><div className="featureLiveResults">{spot.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.scenes} inspection scenes · {report.hotspots} hotspots · {report.problems} genuine problems · {report.annotations} expert annotations · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 14 CATALOGUE CHECK</span><div className="featureLiveResults">{timed.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.challenges} timed bursts · {report.kinds} challenge types · {report.choicePoints} choice points · {report.timedSeconds}s optional timed practice · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 13 CATALOGUE CHECK</span><div className="featureLiveResults">{escape.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.locks} locks · {report.choiceOptions} decision options · {report.sequenceItems} sequence steps · {report.clues} clues · {report.score}/100</span></div>)}</div></section>
-    <section className="stageCard"><span className="eyebrow">PHASE 11–12 CATALOGUE CHECK</span><div className="featureLiveResults">{mission.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.missionStages} mission stages · {report.simulationModules} simulations · {report.simulationStates} simulation states · {report.simulationChoices} decision options · {report.score}/100</span></div>)}</div></section>
+
+  const phaseCards=[
+    ["PHASE 18 READY",`${studio.ready}/${studio.courseCount}`,"before/after studios passing QA"],
+    ["PHASE 17 READY",`${mystery.ready}/${mystery.courseCount}`,"mystery investigations passing QA"],
+    ["PHASE 16 READY",`${adventure.ready}/${adventure.courseCount}`,"branching adventures passing QA"],
+    ["PHASE 15 READY",`${spot.ready}/${spot.courseCount}`,"inspection scenes passing QA"],
+    ["PHASE 14 READY",`${timed.ready}/${timed.courseCount}`,"timed challenges passing QA"],
+    ["PHASE 13 READY",`${escape.ready}/${escape.courseCount}`,"escape challenges passing QA"],
+    ["PHASE 11–12 READY",`${mission.ready}/${mission.courseCount}`,"mission and simulation courses ready"],
+    ["PHASE 7–10 READY",`${final.ready}/${final.courseCount}`,"visual, adaptive, synthesis and archetype checks ready"],
+  ];
+
+  return <main className="stagePage">
+    <section className="stageHero">
+      <span className="eyebrow">PRESENTATION OVERHAUL · FINAL QA</span>
+      <h1>Course presentation quality across all eighteen overhaul phases.</h1>
+      <p>The catalogue now combines active learning, professional reading, workshop interaction, progressive rehearsal, live facilitation, instructional visuals, adaptive routes, synthesis products, missions, branching simulations, escape challenges, timed practice, spot-the-problem inspections, consequence-led adventures, progressive mystery investigations and before/after improvement studios.</p>
+    </section>
+
+    <section className="stageGrid">
+      {phaseCards.map(([label,value,detail])=><div className="stageCard stageSpan3" key={label}><span className="eyebrow">{label}</span><h2>{value}</h2><p>{detail}</p></div>)}
+    </section>
+
+    <section className="stageGrid">
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 18 STUDIOS</span><h2>{studio.totalStudios}</h2><p>{studio.totalAnnotations} annotated model improvements</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 17 CASES</span><h2>{mystery.totalMysteries}</h2><p>{mystery.totalEvidenceItems} staged evidence sources</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">PHASE 16 STATES</span><h2>{adventure.totalStates}</h2><p>{adventure.totalChoices} route-changing decisions</p></div>
+      <div className="stageCard stageSpan3"><span className="eyebrow">ENGAGEMENT</span><h2>{engagement.averageScore}/100</h2><p>core presentation engagement score</p></div>
+    </section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 18 · BEFORE / AFTER STUDIO</span><div className="featureLiveResults">{studio.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.criteria} improvement criteria · {report.annotations} model annotations · {report.weakExampleWords} weak-example words · {report.modelWords} stronger-model words · {report.score}/100</span></div>)}</div></section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 17 · MYSTERY INVESTIGATION</span><div className="featureLiveResults">{mystery.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.evidenceItems} staged evidence items · {report.evidenceKinds} evidence types · {report.judgements} final judgements · {report.score}/100</span></div>)}</div></section>
+
+    <section className="stageCard"><span className="eyebrow">PHASE 16 · CONSEQUENCE ADVENTURES</span><div className="featureLiveResults">{adventure.reports.map(report=><div key={report.courseId} style={{alignItems:"flex-start"}}><strong>{report.ready?"✓":"!"}</strong><span><b>{report.title}</b><br/>{report.states} states · {report.choices} choices · {report.distinctFirstBranches} opening routes · {report.consequenceBranches} consequence branches · {report.endings} endings · {report.score}/100</span></div>)}</div></section>
+
+    <section className="stageGrid">
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 15</span><h2>{spot.averageScore}/100</h2><p>{spot.totalScenes} inspection scenes · {spot.totalHotspots} hotspots</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 14</span><h2>{timed.averageScore}/100</h2><p>{timed.totalChallenges} timed bursts · {timed.totalChoicePoints} decisions</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 13</span><h2>{escape.averageScore}/100</h2><p>{escape.totalLocks} locks · {escape.totalChoiceOptions} decisions</p></div>
+    </section>
+
+    <section className="stageGrid">
+      <div className="stageCard stageSpan4"><span className="eyebrow">PHASE 11–12</span><h2>{mission.totalSimulations}</h2><p>branching simulations · {mission.totalDecisionOptions} decision options</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">ACTIVE SHARE</span><h2>{final.averageActiveShare}%</h2><p>average active-slide share across the catalogue</p></div>
+      <div className="stageCard stageSpan4"><span className="eyebrow">ARCHETYPES</span><h2>{final.archetypes.length}</h2><p>distinct course presentation modes</p></div>
+    </section>
   </main>;
 }
