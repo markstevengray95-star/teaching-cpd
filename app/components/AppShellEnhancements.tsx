@@ -61,6 +61,16 @@ export default function AppShellEnhancements() {
       try {
         const { data: platform } = await client.from("platform_admins").select("user_id").eq("user_id", data.user.id).maybeSingle();
         if (platform) return;
+
+        const managed = data.user.app_metadata?.platform_managed_user === true || data.user.app_metadata?.platform_test_user === true;
+        if (managed) {
+          const managedAccess = String(data.user.app_metadata?.platform_managed_access || "admin");
+          if (managedAccess === "disabled") {
+            window.location.replace(`/access?reason=access_disabled&next=${encodeURIComponent(pathname || "/")}`);
+          }
+          return;
+        }
+
         const access = await claimSchoolAccess(client);
         if (!active) return;
         if (!access.allowed) {
