@@ -19,3 +19,13 @@ The protected setup snapshot returns live counts and the server-side subscriptio
 The invalid trial_ends_at field has been removed from launch-readiness queries to match the Teaching CPD schema. Verification: audit-school-onboarding.cjs, TypeScript, browser preview and the rolled-back supabase/tests/school_onboarding.sql including cross-school write denial.
 
 Existing deployment advisories remain outside this feature: leaked-password protection is disabled, and older tables have indexing/policy notices. Before selling, review https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection and the existing launch-readiness platform-owner checklist. This change is not a whole-platform security certification.
+
+## School procurement pack
+
+/procurement is public and contains no school records. Its server-rendered catalogue summary supplies only aggregate course counts/durations to the interactive pack. Eight sections cover the product, buyer evaluation, data boundaries, processing-agreement review, security/service evidence, accessibility, commercial terms and rollout.
+
+Twelve draft-detail fields are held only in page memory. They are not uploaded, persisted or published. Download before leaving if you need a copy. Markdown export and print/Save PDF include unresolved placeholders and an explicit draft warning even when every field is filled. This tool never signs a contract, approves a quote, certifies compliance or guarantees service levels.
+
+Current official ICO and W3C guidance is linked; ICO flags its contracts guidance as under review. Provider identity, quote, retention/deletion, subprocessors, service levels, recovery evidence and accessibility assessment require confirmation and appropriate review before sale.
+
+Verification: audit-school-procurement.cjs checks derived catalogue counts, complete draft sections/placeholders, input escaping, public-data boundaries and Blob download wiring. Browser fixtures test the actual interactive components, not a real school-account identity-provider login. The in-app browser did not return a download event during CSV testing, so filesystem delivery needs a normal-browser check; export content and download wiring are independently tested.

@@ -37,7 +37,7 @@ export function csvCell(value:unknown):string {
 export function csv(rows:unknown[][]):string {return "\uFEFF"+rows.map(row=>row.map(csvCell).join(",")).join("\r\n");}
 export function downloadText(text:string,name:string,type="text/csv;charset=utf-8") {
   const url=URL.createObjectURL(new Blob([text],{type})), link=document.createElement("a");
-  link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  link.href=url;link.download=name;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export function applies(requirement:ReportRequirement,person:ReportStaff) {
   if(requirement.audience_type==="all") return true;
@@ -88,13 +88,13 @@ export function buildSchoolReport(snapshot:ReportingSnapshot,catalogue:readonly 
     const completed=completionRows.filter(r=>r.person.id===person.id), requirements=requirementRows.filter(r=>r.person.id===person.id);
     return {person,courses:completed.length,hours:completed.reduce((n,r)=>n+r.course.duration,0)/60,current:requirements.filter(r=>r.status==="current"||r.status==="due-soon").length,required:requirements.length,missing:requirements.filter(r=>r.status==="missing"||r.status==="expired").length,overdue:assignmentRows.filter(r=>r.person.id===person.id&&r.status==="overdue").length};
   });
-  return {today,staffRows,completionRows,requirementRows,pathwayRows,assignmentRows,hours:staffRows.reduce((n,r)=>n+r.hours,0)};
+  return {today,periodFrom:filters.from||"All recorded dates",periodTo:filters.to||today,staffRows,completionRows,requirementRows,pathwayRows,assignmentRows,hours:staffRows.reduce((n,r)=>n+r.hours,0)};
 }
 export type SchoolReport = ReturnType<typeof buildSchoolReport>;
 export type ReportTab = "staff"|"completions"|"requirements"|"pathways"|"assignments";
 export function reportCsv(report:SchoolReport,tab:ReportTab,snapshot:ReportingSnapshot):string {
-  const common=(person:ReportStaff)=>[snapshot.organisation.name,report.today,person.full_name,person.department,person.role];
-  const prefix=["School","As of (school timezone)","Staff","Department","Role"];
+  const common=(person:ReportStaff)=>[snapshot.organisation.name,report.today,report.periodFrom,report.periodTo,person.full_name,person.department,person.role];
+  const prefix=["School","As of (school timezone)","Completion period from","Completion period to","Staff","Department","Role"];
   const rows:unknown[][]=tab==="staff"?[[...prefix,"Completed courses in period","Planned CPD hours in period","Current requirements","Applicable requirements","Missing or expired","Overdue assignments"],...report.staffRows.map(r=>[...common(r.person),r.courses,r.hours.toFixed(2),r.current,r.required,r.missing,r.overdue])]
     :tab==="completions"?[[...prefix,"Course","Completion date","Planned minutes"],...report.completionRows.map(r=>[...common(r.person),r.course.title,r.day,r.course.duration])]
     :tab==="requirements"?[[...prefix,"Requirement","Status","Completed","Expires","Evidence source"],...report.requirementRows.map(r=>[...common(r.person),r.requirement.title,r.status,r.completed,r.expires,r.source])]
