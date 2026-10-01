@@ -47,6 +47,8 @@ export default function AccessPage() {
     window.location.replace("/auth");
   }
 
+  const canStartTrial = reason === "school_not_licensed" || reason === "access_check_failed";
+
   return <main className="phasePage accessStatusPage">
     <section className="phaseCard accessStatusCard">
       <div className="accessStatusIcon" aria-hidden="true">🏫</div>
@@ -55,12 +57,16 @@ export default function AccessPage() {
       <p className="accessLead">{message || accessReasonMessage(reason)}</p>
       {email && <div className="signedInIdentity"><span>Signed in as</span><strong>{email}</strong></div>}
       <div className="accessChecklist">
-        <div><span>1</span><p><strong>School subscription</strong><small>Your school or trust needs an active Teaching CPD subscription.</small></p></div>
-        <div><span>2</span><p><strong>Verified email domain</strong><small>The school domain must be verified before automatic staff access is enabled.</small></p></div>
-        <div><span>3</span><p><strong>Automatic staff membership</strong><small>Once both checks pass, staff using the school domain join the correct organisation automatically.</small></p></div>
+        <div><span>1</span><p><strong>School subscription</strong><small>Your school or trust needs an active Teaching CPD subscription or 14-day trial.</small></p></div>
+        <div><span>2</span><p><strong>Verified email domain</strong><small>The first School Admin can use a new trial immediately. Domain verification is required before additional staff can auto-join.</small></p></div>
+        <div><span>3</span><p><strong>Automatic staff membership</strong><small>Once the domain is verified, staff using the school domain join the correct organisation automatically.</small></p></div>
       </div>
-      <div className="phaseActions accessActions"><button className="primary" disabled={busy} onClick={retry}>{busy ? "Checking…" : "Check again"}</button><button className="secondary" onClick={signOut}>Use a different account</button></div>
-      <p className="muted">If your school has already purchased access, ask the school CPD lead to check the verified domain and subscription status in School access settings.</p>
+      <div className="phaseActions accessActions">
+        <button className="primary" disabled={busy} onClick={retry}>{busy ? "Checking…" : "Check again"}</button>
+        {canStartTrial && <a className="secondary phaseLinkButton" href="/school-trial">Start 14-day School trial</a>}
+        <button className="secondary" onClick={signOut}>Use a different account</button>
+      </div>
+      <p className="muted">If your school already has access, ask the school CPD lead to check its subscription and verified domain. If you are setting up a new school, you can start the full School trial above.</p>
     </section>
   </main>;
 }
