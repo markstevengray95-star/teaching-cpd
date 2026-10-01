@@ -5,13 +5,20 @@ import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
 import { claimSchoolAccess, safeNextPath } from "@/lib/schoolAccess";
 
 type PasswordMode = "signin" | "signup";
+type UsernameSession = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+  user_id?: string;
+  error?: string;
+};
 
 const STAFF_DEVELOPMENT_ORIGIN = "https://schoolcpd.vercel.app";
 
 export default function AuthPage() {
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
   const [showFallback, setShowFallback] = useState(false);
-  const [email, setEmail] = useState("");
+  const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("");
@@ -25,9 +32,8 @@ export default function AuthPage() {
 
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get("error_description") || params.get("error");
-    if (oauthError) {
-      setMessage(formatOAuthError(oauthError));
-    }
+    if (oauthError) setMessage(formatOAuthError(oauthError));
+    if (params.get("login") === "username") setShowFallback(true);
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active || !session) return;
@@ -70,7 +76,12 @@ export default function AuthPage() {
 
       const access = await claimSchoolAccess(supabase);
       if (access.allowed) {
-        window.location.replace(nextPath());
+        const target = nextPath();
+        if (auth.user?.user_metadata?.username_setup_pending === true && !target.startsWith("/account/username")) {
+          window.location.replace(`/account/username?next=${encodeURIComponent(target)}`);
+          return;
+        }
+        window.location.replace(target);
         return;
       }
       window.location.replace(`/access?reason=${encodeURIComponent(access.reason)}&next=${encodeURIComponent(nextPath())}`);
@@ -110,27 +121,44 @@ export default function AuthPage() {
     setMessage("");
     try {
       if (passwordMode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-        if (error) throw error;
+        const value = identity.trim();
+        if (value.includes("@")) {
+          const { error } = await supabase.auth.signInWithPassword({ email: value, password });
+          if (error) throw error;
+        } else {
+          const username = normaliseUsername(value);
+          const { data, error } = await supabase.functions.invoke<UsernameSession>("username-login", {
+            body: { username, password },
+          });
+          if (error || !data?.access_token || !data?.refresh_token) {
+            throw new Error("That email/username and password combination was not accepted.");
+          }
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+          });
+          if (sessionError) throw sessionError;
+        }
         await finishAccess();
       } else {
+        const email = identity.trim();
         const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
+          email,
           password,
           options: {
-            data: { full_name: name.trim(), department: department.trim() },
+            data: { full_name: name.trim(), department: department.trim(), username_setup_pending: true },
             emailRedirectTo: `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`,
           },
         });
         if (error) throw error;
         if (data.session) await finishAccess();
-        else setMessage("Account created. Confirm your school email, then return here to sign in. If your school has an active subscription and verified domain, access will be granted automatically without an invitation.");
+        else setMessage("Account created. Confirm your school email, then sign in. After your first successful sign-in you can choose an optional username for quicker future access.");
       }
     } catch (error) {
       finishingAccess.current = false;
       const raw = error instanceof Error ? error.message : "Unable to authenticate.";
       setMessage(raw.toLowerCase().includes("invalid login credentials")
-        ? "That email/password combination was not accepted. Use ‘Email me a sign-in link’ below or reset your password."
+        ? "That email/username and password combination was not accepted. You can still use an email sign-in link or reset your password with your email address."
         : raw);
     } finally {
       setBusy(false);
@@ -138,8 +166,8 @@ export default function AuthPage() {
   }
 
   async function sendMagicLink(){
-    const value=email.trim();
-    if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Email me a sign-in link’.");return;}
+    const value=identity.trim();
+    if(!value || !value.includes("@")){setShowFallback(true);setMessage("Enter your email address (not your username) first, then choose ‘Email me a sign-in link’.");return;}
     const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
     try{
       const redirectTo=`${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
@@ -151,8 +179,8 @@ export default function AuthPage() {
   }
 
   async function resetPassword(){
-    const value=email.trim();
-    if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Reset password’.");return;}
+    const value=identity.trim();
+    if(!value || !value.includes("@")){setShowFallback(true);setMessage("Enter your email address (not your username) first, then choose ‘Reset password’.");return;}
     const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
     try{
       const redirectTo=`${appOrigin()}/reset-password`;
@@ -169,39 +197,43 @@ export default function AuthPage() {
     <section className="phaseHero compactHero schoolAuthHero">
       <span className="eyebrow">TEACHING CPD · SCHOOL ACCESS</span>
       <h1>Use your school account.</h1>
-      <p>If your school has purchased the School plan, any member of staff using its verified school email domain can create an account and join automatically. No individual invitation code is required.</p>
+      <p>If your school has purchased the School plan, any member of staff using its verified school email domain can create an account and join automatically. After signup, staff can also choose a username and use that instead of their email when signing in.</p>
       <div className="schoolAccessFlow" aria-label="School access process">
         <span><b>1</b> School subscription</span><i>→</i><span><b>2</b> Verified domain</span><i>→</i><span><b>3</b> Staff creates/signs into account</span><i>→</i><span><b>4</b> Automatic school access</span>
       </div>
-      <div className="schoolAuthTrust"><span>✓ Whole-school access</span><span>✓ School-scoped data</span><span>✓ Admin-controlled roles</span></div>
+      <div className="schoolAuthTrust"><span>✓ Email or username login</span><span>✓ School-scoped data</span><span>✓ Admin-controlled roles</span></div>
     </section>
 
     <section className="phaseCard authCard schoolAuthCard">
       {!hasSupabaseConfig() && <div className="phaseNotice">The authentication service is not connected.</div>}
-      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN / CREATE ACCOUNT</span><h2>Continue with your school identity</h2><p>First time here? Choosing Google or Microsoft creates your account automatically when your school identity is accepted.</p></div>
+      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN / CREATE ACCOUNT</span><h2>Continue with your school identity</h2><p>First time here? Create an account with your school email. Once it is confirmed, you can choose a username for future sign-ins.</p></div>
       <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
       <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={() => schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
 
-      <div className="schoolDomainRule"><strong>No invite needed for subscribed schools</strong><p>Once the school domain is verified and the subscription is active, any confirmed staff email on that domain can join. New users start with Staff access unless a School Admin gives them a higher role.</p></div>
+      <div className="schoolDomainRule"><strong>Username sign-in is now supported</strong><p>Staff can still sign in with their school email, or use the unique username they created after signup. Platform Owner-created test logins use this same username/password sign-in.</p></div>
 
       <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a><a className="textButton" href="/owner-login">Platform Owner sign in</a></div>
-      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide email/password options" : "Use email/password fallback"}</button>
+      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide password sign in" : "Use email or username + password"}</button>
       {showFallback && <form className="schoolFallbackForm" onSubmit={passwordSubmit}>
         {passwordMode === "signup" && <>
           <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
           <label>Department<input required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Science" /></label>
         </>}
-        <label>School email<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@school.org" /></label>
+        <label>{passwordMode === "signin" ? "Email or username" : "School email"}<input required type={passwordMode === "signin" ? "text" : "email"} autoComplete={passwordMode === "signin" ? "username" : "email"} autoCapitalize="none" autoCorrect="off" value={identity} onChange={e => setIdentity(e.target.value)} placeholder={passwordMode === "signin" ? "name@school.org or username" : "name@school.org"} /></label>
         <label>Password<input required minLength={8} type="password" autoComplete={passwordMode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
-        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in with email" : "Create school account"}</button>
+        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in" : "Create school account"}</button>
         {passwordMode==="signin"&&<div className="passwordHelpActions"><button type="button" className="secondary" disabled={busy} onClick={sendMagicLink}>Email me a sign-in link</button><button type="button" className="textButton" disabled={busy} onClick={resetPassword}>Reset password</button></div>}
-        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "Create a new school account" : "Already have a password account?"}</button>
+        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "Create a new school account" : "Already have an account?"}</button>
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Personal email addresses do not grant access to a subscribed school. Platform Admin accounts use the dedicated Platform Owner sign-in above and bypass school-domain checks.</p>
+      <p className="schoolAuthFinePrint">Email remains attached to the account for confirmation, password resets and school-domain access. A username is an optional sign-in alias and does not replace the school email identity.</p>
     </section>
   </main>;
+}
+
+function normaliseUsername(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 
 function nextPath() {
