@@ -195,7 +195,7 @@ export default function CourseSpotProblemPhase15Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderScene(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderScene(modal));
       });
     };
     apply();

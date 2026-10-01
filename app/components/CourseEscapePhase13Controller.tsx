@@ -234,7 +234,7 @@ export default function CourseEscapePhase13Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderEscape(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderEscape(modal));
       });
     };
     apply();

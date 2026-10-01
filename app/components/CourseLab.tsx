@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Course, Module } from "@/lib/data";
+import type { Course, Module } from "@/lib/catalogue";
+import InteractiveClassroom from "./InteractiveClassroom";
+import FlashcardPractice from "./FlashcardPractice";
 import { buildCourseExperience, suggestedMode, type ExperienceMode } from "@/lib/courseExperience";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -17,10 +19,6 @@ type Props = {
 
 type LabTab = "diagnose" | "explore" | "practise" | "apply" | "facilitate" | "review";
 
-type BranchChoice = { label: string; feedback: string; quality: "strong" | "developing" | "weak" };
-
-type BranchStep = { title: string; prompt: string; choices: BranchChoice[] };
-
 const implementationOrder = [
   "Identify the specific problem or learning need",
   "Choose one small course-informed change",
@@ -29,7 +27,6 @@ const implementationOrder = [
   "Review evidence and keep, adapt or stop",
 ];
 
-const hotspotPositions = ["hotspot-a", "hotspot-b", "hotspot-c", "hotspot-d"];
 const subjects = ["Science", "Mathematics", "English", "Humanities", "Practical subjects"];
 const phases = ["Primary", "KS3", "GCSE", "Post-16"];
 
@@ -63,7 +60,7 @@ function safeIndex(index: number, length: number) {
   return length ? Math.min(index, length - 1) : 0;
 }
 
-export default function CourseLab({ course, allCourses, savedMeta, completedCount, totalModules, onSaveMeta, onOpenCourse }: Props) {
+export default function CourseLab({ course, allCourses, savedMeta, completedCount, totalModules, onSaveMeta: persistMeta, onOpenCourse }: Props) {
   const experience = useMemo(() => buildCourseExperience(course, allCourses), [course, allCourses]);
   const scenarioBank = useMemo(() => course.modules.filter((m): m is Extract<Module, { type: "scenario" }> => m.type === "scenario"), [course]);
   const visualModules = useMemo(() => course.modules.filter((m): m is Extract<Module, { type: "visual" }> => m.type === "visual"), [course]);
@@ -74,18 +71,12 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
   const [diagAnswers, setDiagAnswers] = useState<Record<number, number>>({});
   const [diagScore, setDiagScore] = useState(Number(savedMeta.__diagnostic_score || -1));
   const [missedDiagnostic, setMissedDiagnostic] = useState<number[]>([]);
-  const [flashIndex, setFlashIndex] = useState(0);
-  const [flashOpen, setFlashOpen] = useState(false);
   const [revealedMyths, setRevealedMyths] = useState<number[]>([]);
-  const [hotspotOpen, setHotspotOpen] = useState(0);
   const [compareValue, setCompareValue] = useState(50);
   const [mistakeOpen, setMistakeOpen] = useState<number[]>([]);
   const [sortItems, setSortItems] = useState(() => rotate(implementationOrder, (stableHash(course.id) % 4) + 1));
   const [sortMessage, setSortMessage] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [branchStep, setBranchStep] = useState(0);
-  const [branchHistory, setBranchHistory] = useState<BranchChoice[]>([]);
-  const [branchFeedback, setBranchFeedback] = useState("");
   const [subjectIndex, setSubjectIndex] = useState(0);
   const [phaseIndex, setPhaseIndex] = useState(0);
   const [lessonChallenge, setLessonChallenge] = useState(savedMeta.__lesson_challenge || "");
@@ -98,43 +89,17 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
   const [deckOpen, setDeckOpen] = useState(false);
   const [deckIndex, setDeckIndex] = useState(0);
 
+  async function onSaveMeta(key: string, value: string) {
+    try { await persistMeta(key, value); return true; }
+    catch { setMessage("Could not save your course lab record. Your response is still here; try again."); return false; }
+  }
+
   const progress = totalModules ? Math.round((completedCount / totalModules) * 100) : 0;
   const masteryQuestions = useMemo(() => rotate(experience.diagnostic, stableHash(course.id) + masterySeed), [experience.diagnostic, course.id, masterySeed]);
   const recommendedCourses = experience.recommendedNext.map(id => allCourses.find(c => c.id === id)).filter(Boolean) as Course[];
   const subjectExample = experience.subjectExamples[safeIndex(subjectIndex, experience.subjectExamples.length)];
   const phaseExample = experience.phaseExamples[safeIndex(phaseIndex, experience.phaseExamples.length)];
   const pair = experience.beforeAfter[0] || { before: "Use the idea mechanically.", after: "Use the idea deliberately and check impact." };
-  const hotspots = course.objectives.slice(0, 4).map((objective, i) => ({
-    title: ["Teacher explanation", "Pupil thinking", "Evidence check", "Next response"][i] || `Focus ${i + 1}`,
-    body: objective,
-    position: hotspotPositions[i] || hotspotPositions[0],
-  }));
-
-  const branchSteps: BranchStep[] = useMemo(() => {
-    const firstScenario = scenarioBank[0];
-    const firstChoices: BranchChoice[] = firstScenario?.options.slice(0, 3).map((option, i) => ({
-      label: option.label,
-      feedback: option.feedback,
-      quality: i === 0 ? "strong" : i === 1 ? "developing" : "weak",
-    })) || [
-      { label: "Pause and gather evidence", feedback: "A useful first move is to make the problem visible before changing the plan.", quality: "strong" },
-      { label: "Continue exactly as planned", feedback: "This may miss evidence that pupils need a different response.", quality: "developing" },
-      { label: "Change several things immediately", feedback: "Changing too much at once makes it hard to know what helped.", quality: "weak" },
-    ];
-    return [
-      { title: "Step 1 · Notice", prompt: firstScenario?.prompt || `You are trying to apply ${course.title}, but pupil responses suggest the lesson is not going as expected. What do you do first?`, choices: firstChoices },
-      { title: "Step 2 · Respond", prompt: "Your first decision gives you more information. A pattern is now visible across several pupils. What is the strongest next move?", choices: [
-        { label: "Use one focused adjustment and check again", feedback: "This keeps the response proportionate and makes the effect easier to evaluate.", quality: "strong" },
-        { label: "Explain everything again from the beginning", feedback: "Repetition may help, but only if it addresses the actual barrier you identified.", quality: "developing" },
-        { label: "Lower the learning goal for everyone", feedback: "Support should normally improve access without automatically reducing ambition.", quality: "weak" },
-      ] },
-      { title: "Step 3 · Review", prompt: "The adjustment appears to help some pupils. How should you decide what happens next?", choices: [
-        { label: "Compare evidence, keep what helped and adapt what did not", feedback: "This closes the implementation loop with evidence rather than impression.", quality: "strong" },
-        { label: "Assume it worked because the lesson felt smoother", feedback: "A smoother lesson is useful information, but not enough on its own to judge learning or impact.", quality: "developing" },
-        { label: "Use the same response in every future lesson", feedback: "Professional strategies should remain responsive to context and pupil need.", quality: "weak" },
-      ] },
-    ];
-  }, [course.title, scenarioBank]);
 
   const deckSlides = useMemo(() => [
     { kicker: "WELCOME", title: course.title, body: course.summary },
@@ -148,19 +113,19 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
   const progressStages = [
     { label: "Diagnose", detail: diagScore >= 0 ? `${diagScore}%` : "Start", complete: diagScore >= 0 },
     { label: "Learn", detail: `${Math.min(progress, 100)}%`, complete: progress >= 35 },
-    { label: "Practise", detail: branchHistory.length ? `${branchHistory.length}/3` : "Try", complete: branchHistory.length >= 2 },
-    { label: "Apply", detail: tryTomorrow ? "Ready" : "Plan", complete: Boolean(tryTomorrow) },
+    { label: "Practise", detail: savedMeta.__classroom_practice ? "Saved" : "Try", complete: Boolean(savedMeta.__classroom_practice) },
+    { label: "Apply", detail: savedMeta.__try_tomorrow ? "Saved" : tryTomorrow ? "Draft" : "Plan", complete: Boolean(savedMeta.__try_tomorrow) },
     { label: "Review", detail: masteryScore >= 0 ? `${masteryScore}%` : "Check", complete: masteryScore >= 80 },
   ];
 
   async function saveMode(next: ExperienceMode) {
-    setMode(next);
-    await onSaveMeta("__experience_mode", next);
+    if (await onSaveMeta("__experience_mode", next)) setMode(next);
   }
 
   async function saveConfidence(kind: "start" | "end", value: number) {
-    if (kind === "start") setConfidenceStart(value); else setConfidenceEnd(value);
-    await onSaveMeta(kind === "start" ? "__confidence_start" : "__confidence_end", String(value));
+    if (await onSaveMeta(kind === "start" ? "__confidence_start" : "__confidence_end", String(value))) {
+      if (kind === "start") setConfidenceStart(value); else setConfidenceEnd(value);
+    }
   }
 
   async function submitDiagnostic() {
@@ -179,7 +144,8 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
     setDiagScore(score);
     setMissedDiagnostic(missed);
     setMode(nextMode);
-    await Promise.all([onSaveMeta("__diagnostic_score", String(score)), onSaveMeta("__experience_mode", nextMode)]);
+    if (!await onSaveMeta("__diagnostic_score", String(score))) return;
+    if (!await onSaveMeta("__experience_mode", nextMode)) return;
     setMessage(`Diagnostic complete: ${score}%. ${missed.length ? "Targeted review cards are ready below." : "Strong starting point — move into the challenge activities."}`);
   }
 
@@ -199,28 +165,23 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
     setSortMessage(correct ? "Correct — diagnose, plan, gather evidence, implement and review." : "Not quite. Start with the problem, then choose and test one change before reviewing evidence.");
   }
 
-  function chooseBranch(choice: BranchChoice) {
-    const next = [...branchHistory.slice(0, branchStep), choice];
-    setBranchHistory(next);
-    setBranchFeedback(choice.feedback);
-    if (branchStep < branchSteps.length - 1) window.setTimeout(() => { setBranchStep(v => v + 1); setBranchFeedback(""); }, 550);
-  }
-
   async function saveTextMeta(key: string, value: string, success: string) {
     if (value.trim().length < 20) {
       setMessage("Add a little more detail before saving.");
       return;
     }
     setBusy(true);
-    await onSaveMeta(key, value.trim());
+    const saved = await onSaveMeta(key, value.trim());
     setBusy(false);
-    setMessage(success);
+    if (saved) setMessage(success);
   }
 
   async function createActionPlan(form: HTMLFormElement) {
+    setBusy(true);
+    try {
     const supabase = getSupabaseBrowserClient();
     const { data: auth } = await supabase.auth.getUser();
-    if (!auth.user) return;
+    if (!auth.user) { setMessage("Sign in to save an action plan."); return; }
     const data = new FormData(form);
     setBusy(true);
     const { error } = await supabase.from("action_plans").insert({
@@ -238,6 +199,8 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
     setBusy(false);
     setMessage(error ? error.message : "Action plan saved to your implementation tracker.");
     if (!error) form.reset();
+    } catch { setMessage("The action plan could not be saved. Your form is still here; try again."); }
+    finally { setBusy(false); }
   }
 
   async function submitMastery() {
@@ -248,7 +211,7 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
     const correct = masteryQuestions.reduce((sum, q, i) => sum + (masteryAnswers[i] === q.answer ? 1 : 0), 0);
     const score = Math.round((correct / masteryQuestions.length) * 100);
     setMasteryScore(score);
-    await onSaveMeta("__mastery_score", String(score));
+    if (!await onSaveMeta("__mastery_score", String(score))) return;
     setMessage(score >= 80 ? `Mastery check: ${score}%. Strong result.` : `Mastery check: ${score}%. Adaptive review is recommended before retrying.`);
   }
 
@@ -286,8 +249,8 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
 
     {tab === "explore" && <div className="courseLabSection">
       <div className="labGrid two">
-        <div className="labPanel"><span className="labKicker">INTERACTIVE HOTSPOTS</span><h4>Explore a classroom through this CPD lens</h4><div className="hotspotScene"><div className="sceneBoard">Learning goal</div><div className="sceneTeacher">Teacher</div><div className="scenePupils">Pupil responses</div>{hotspots.map((hotspot, i) => <button type="button" key={hotspot.title} className={`hotspotButton ${hotspot.position} ${hotspotOpen === i ? "active" : ""}`} onClick={() => setHotspotOpen(i)} aria-label={`Open ${hotspot.title}`}>{i + 1}</button>)}</div>{hotspots[hotspotOpen] && <div className="hotspotReveal"><strong>{hotspots[hotspotOpen].title}</strong><p>{hotspots[hotspotOpen].body}</p></div>}</div>
-        <div className="labPanel"><span className="labKicker">KEY-TERM FLASHCARDS</span><h4>Retrieve before you reveal</h4>{experience.flashcards.length > 0 && <button type="button" className={flashOpen ? "flashcard open" : "flashcard"} onClick={() => setFlashOpen(v => !v)}><span>{flashOpen ? experience.flashcards[flashIndex].back : experience.flashcards[flashIndex].front}</span><small>{flashOpen ? "Tap to hide" : "Think first, then reveal"}</small></button>}<div className="flashControls"><button type="button" className="secondary" onClick={() => { setFlashIndex(i => (i - 1 + experience.flashcards.length) % experience.flashcards.length); setFlashOpen(false); }}>Previous</button><span>{flashIndex + 1}/{experience.flashcards.length}</span><button type="button" className="secondary" onClick={() => { setFlashIndex(i => (i + 1) % experience.flashcards.length); setFlashOpen(false); }}>Next</button></div></div>
+        <InteractiveClassroom course={course} saved={savedMeta.__classroom_practice || ""} onSave={async value => { if (!await onSaveMeta("__classroom_practice", value)) throw new Error("Save failed"); }} />
+        <FlashcardPractice cards={experience.flashcards} />
       </div>
 
       <div className="labPanel compareSliderPanel"><span className="labKicker">BEFORE / AFTER SLIDER</span><h4>Reveal the stronger implementation</h4><div className="comparisonStage"><div className="comparisonLayer beforeLayer"><span>BEFORE</span><p>{pair.before}</p></div><div className="comparisonLayer afterLayer" style={{ clipPath: `inset(0 0 0 ${compareValue}%)` }}><span>AFTER</span><p>{pair.after}</p></div><div className="comparisonDivider" style={{ left: `${compareValue}%` }} /></div><input className="comparisonRange" aria-label="Reveal stronger implementation" type="range" min="5" max="95" value={compareValue} onChange={e => setCompareValue(Number(e.target.value))}/></div>
@@ -304,16 +267,16 @@ export default function CourseLab({ course, allCourses, savedMeta, completedCoun
 
     {tab === "practise" && <div className="courseLabSection">
       <div className="labGrid two">
-        <div className="labPanel"><span className="labKicker">DRAG-AND-DROP CHALLENGE</span><h4>Build the implementation sequence</h4><div className="sortList">{sortItems.map((item, i) => <div key={item} draggable onDragStart={() => setDragIndex(i)} onDragOver={e => e.preventDefault()} onDrop={() => { if (dragIndex !== null) moveSort(dragIndex, i); setDragIndex(null); }} className="sortItem"><span className="sortHandle">↕</span><span>{item}</span><div><button type="button" onClick={() => moveSort(i, i - 1)}>↑</button><button type="button" onClick={() => moveSort(i, i + 1)}>↓</button></div></div>)}</div><button type="button" className="secondary" onClick={checkSort}>Check order</button>{sortMessage && <p className="labFeedback">{sortMessage}</p>}</div>
-        <div className="labPanel branchPanel"><span className="labKicker">MULTI-STEP BRANCHING SIMULATION</span><h4>{branchSteps[branchStep].title}</h4><div className="branchProgress">{branchSteps.map((_, i) => <span key={i} className={i < branchStep ? "done" : i === branchStep ? "current" : ""}>{i + 1}</span>)}</div><p className="scenarioPrompt">{branchSteps[branchStep].prompt}</p><div className="labOptions">{branchSteps[branchStep].choices.map(choice => <button type="button" key={choice.label} onClick={() => chooseBranch(choice)}>{choice.label}</button>)}</div>{branchFeedback && <div className="labFeedback">{branchFeedback}</div>}{branchHistory.length === branchSteps.length && <div className="branchOutcome"><strong>Simulation complete</strong><p>{branchHistory.filter(choice => choice.quality === "strong").length >= 2 ? "Your path stayed evidence-informed and proportionate. Now compare it with how you normally respond in practice." : "Your path exposed useful decision points. Revisit the feedback, reset and try a more evidence-informed route."}</p><button type="button" className="secondary" onClick={() => { setBranchStep(0); setBranchHistory([]); setBranchFeedback(""); }}>Reset simulation</button></div>}</div>
+        <div className="labPanel"><span className="labKicker">DRAG-AND-DROP CHALLENGE</span><h4>Build the implementation sequence</h4><div className="sortList">{sortItems.map((item, i) => <div key={item} draggable onDragStart={() => setDragIndex(i)} onDragOver={e => e.preventDefault()} onDrop={() => { if (dragIndex !== null) moveSort(dragIndex, i); setDragIndex(null); }} className="sortItem"><span className="sortHandle">↕</span><span>{item}</span><div><button type="button" aria-label={`Move step ${i + 1} up`} disabled={i === 0} onClick={() => moveSort(i, i - 1)}>↑</button><button type="button" aria-label={`Move step ${i + 1} down`} disabled={i === sortItems.length - 1} onClick={() => moveSort(i, i + 1)}>↓</button></div></div>)}</div><button type="button" className="secondary" onClick={checkSort}>Check order</button>{sortMessage && <p className="labFeedback">{sortMessage}</p>}</div>
+        <div className="labPanel"><span className="labKicker">EVIDENCE-LED REHEARSAL</span><h4>Make a decision, then review new information</h4><p>The interactive situation in Explore asks you to distinguish observations from assumptions, justify a response and adapt to new evidence. It uses explicit feedback instead of guessing quality from option position.</p><button type="button" className="primary" onClick={() => setTab("explore")}>Open interactive situation</button></div>
       </div>
       <div className="labPanel"><span className="labKicker">ANNOTATED EXEMPLAR</span><h4>A strong implementation cycle</h4><ol className="annotatedSteps">{experience.annotatedExample.map(step => <li key={step}>{step}</li>)}</ol></div>
     </div>}
 
     {tab === "apply" && <div className="courseLabSection">
-      <div className="labPanel tomorrowCard"><span className="labKicker">TRY IT TOMORROW</span><h4>Choose one action small enough to actually use</h4><p>Write one precise action you can test in your next suitable lesson or professional situation.</p><textarea rows={4} value={tryTomorrow} onChange={e => setTryTomorrow(e.target.value)} placeholder={`Tomorrow I will use one idea from ${course.title} by…`}/><div className="labActions"><button type="button" className="primary" disabled={busy} onClick={() => saveTextMeta("__try_tomorrow", tryTomorrow, "Tomorrow action saved. It now appears in your course journey map.")}>Save tomorrow action</button></div></div>
+      <div className="labPanel tomorrowCard"><span className="labKicker">TRY IT TOMORROW</span><h4>Choose one action small enough to actually use</h4><p>Write one precise action you can test in your next suitable lesson or professional situation.</p><textarea aria-label="Tomorrow action" rows={4} value={tryTomorrow} onChange={e => setTryTomorrow(e.target.value)} placeholder={`Tomorrow I will use one idea from ${course.title} by…`}/><div className="labActions"><button type="button" className="primary" disabled={busy} onClick={() => saveTextMeta("__try_tomorrow", tryTomorrow, "Tomorrow action saved. It now appears in your course journey map.")}>Save tomorrow action</button></div></div>
       <div className="labGrid two">
-        <div className="labPanel"><span className="labKicker">LESSON-PLANNING CHALLENGE</span><h4>Apply this to an upcoming lesson</h4><p>Explain where the course idea will appear, what pupils will do, and how you will know whether it helped.</p><textarea rows={6} value={lessonChallenge} onChange={e => setLessonChallenge(e.target.value)} placeholder="Lesson / class / strategy / evidence…"/><button type="button" className="primary" disabled={busy} onClick={() => saveTextMeta("__lesson_challenge", lessonChallenge, "Lesson-planning challenge saved.")}>Save challenge</button></div>
+        <div className="labPanel"><span className="labKicker">LESSON-PLANNING CHALLENGE</span><h4>Apply this to an upcoming lesson</h4><p>Explain where the course idea will appear, what pupils will do, and how you will know whether it helped.</p><textarea aria-label="Lesson planning challenge" rows={6} value={lessonChallenge} onChange={e => setLessonChallenge(e.target.value)} placeholder="Lesson / class / strategy / evidence…"/><button type="button" className="primary" disabled={busy} onClick={() => saveTextMeta("__lesson_challenge", lessonChallenge, "Lesson-planning challenge saved.")}>Save challenge</button></div>
         <div className="labPanel"><span className="labKicker">IMPLEMENTATION CHECKLIST</span><h4>Before you try it</h4><ul className="implementationChecklist">{experience.implementationChecklist.map(item => <li key={item}>✓ {item}</li>)}</ul></div>
       </div>
       <div className="labPanel"><span className="labKicker">ACTION-PLAN BUILDER</span><h4>Turn learning into one testable change</h4><form className="courseActionForm" onSubmit={e => { e.preventDefault(); createActionPlan(e.currentTarget); }}><label>Plan title<input name="title" defaultValue={`${course.title}: classroom implementation`}/></label><label>Review date<input type="date" name="review_date" defaultValue={dateFromNow(21)}/></label><label className="span2">Action to test<textarea required name="action" rows={3} defaultValue={tryTomorrow}/></label><label>Context<textarea name="context" rows={3} placeholder="Class, routine or situation — no pupil-identifiable information"/></label><label>Intended outcome<textarea name="outcome" rows={3}/></label><label className="span2">Evidence plan<textarea name="evidence" rows={3}/></label><div className="span2"><button className="primary" disabled={busy}>Save action plan</button></div></form></div>

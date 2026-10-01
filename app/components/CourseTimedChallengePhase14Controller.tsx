@@ -138,7 +138,7 @@ function renderTimedChallenge(modal: HTMLElement) {
 export default function CourseTimedChallengePhase14Controller() {
   useEffect(() => {
     let queued = false;
-    const apply = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; document.querySelectorAll<HTMLElement>(".courseModal").forEach(renderTimedChallenge); }); };
+    const apply = () => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(renderTimedChallenge); }); };
     apply();
     const observer = new MutationObserver(apply);
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });

@@ -34,4 +34,4 @@ function render(modal:HTMLElement,force=false){
   drawer.querySelector(".phase23Reset")?.addEventListener("click",()=>{reset(course.id);render(modal,true);});
 }
 
-export default function CourseLiveTeamQuizPhase23Controller(){useEffect(()=>{let q=false;const apply=()=>{if(q)return;q=true;requestAnimationFrame(()=>{q=false;document.querySelectorAll<HTMLElement>(".courseModal").forEach(m=>render(m));});};apply();const o=new MutationObserver(apply);o.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});return()=>o.disconnect();},[]);return null;}
+export default function CourseLiveTeamQuizPhase23Controller(){useEffect(()=>{let q=false;const apply=()=>{if(q)return;q=true;requestAnimationFrame(()=>{q=false;document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(m=>render(m));});};apply();const o=new MutationObserver(apply);o.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});return()=>o.disconnect();},[]);return null;}

@@ -383,7 +383,7 @@ export default function CoursePracticePhase4Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach(modal => {
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach(modal => {
           const article = modal.querySelector<HTMLElement>(".moduleContent");
           if (article) buildForArticle(modal, article, completedKeys);
         });

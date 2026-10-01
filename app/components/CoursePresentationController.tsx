@@ -35,6 +35,7 @@ function ensurePresentationToggle(modal: HTMLElement) {
 }
 
 function decoratePresentation(modal: HTMLElement) {
+  if (modal.classList.contains("academyPresentation")) return;
   if (modal.classList.contains("labMode")) return;
   const nav = modal.querySelector<HTMLElement>(".moduleNav");
   const article = modal.querySelector<HTMLElement>(".moduleContent");
@@ -120,7 +121,7 @@ export default function CoursePresentationController() {
       scheduled = true;
       window.requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(decoratePresentation);
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(decoratePresentation);
       });
     };
 
@@ -130,8 +131,8 @@ export default function CoursePresentationController() {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
-      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode)");
-      if (!modal) return;
+      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)");
+      if (!modal || modal.classList.contains("academyPresentation")) return;
 
       if (event.key === "Escape" && modal.classList.contains("presentationFocus")) {
         event.preventDefault();

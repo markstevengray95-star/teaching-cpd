@@ -1,0 +1,146 @@
+/* Academy presentation: one readable canvas and a section-based learning map. */
+#main-content .academyPresentation .courseMoreTools .courseLabToggle { display: inline-flex !important; }
+#main-content .academyPresentation { width: min(1440px, 96vw); height: min(94dvh, 1050px); max-height: 94dvh; overflow: hidden; border-radius: 22px; background: #f4f7f8; display: flex; flex-direction: column; }
+#main-content .academyPresentation .courseModalHead { flex: none; padding: 20px 26px; background: #fff; border-bottom: 1px solid #dce5e7; display: flex; align-items: center; gap: 22px; justify-content: space-between; overflow: visible; }
+#main-content .academyPresentation .courseModalHead:after { display: none; }
+#main-content .academyPresentation .courseModalHead h2 { font-size: clamp(19px, 2vw, 26px); line-height: 1.2; margin: 7px 0 0; }
+#main-content .academyPresentation .courseModalHead .eyebrow { font-size: 10px; letter-spacing: .06em; }
+#main-content .academyPresentation .courseModalHeadActions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; flex: 0 0 auto; }
+#main-content .academyPresentation .courseProgress { padding: 12px 26px; flex: none; background: #fff; }
+#main-content .academyPresentation .moduleLayout { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 0; overflow: hidden; flex: 1; min-height: 0; }
+#main-content .academyPresentation .moduleNav { position: static; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 18px 12px; background: #edf2f4; border-right: 1px solid #dce5e7; display: block; }
+#main-content .academyPresentation .moduleNav:before { display: none; }
+.courseMapTitle { font-size: 14px; font-weight: 800; color: #243e48; padding: 3px 10px 16px; }
+.courseMapTitle small { display: block; font-size: 11px; font-weight: 500; color: #526b76; margin-top: 5px; }
+.courseSection { border-bottom: 1px solid #d6e0e4; padding: 6px 0; }
+.courseSection > summary { list-style: none; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 12px 9px; border-radius: 10px; color: #243e48; }
+.courseSection > summary::-webkit-details-marker { display: none; }
+.courseSection > summary > span { background: #fff; width: 29px; height: 29px; display: grid; place-items: center; border-radius: 9px; font-size: 12px; font-weight: 800; }
+.courseSection > summary:after { content: '+'; margin-left: auto; font-size: 18px; }
+.courseSection[open] > summary:after { content: '−'; }
+.courseSection > summary strong { font-size: 13px; }
+.courseSection > summary small { display: block; font-size: 10px; color: #526b76; margin-top: 3px; }
+#main-content .academyPresentation .moduleNav .courseSection button { width: 100%; min-width: 0; padding: 11px 9px; margin: 3px 0; border: 1px solid transparent; border-radius: 10px; display: flex; align-items: flex-start; text-align: left; gap: 9px; }
+#main-content .academyPresentation .moduleNav .courseSection button.current { background: #fff; border-color: #a8c6cc; box-shadow: inset 3px 0 #176d76; }
+#main-content .academyPresentation .moduleNav .courseSection button strong { font-size: 12px; line-height: 1.4; font-weight: 650; }
+#main-content .academyPresentation .moduleNav .courseSection button > span { flex: 0 0 25px; width: 25px; height: 25px; font-size: 10px; }
+.academySlideViewport { min-width: 0; min-height: 0; overflow-y: auto; padding: 22px 28px 30px; scrollbar-gutter: stable; }
+.learningSectionBanner { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; color: #526b76; max-width: 900px; margin: 0 auto 16px; }
+.learningSectionBanner > span { font-size: 12px; color: #176d76; font-weight: 850; }
+.learningSectionBanner p { font-size: 12px; margin: 0; }
+.learningSectionBanner small { font-size: 11px; margin-left: auto; }
+#main-content .academyPresentation .academySlide { min-height: 0; max-height: none; height: auto; aspect-ratio: auto; overflow: visible !important; padding: clamp(22px, 3vw, 42px) !important; max-width: 980px; margin: 0 auto; border: 1px solid #dce5e7; border-radius: 18px; background: #fff !important; box-shadow: 0 5px 24px #213d4c08; }
+#main-content .academyPresentation .academySlide:before { display: none; }
+#main-content .academyPresentation .academySlide h2 { font-size: clamp(22px, 2.3vw, 32px) !important; line-height: 1.2 !important; letter-spacing: -.025em; margin: 10px auto 22px !important; }
+#main-content .academyPresentation .academySlide .moduleType { display: none; }
+#main-content .academyPresentation .presentationSlideMeta { display: flex; gap: 10px; flex-wrap: wrap; }
+#main-content .academyPresentation .presentationStageBadge { font-size: 11px !important; padding: 7px 10px !important; }
+#main-content .academyPresentation .presentationSlideCounter, #main-content .academyPresentation .presentationKeyboardHint { font-size: 11px; color: #526b76; }
+.courseMoreTools { position: relative; }
+.courseMoreTools > summary { cursor: pointer; list-style: none; border: 1px solid #d6e0e4; border-radius: 10px; padding: 10px 13px; font-size: 12px; font-weight: 700; background: #fff; color: #243e48; }
+.courseMoreTools > div { position: absolute; right: 0; top: calc(100% + 8px); width: 240px; display: grid; gap: 8px; padding: 12px; border: 1px solid #dce5e7; background: #fff; box-shadow: 0 10px 35px #23394422; border-radius: 12px; z-index: 30; }
+.readingByline { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; border-bottom: 1px solid #e4eaed; padding-bottom: 12px; font-size: 11px; font-weight: 700; color: #526b76; }
+.readingStrapline { font-size: 14px; color: #526b76; line-height: 1.6; }
+.readingDepthChoice { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 24px; }
+.readingDepthChoice button, .decisionChoices button { border: 1px solid #d6e0e4; background: #f6f9fa; color: #243e48; border-radius: 10px; padding: 11px 15px; font: inherit; font-size: 12px; cursor: pointer; }
+.readingDepthChoice button[aria-pressed=true], .decisionChoices button[aria-pressed=true] { border-color: #176d76; background: #e9f5f5; color: #135760; box-shadow: inset 0 0 0 1px #176d76; }
+#main-content .academyPresentation .readingProse { max-width: 68ch; margin: 22px auto; }
+#main-content .academyPresentation .readingProse .readingParagraph { padding: 0 !important; background: transparent !important; border: 0 !important; box-shadow: none !important; font-size: clamp(15px, 1.4vw, 17px) !important; line-height: 1.85 !important; color: #293f49 !important; margin: 0 0 1.3em !important; max-width: none !important; font-weight: 400 !important; }
+.readingQuestion { padding: 18px 21px; border-left: 3px solid #176d76; border-radius: 0 10px 10px 0; background: #edf7f7; margin: 22px 0; }
+.readingQuestion > span { font-size: 10px; text-transform: uppercase; letter-spacing: .09em; font-weight: 800; color: #135760; }
+.readingQuestion p { font-size: 14px; line-height: 1.65; margin: 7px 0 0; }
+.readingReference { border: 1px solid #dce5e7; border-radius: 12px; padding: 15px 18px; margin: 20px 0; }
+.readingReference summary { cursor: pointer; font-size: 13px; font-weight: 800; color: #243e48; }
+.readingReference ul { padding-left: 20px; }
+.readingReference li { font-size: 14px; line-height: 1.6; margin: 9px 0; }
+.readingReference dt { font-size: 13px; font-weight: 800; margin-top: 14px; }
+.readingReference dd { margin: 5px 0 0; font-size: 13px; line-height: 1.6; }
+.readingExtension { margin: 24px auto 0; border: 1px solid #b9d7da; border-radius: 14px; overflow: hidden; background: #fff; }
+.readingExtension > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 20px; background: #edf7f7; }
+.readingExtension > summary small { display: block; color: #176d76; font-size: 10px; font-weight: 800; letter-spacing: .05em; margin-bottom: 5px; }
+.readingExtension > summary strong { font-size: 16px; color: #243e48; line-height: 1.4; }
+.extensionHint { font-size: 11px; color: #526b76; text-align: right; }
+.extensionBody { padding: 22px; }
+.practiceLab { margin-top: 24px; padding: 22px; background: #f4f6fb; border-radius: 13px; border: 1px solid #dce2ee; }
+.practiceEyebrow { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; font-weight: 800; color: #495e8a; }
+.practiceLab h3 { font-size: 21px; margin: 9px 0 12px; letter-spacing: -.02em; }
+.practiceLab > p { font-size: 14px; line-height: 1.65; }
+.evidenceCard { border: 1px solid #dce2ee; background: #fff; padding: 14px 17px; border-radius: 10px; margin: 16px 0; }
+.evidenceCard legend { font-size: 14px; line-height: 1.6; font-weight: 650; padding: 0 5px; }
+.evidenceCard label { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 10px 0; cursor: pointer; }
+.evidenceCard input { accent-color: #176d76; width: 16px; height: 16px; }
+.sequenceCards { list-style: none; padding: 0; margin: 18px 0; }
+.sequenceCards li { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #dce2ee; border-radius: 10px; padding: 13px; margin: 9px 0; }
+.sequenceNumber { flex: 0 0 25px; width: 25px; height: 25px; display: grid; place-items: center; border-radius: 7px; background: #edf2f7; font-size: 12px; font-weight: 800; }
+.sequenceCards p { flex: 1; margin: 0; font-size: 13px; line-height: 1.6; }
+.sequenceCards li > div { display: flex; gap: 4px; }
+.sequenceCards button { border: 1px solid #dce2ee; background: #fff; color: #243e48; border-radius: 8px; width: 35px; height: 35px; cursor: pointer; }
+.decisionChoices { display: grid; gap: 8px; margin: 16px 0; }
+.decisionChoices button { text-align: left; line-height: 1.6; font-size: 14px; }
+.practiceFeedback { background: #e8f3ee; color: #205343; padding: 16px; border-radius: 10px; margin: 17px 0; font-size: 14px; line-height: 1.65; }
+.practiceNoteLabel { display: block; font-size: 12px; color: #243e48; font-weight: 800; margin: 22px 0 14px; }
+.practiceNoteLabel textarea { display: block; width: 100%; min-height: 115px; margin-top: 9px; padding: 14px; border: 1px solid #bfccd7; border-radius: 10px; background: #fff; color: #243e48; font: inherit; font-size: 14px; line-height: 1.65; resize: vertical; box-sizing: border-box; }
+.practiceSave { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.practiceSave small { flex: 1 1 180px; color: #526b76; font-size: 11px; line-height: 1.5; }
+.practiceSaveMessage { font-size: 13px; line-height: 1.6; color: #243e48; }
+#main-content .academyPresentation .moduleFooter { position: static !important; margin-top: 30px !important; padding-top: 20px !important; border-top: 1px solid #dce5e7; background: transparent !important; }
+#main-content .academyPresentation .academySlide :is(button,input,textarea,summary):focus-visible, .academyPresentation :is(summary,button):focus-visible { outline: 3px solid #2675b1; outline-offset: 3px; }
+.academyPresentation button:disabled { opacity: .45; cursor: not-allowed; }
+#main-content .academyPresentation.presentationFocus { width: 98vw; height: 96dvh; max-height: 96dvh; }
+#main-content .academyPresentation.presentationFocus .moduleLayout { grid-template-columns: minmax(0, 1fr); }
+#main-content .academyPresentation.presentationFocus .academySlideViewport { padding: 24px clamp(16px, 6vw, 100px); }
+@media (max-width: 900px) {
+  #main-content .academyPresentation { width: 98vw; height: 96dvh; max-height: 96dvh; border-radius: 14px; }
+  #main-content .academyPresentation .courseModalHead { padding: 15px 18px; flex-wrap: wrap; gap: 13px; }
+  #main-content .academyPresentation .moduleLayout { grid-template-columns: 190px minmax(0, 1fr); }
+  #main-content .academyPresentation .moduleNav { padding: 12px 7px; }
+  .academySlideViewport { padding: 16px; }
+  .learningSectionBanner p { display: none; }
+  .courseMapTitle small { font-size: 10px; }
+}
+@media (max-width: 850px) {
+  #main-content .academyPresentation .moduleLayout { display: flex !important; flex-direction: column !important; }
+  #main-content .academyPresentation .moduleNav { display: block !important; flex: none; height: auto !important; max-height: 135px !important; overflow-y: auto !important; overflow-x: hidden !important; border-right: 0; border-bottom: 1px solid #dce5e7; padding: 5px 10px !important; }
+  .courseMapTitle { display: none; }
+  .courseSection { padding: 0; }
+  .courseSection > summary { padding: 8px; }
+  .academySlideViewport { flex: 1; padding: 12px; }
+  #main-content .academyPresentation .academySlide { padding: 20px 16px !important; }
+  .readingByline { font-size: 10px; }
+  .extensionBody, .practiceLab { padding: 16px; }
+  .readingExtension > summary { padding: 16px; }
+  .extensionHint { display: none; }
+  .sequenceCards li { flex-wrap: wrap; }
+  .sequenceCards li > div { margin-left: auto; }
+  .learningSectionBanner small { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .academyPresentation * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+
+.relatedCourseStrip { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 10px 26px; background: #edf7f7; border-bottom: 1px solid #dce5e7; max-height: 100px; overflow-y: auto; }
+.relatedCourseStrip > span { font-size: 11px; font-weight: 750; color: #176d76; }
+.relatedCourseStrip button { text-align: left; font-size: 12px; line-height: 1.5; }
+.courseLengthFilter { margin: 18px 0; padding: 18px; border: 1px solid #dce5e7; background: #fff; border-radius: 12px; }
+.courseLengthFilter label { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 14px; font-weight: 750; }
+.courseLengthFilter select { padding: 10px; border: 1px solid #bfccd7; border-radius: 8px; font: inherit; }
+.courseLengthFilter p { font-size: 12px; line-height: 1.65; color: #526b76; margin-bottom: 0; }
+#main-content .academyPresentation .courseLabViewport { flex: 1; min-height: 0; overflow-y: auto; padding: 20px; }
+.practiceStepTabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.practiceStepTabs button[aria-pressed=true] { border-color: #176d76; background: #e9f5f5; color: #135760; }
+.practiceSetting { padding: 18px; background: #edf7f7; border-left: 3px solid #176d76; border-radius: 10px; line-height: 1.75; }
+.evidenceScene { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; background: linear-gradient(140deg, #eaf2f6, #edf7f7); padding: 18px; border: 1px solid #b9d7da; border-radius: 14px; }
+.evidenceScene button { padding: 14px 9px; border: 1px solid #b9d7da; border-radius: 10px; background: #fff; color: #243e48; cursor: pointer; font-size: 12px; line-height: 1.5; }
+.evidenceScene button > span { display: block; margin: 0 auto 9px; background: #176d76; color: white; border-radius: 50%; width: 25px; height: 25px; line-height: 25px; }
+.evidenceScene button[aria-pressed=true] { box-shadow: 0 0 0 2px #176d76; }
+.classroomPractice h5 { font-size: 17px; line-height: 1.55; margin: 24px 0 15px; }
+.classroomPractice .practiceFeedback p { line-height: 1.7; }
+.retrievalQuestion { white-space: pre-line; font-size: 17px; font-weight: 750; line-height: 1.7; padding: 22px; background: #edf7f7; border-radius: 12px; }
+.retrievalAnswer { padding: 20px; border: 1px solid #b9d7da; border-radius: 12px; margin: 18px 0; background: #f3faf8; line-height: 1.75; }
+.courseLab :is(button,input,textarea,select,summary):focus-visible { outline: 3px solid #2675b1; outline-offset: 3px; }
+.courseJourneyMap { display: flex; gap: 8px; overflow-x: auto; padding: 2px; }
+.courseJourneyMap .journeyStage { flex: 1 0 130px; border: 1px solid #dce5e7; border-radius: 10px; background: #fff; color: #243e48; padding: 12px; display: flex; align-items: center; gap: 8px; text-align: left; }
+.journeyStage > span { display: grid; place-items: center; border-radius: 50%; background: #edf7f7; width: 25px; height: 25px; flex: none; font-size: 12px; }
+.journeyStage small { display: block; margin-top: 4px; font-size: 11px; }
+.journeyStage i { margin-left: auto; font-style: normal; }
+.journeyStage.done { border-color: #176d76; background: #edf7f7; }
+.nativeAssessment input[type=radio], .classroomPractice .evidenceCard input[type=radio] { width: 16px; height: 16px; padding: 0; flex: none; }
+@media (max-width: 850px) { #main-content .academyPresentation .courseLabViewport { padding: 12px; } .evidenceScene { grid-template-columns: 1fr; } .relatedCourseStrip { padding: 8px 16px; max-height: 80px; } }

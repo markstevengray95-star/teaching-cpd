@@ -243,7 +243,7 @@ export default function CourseWorkshopPhase3Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderWorkshop(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderWorkshop(modal));
       });
     };
     apply();

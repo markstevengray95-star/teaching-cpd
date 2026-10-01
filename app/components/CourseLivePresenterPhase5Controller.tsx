@@ -79,7 +79,7 @@ export default function CourseLivePresenterPhase5Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderCue(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderCue(modal));
       });
     };
     apply();

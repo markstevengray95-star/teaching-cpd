@@ -116,9 +116,9 @@ function render(modal: HTMLElement, force = false) {
 
 export default function CourseProfessionalMilestonesPhase21Controller(){
   useEffect(()=>{
-    let queued=false; const apply=()=>{ if(queued)return; queued=true; requestAnimationFrame(()=>{ queued=false; document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal=>render(modal)); }); };
+    let queued=false; const apply=()=>{ if(queued)return; queued=true; requestAnimationFrame(()=>{ queued=false; document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal=>render(modal)); }); };
     apply(); const observer=new MutationObserver(apply); observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class","disabled"]});
-    const refresh=()=>document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal=>render(modal,true));
+    const refresh=()=>document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal=>render(modal,true));
     window.addEventListener("storage",refresh); window.addEventListener("cpd:phase5-assessment",refresh as EventListener); window.addEventListener("cpd:meaningful-progress",refresh as EventListener); window.addEventListener("cpd:team-challenge",refresh as EventListener);
     return()=>{ observer.disconnect(); window.removeEventListener("storage",refresh); window.removeEventListener("cpd:phase5-assessment",refresh as EventListener); window.removeEventListener("cpd:meaningful-progress",refresh as EventListener); window.removeEventListener("cpd:team-challenge",refresh as EventListener); };
   },[]); return null;

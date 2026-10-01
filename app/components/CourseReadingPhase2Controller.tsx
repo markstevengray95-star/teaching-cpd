@@ -44,6 +44,7 @@ function readingTime(words: number) {
 }
 
 function render(modal: HTMLElement, depth: Phase2ReadingDepth, force = false) {
+  if (modal.classList.contains("academyPresentation")) return;
   if (modal.classList.contains("labMode")) return;
   const course = currentCourse(modal);
   const index = currentModuleIndex(modal);
@@ -126,7 +127,7 @@ export default function CourseReadingPhase2Controller() {
       requestAnimationFrame(() => {
         queued = false;
         const depth = readDepth();
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => render(modal, depth));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => render(modal, depth));
       });
     };
     apply();

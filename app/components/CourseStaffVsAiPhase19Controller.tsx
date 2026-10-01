@@ -68,5 +68,5 @@ function render(modal: HTMLElement, force = false) {
 }
 
 export default function CourseStaffVsAiPhase19Controller(){
-  useEffect(()=>{ let queued=false; const apply=()=>{ if(queued)return; queued=true; requestAnimationFrame(()=>{ queued=false; document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal=>render(modal)); }); }; apply(); const observer=new MutationObserver(apply); observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class","disabled"]}); return()=>observer.disconnect(); },[]); return null;
+  useEffect(()=>{ let queued=false; const apply=()=>{ if(queued)return; queued=true; requestAnimationFrame(()=>{ queued=false; document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal=>render(modal)); }); }; apply(); const observer=new MutationObserver(apply); observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class","disabled"]}); return()=>observer.disconnect(); },[]); return null;
 }

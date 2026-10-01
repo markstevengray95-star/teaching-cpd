@@ -215,7 +215,7 @@ export default function CourseBranchingAdventurePhase16Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderAdventure(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderAdventure(modal));
       });
     };
     apply();

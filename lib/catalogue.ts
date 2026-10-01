@@ -1,4 +1,7 @@
 import { courses as coreCourses, categoryOrder } from "./data";
+import { conciseCourse } from "./conciseCourses";
+import { shortCourses } from "./shortCourses";
+import { withCourseTiming, withModuleBudgets } from "./courseTiming";
 import { phase3Courses } from "./phase3Courses";
 import { expandedCourses } from "./courseExpansions";
 import { expandedCoursesBatch2 } from "./courseExpansionBatch2";
@@ -218,10 +221,18 @@ fullyEnhancedCourses.forEach(validatePresentationEngagementPhase6);
 fullyEnhancedCourses.forEach(validateFinalPresentationPhases7to10);
 fullyEnhancedCourses.forEach(validateMissionSimulationPhases11to12);
 
-export const courses = fullyEnhancedCourses.map(shortenCourseJourney);
-courses.forEach(validateCourse);
+export const sourceCourses = fullyEnhancedCourses.map(shortenCourseJourney);
+export const keyCourses = sourceCourses.map(conciseCourse).map(withCourseTiming);
+export const quickCourses = shortCourses.map(withCourseTiming);
+export const courses = [...quickCourses, ...keyCourses];
+export const extendedCourses = sourceCourses.map(course => {
+  const core = keyCourses.find(c => c.id === course.id)!;
+  const duration = Math.ceil(core.duration * course.modules.length / core.modules.length / 5) * 5;
+  return withModuleBudgets({ ...course, duration });
+});
+keyCourses.forEach(validateCourse);
 
-export const courseLengthOptimisationSummary = summariseCourseLengthOptimisation(fullyEnhancedCourses, courses);
+export const courseLengthOptimisationSummary = summariseCourseLengthOptimisation(fullyEnhancedCourses, keyCourses);
 export const courseQualityAudit = auditCatalogue(fullyEnhancedCourses);
 export const coursePresentationAudit = fullyEnhancedCourses.map(auditCoursePresentationPhase3);
 export const coursePracticeAudit = fullyEnhancedCourses.map(auditAdvancedPracticePhase4);
