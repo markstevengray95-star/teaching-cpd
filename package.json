@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "audit:courses": "node scripts/audit-concise-courses.cjs && node scripts/audit-learning-tasks.cjs && node scripts/audit-learning-improvements.cjs && node scripts/audit-course-editorial.cjs"
+    "audit:courses": "node scripts/audit-concise-courses.cjs && node scripts/audit-learning-tasks.cjs && node scripts/audit-learning-improvements.cjs && node scripts/audit-course-editorial.cjs && node scripts/audit-course-pathways.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.1",

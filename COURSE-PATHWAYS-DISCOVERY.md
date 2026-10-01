@@ -16,3 +16,12 @@ across retained tasks, not presented as measured completion times.
 Automated editorial checks cover all 88 core courses and extended routes:
 616 template slides removed, 189,322 template words removed, 161 subject
 reading passages unchanged, all non-content tasks unchanged.
+
+## Connected pathways
+
+Eight authored pathways connect 36 ordered course steps: classroom routines,
+visible thinking, inclusive access, durable learning, safeguarding response,
+school safety, pastoral support and sustainable leadership. Role filtering,
+per-course completion, whole-pathway time and the next unfinished course use
+the existing CPD progress record. A pathway is a suggested sequence, not a new
+qualification or an enforced prerequisite. No new personal data is collected.
