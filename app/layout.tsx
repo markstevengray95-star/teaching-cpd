@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import DevelopmentDock from "./components/DevelopmentDock";
 import AppShellEnhancements from "./components/AppShellEnhancements";
+import GlobalMainTabs from "./components/GlobalMainTabs";
+import MobilePlatformDock from "./components/MobilePlatformDock";
 import CoursePresentationController from "./components/CoursePresentationController";
 import AdminSlideUnlockController from "./components/AdminSlideUnlockController";
 import CoursePresenterPhase3Controller from "./components/CoursePresenterPhase3Controller";
@@ -55,7 +56,6 @@ import "./course-navigation.css";
 import "./course-module-navigation.css";
 import "./course-fun-engagement.css";
 import "./course-presentation-player.css";
-import "./development-dock.css";
 import "./course-studio.css";
 import "./course-packs.css";
 import "./course-reading.css";
@@ -117,9 +117,9 @@ import "./course-discovery.css";
 import "./school-operations.css";
 
 export const metadata: Metadata = {
-  title: "Teaching CPD Hub",
-  description: "Interactive professional development for school staff",
-  applicationName: "Teaching CPD Hub",
+  title: "Teaching CPD | Whole-School Staff Platform",
+  description: "Teaching CPD, professional development, inclusion and whole-school staff systems in one platform.",
+  applicationName: "Teaching CPD",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -127,6 +127,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <AppShellEnhancements />
+        <GlobalMainTabs />
         <CoursePresentationController />
         <AdminSlideUnlockController />
         <CoursePresenterPhase3Controller />
@@ -163,7 +164,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
-        <DevelopmentDock />
+        <MobilePlatformDock />
       </body>
     </html>
   );
