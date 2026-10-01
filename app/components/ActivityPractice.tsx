@@ -2,11 +2,15 @@
 import { useState } from "react";
 import type { Course, Module } from "@/lib/catalogue";
 import { isSafetyCourse } from "@/lib/classroomPractice";
+import { activityChallenge } from "@/lib/courseLearningTools";
 
 export default function ActivityPractice({ course, module, response, onChange }: { course: Course; module: Extract<Module, { type: "activity" }>; response: string; onChange: (value: string) => void }) {
   const [draft, setDraft] = useState(["", "", ""]);
   const [checks, setChecks] = useState<number[]>([]);
   const [compared, setCompared] = useState(false);
+  const [challengeResponse, setChallengeResponse] = useState("");
+  const [reveal, setReveal] = useState(false);
+  const challenge = activityChallenge(course, module);
   const safe = isSafetyCourse(course) || course.category === "Safeguarding";
   const prompts = safe
     ? ["What facts are available, and what remains unknown?", "What is the next step within your role under current school arrangements?", "What would you record, check or take to the designated colleague?"]
@@ -21,6 +25,16 @@ export default function ActivityPractice({ course, module, response, onChange }:
   return <section className="interactiveBlock activityPractice" aria-label="Guided course activity">
     <p className="lead">{module.prompt}</p>
     <ol className="activitySteps">{module.instructions.map(step => <li key={step}>{step}</li>)}</ol>
+    {challenge.question && <details className="readingReference"><summary>Course-specific challenge: improve a weak response (optional)</summary>
+      <p><strong>Focus:</strong> {challenge.objective}</p>
+      <p>{challenge.question.question}</p><blockquote>{challenge.weakResponse}</blockquote>
+      <label className="practiceNoteLabel">How would I improve this response, and why?<textarea value={challengeResponse} onChange={e => { setChallengeResponse(e.target.value); setReveal(false); }}/></label>
+      <button type="button" className="secondary" disabled={!challengeResponse.trim()} onClick={() => setReveal(v => !v)}>{reveal ? "Hide comparison" : "Compare with the course explanation"}</button>
+      {reveal && <div className="practiceFeedback"><strong>Course response: {challenge.question.options[challenge.question.answer]}</strong><p>{challenge.question.feedback}</p><p>{challenge.question.reteach}</p><p>Identify what your revision changes, not just which answer it chooses.</p></div>}
+      {challenge.scenario && <details><summary>Transfer the idea to this course case</summary><p>{challenge.scenario.prompt}</p><p>{challenge.safe ? "Identify the facts, the limits of your role and the appropriate procedure or designated support. Do not record real case details." : "Which part of your revised response fits this case, and what would need to change? Name the evidence you would check."}</p></details>}
+      <button type="button" className="secondary" disabled={!challengeResponse.trim()} onClick={() => onChange([response.trim(), "Course-specific challenge: " + challenge.question?.question, challengeResponse.trim()].filter(Boolean).join("\n\n"))}>Append challenge response</button>
+      <small>This optional draft is only saved when appended to your activity response and the module is saved.</small>
+    </details>}
     <details className="readingReference"><summary>Build a response in three steps (optional)</summary>
       <p>Use the course task above. This scaffold is a drafting aid, not a model answer. Fictional or non-identifiable examples only.</p>
       {prompts.map((prompt, i) => <label className="practiceNoteLabel" key={prompt}>{prompt}<textarea value={draft[i]} onChange={e => setDraft(d => d.map((v, n) => n === i ? e.target.value : v))}/></label>)}
