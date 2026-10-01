@@ -72,6 +72,17 @@ export default function AuthPage() {
           window.location.replace(target === "/" || target.startsWith("/access") ? "/owner-portal" : target);
           return;
         }
+
+        const managed = auth.user.app_metadata?.platform_managed_user === true || auth.user.app_metadata?.platform_test_user === true;
+        if (managed) {
+          const managedAccess = String(auth.user.app_metadata?.platform_managed_access || "admin");
+          if (managedAccess === "disabled") {
+            window.location.replace(`/access?reason=access_disabled&next=${encodeURIComponent(nextPath())}`);
+            return;
+          }
+          window.location.replace(nextPath());
+          return;
+        }
       }
 
       const access = await claimSchoolAccess(supabase);
@@ -210,7 +221,7 @@ export default function AuthPage() {
       <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
       <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={() => schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
 
-      <div className="schoolDomainRule"><strong>Username sign-in is now supported</strong><p>Staff can still sign in with their school email, or use the unique username they created after signup. Platform Owner-created test logins use this same username/password sign-in.</p></div>
+      <div className="schoolDomainRule"><strong>Username sign-in is supported</strong><p>Staff can sign in with their school email or a unique username. Accounts created by the Platform Owner under Managed logins are already authorised and enter the site directly without school-domain verification.</p></div>
 
       <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a><a className="textButton" href="/owner-login">Platform Owner sign in</a></div>
       <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide password sign in" : "Use email or username + password"}</button>
@@ -227,7 +238,7 @@ export default function AuthPage() {
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Email remains attached to the account for confirmation, password resets and school-domain access. A username is an optional sign-in alias and does not replace the school email identity.</p>
+      <p className="schoolAuthFinePrint">Email remains attached to normal school accounts for confirmation, password resets and school-domain access. Platform Owner-created managed usernames are pre-authorised and use the access level you assign.</p>
     </section>
   </main>;
 }
