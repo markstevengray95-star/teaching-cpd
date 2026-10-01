@@ -78,6 +78,7 @@ export default function DevelopmentDock() {
     manage.push(["/live-presenter", "Presenter 2.0"], ["/facilitator", "Facilitator packs"], ["/improvement/programmes", "Improvement → CPD"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
+    manage.push(["/school-onboarding", "School setup & tutorial"]);
     manage.push(
       ["/ai-course-builder", "AI course builder"],
       ["/policy-training", "Policy training"],

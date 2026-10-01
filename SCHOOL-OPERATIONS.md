@@ -9,3 +9,13 @@ School scope is derived from the authenticated active membership, never a browse
 Department and staff filters apply throughout. Date filters apply only to completed catalogue courses and planned hours; requirements and deadlines remain current. Hours are catalogue estimates, not tracked time or proof of competence. Suggested pathways are not assigned obligations. CSV exports contain staff personal data and must use school-approved handling.
 
 Verification: audit-school-reporting.cjs, TypeScript and the transaction-only supabase/tests/school_reporting.sql (two-school isolation, anonymous/ordinary/inactive access denial and private-data exclusion). All database fixtures roll back.
+
+## Guided school setup
+
+/school-onboarding is self-guarded for School Admin and CPD Lead accounts, including before a school is connected or licensed. Seven tutorial pages link to existing configuration screens rather than creating schools, buying licences or granting roles implicitly. School creation still uses the existing Organisation setup workflow.
+
+The protected setup snapshot returns live counts and the server-side subscription decision. Manual pilot confirmations are stored per school/checkpoint with database-stamped user/time and admin-only RLS. Checkboxes remain unchanged when a save fails. Reading the tutorial never marks configuration as complete; directory rows do not imply active staff membership.
+
+The invalid trial_ends_at field has been removed from launch-readiness queries to match the Teaching CPD schema. Verification: audit-school-onboarding.cjs, TypeScript, browser preview and the rolled-back supabase/tests/school_onboarding.sql including cross-school write denial.
+
+Existing deployment advisories remain outside this feature: leaked-password protection is disabled, and older tables have indexing/policy notices. Before selling, review https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection and the existing launch-readiness platform-owner checklist. This change is not a whole-platform security certification.

@@ -5,14 +5,14 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type Profile={role:string;organisation_id:string|null};
 type Org={name:string;support_email:string|null;brand_name:string|null;logo_url:string|null};
-type Subscription={status:string;seat_limit:number|null;current_period_end:string|null;trial_ends_at:string|null;grace_until:string|null};
+type Subscription={status:string;seat_limit:number|null;current_period_end:string|null;grace_until:string|null};
 type Check={key:string;title:string;detail:string;href:string;done:boolean;critical:boolean;count?:number;note?:string};
 
 export default function LaunchReadinessPage(){
   const [profile,setProfile]=useState<Profile|null>(null);const [org,setOrg]=useState<Org|null>(null);const [subscription,setSubscription]=useState<Subscription|null>(null);const [counts,setCounts]=useState<Record<string,number>>({});const [loading,setLoading]=useState(true);const [message,setMessage]=useState("");
   useEffect(()=>{let live=true;(async()=>{const c=getSupabaseBrowserClient();const {data:auth}=await c.auth.getUser();if(!auth.user){window.location.href="/auth?next=/launch-readiness";return;}const {data:p,error:pError}=await c.from("staff_profiles").select("role,organisation_id").eq("id",auth.user.id).single();if(!live)return;if(pError||!p){setMessage(pError?.message||"Unable to load profile.");setLoading(false);return;}setProfile(p as Profile);if(!["CPD Lead","Admin"].includes(p.role)){setLoading(false);return;}if(!p.organisation_id){setLoading(false);return;}const orgId=p.organisation_id;const results=await Promise.all([
     c.from("organisations").select("name,support_email,brand_name,logo_url").eq("id",orgId).single(),
-    c.from("school_subscriptions").select("status,seat_limit,current_period_end,trial_ends_at,grace_until").eq("organisation_id",orgId).maybeSingle(),
+    c.from("school_subscriptions").select("status,seat_limit,current_period_end,grace_until").eq("organisation_id",orgId).maybeSingle(),
     c.from("organisation_domains").select("id",{count:"exact",head:true}).eq("organisation_id",orgId).eq("status","verified"),
     c.from("organisation_staff_directory").select("id",{count:"exact",head:true}).eq("organisation_id",orgId).eq("active",true),
     c.from("staff_profiles").select("id",{count:"exact",head:true}).eq("organisation_id",orgId),
