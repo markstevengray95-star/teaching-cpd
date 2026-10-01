@@ -90,7 +90,7 @@ export default function DevelopmentDock() {
     );
   }
   if (role === "Admin") manage.push(["/staff-access", "Staff access"], ["/staff-sync", "Staff sync"]);
-  if (platformAdmin) manage.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"], ["/test-logins", "Test logins"]);
+  if (platformAdmin) manage.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"], ["/managed-logins", "Managed logins"]);
 
   const groups: LinkGroup[] = [
     { label: "Learn", links: learning },
