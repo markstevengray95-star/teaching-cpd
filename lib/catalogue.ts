@@ -90,6 +90,8 @@ export type { Phase11MissionStage, Phase11MissionPack, Phase12MeterEffects, Phas
 export { COURSE_LENGTH_OPTIMISATION_VERSION } from "./courseLengthOptimisation";
 export type { CourseLengthAudit } from "./courseLengthOptimisation";
 
+import { editCourseContent } from "./courseEditorial";
+
 const seededCourses = [...coreCourses, ...phase3Courses];
 const replacementMap = new Map([
   ...expandedCourses,
@@ -222,13 +224,13 @@ fullyEnhancedCourses.forEach(validateFinalPresentationPhases7to10);
 fullyEnhancedCourses.forEach(validateMissionSimulationPhases11to12);
 
 export const sourceCourses = fullyEnhancedCourses.map(shortenCourseJourney);
-export const keyCourses = sourceCourses.map(conciseCourse).map(withCourseTiming);
+export const keyCourses = sourceCourses.map(conciseCourse).map(withCourseTiming).map(editCourseContent).map(withModuleBudgets);
 export const quickCourses = shortCourses.map(withCourseTiming);
 export const courses = [...quickCourses, ...keyCourses];
 export const extendedCourses = sourceCourses.map(course => {
   const core = keyCourses.find(c => c.id === course.id)!;
   const duration = Math.ceil(core.duration * course.modules.length / core.modules.length / 5) * 5;
-  return withModuleBudgets({ ...course, duration });
+  return withModuleBudgets(editCourseContent({ ...course, duration }));
 });
 keyCourses.forEach(validateCourse);
 
