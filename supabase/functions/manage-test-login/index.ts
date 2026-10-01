@@ -135,8 +135,22 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
     if (usernameLookupError) throw usernameLookupError;
 
+    const syntheticEmail = `${username}@test.schoolcpd.app`;
     let userId = existingProfile?.user_id as string | undefined;
     let created = false;
+
+    // A previous provisioning attempt may have created the Auth user before a
+    // later database trigger failed. Recover that safe test-only orphan rather
+    // than trying to create the same synthetic email again.
+    if (!userId) {
+      const { data: orphanUserId, error: orphanLookupError } = await admin.rpc(
+        "lookup_platform_test_user_by_email",
+        { p_email: syntheticEmail },
+      );
+      if (orphanLookupError) throw orphanLookupError;
+      if (orphanUserId) userId = orphanUserId as string;
+    }
+
     if (userId) {
       const { data: existingUser, error: existingUserError } = await admin.auth.admin.getUserById(userId);
       if (existingUserError) throw existingUserError;
@@ -151,9 +165,8 @@ Deno.serve(async (req: Request) => {
       });
       if (updateUserError) throw updateUserError;
     } else {
-      const email = `${username}@test.schoolcpd.app`;
       const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
-        email,
+        email: syntheticEmail,
         password,
         email_confirm: true,
         user_metadata: { full_name: displayName, username },
@@ -208,6 +221,7 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true,
       created,
+      recovered: !created && !existingProfile,
       username,
       display_name: displayName,
       access: "Full test-school Admin access",
