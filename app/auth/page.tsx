@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
 import { claimSchoolAccess, safeNextPath } from "@/lib/schoolAccess";
 
 type PasswordMode = "signin" | "signup";
+
+const STAFF_DEVELOPMENT_ORIGIN = "https://schoolcpd.vercel.app";
 
 export default function AuthPage() {
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
@@ -15,17 +17,44 @@ export default function AuthPage() {
   const [department, setDepartment] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const finishingAccess = useRef(false);
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) finishAccess();
+
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get("error_description") || params.get("error");
+    if (oauthError) {
+      setMessage(formatOAuthError(oauthError));
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active || !session) return;
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
+        void finishAccess();
+      }
     });
-    return () => { active = false; };
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+      if (data.session) void finishAccess();
+    });
+
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   async function finishAccess() {
+    if (finishingAccess.current) return;
+    finishingAccess.current = true;
+
     const supabase = getSupabaseBrowserClient();
     try {
       const { data: auth } = await supabase.auth.getUser();
@@ -46,6 +75,7 @@ export default function AuthPage() {
       }
       window.location.replace(`/access?reason=${encodeURIComponent(access.reason)}&next=${encodeURIComponent(nextPath())}`);
     } catch (error) {
+      finishingAccess.current = false;
       const detail = error instanceof Error ? error.message : "Access check failed.";
       window.location.replace(`/access?reason=access_check_failed&detail=${encodeURIComponent(detail)}&next=${encodeURIComponent(nextPath())}`);
     }
@@ -56,20 +86,19 @@ export default function AuthPage() {
     setBusy(true);
     setMessage("");
     try {
-      const redirectTo = `${window.location.origin}/auth?next=${encodeURIComponent(nextPath())}`;
+      const redirectTo = `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
+          queryParams: { prompt: "select_account" },
           ...(provider === "azure" ? { scopes: "email" } : {}),
         },
       });
       if (error) throw error;
     } catch (error) {
       const raw = error instanceof Error ? error.message : "Unable to start school sign-in.";
-      setMessage(raw.toLowerCase().includes("provider") && raw.toLowerCase().includes("enabled")
-        ? "That school sign-in provider is not enabled on this installation yet. A platform administrator needs to finish the Google/Microsoft OAuth provider setup."
-        : raw);
+      setMessage(formatOAuthError(raw));
       setBusy(false);
     }
   }
@@ -88,13 +117,17 @@ export default function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { full_name: name.trim(), department: department.trim() } },
+          options: {
+            data: { full_name: name.trim(), department: department.trim() },
+            emailRedirectTo: `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`,
+          },
         });
         if (error) throw error;
         if (data.session) await finishAccess();
         else setMessage("Account created. Confirm your school email, then return here to sign in. If your school has an active subscription and verified domain, access will be granted automatically without an invitation.");
       }
     } catch (error) {
+      finishingAccess.current = false;
       const raw = error instanceof Error ? error.message : "Unable to authenticate.";
       setMessage(raw.toLowerCase().includes("invalid login credentials")
         ? "That email/password combination was not accepted. Use ‘Email me a sign-in link’ below or reset your password."
@@ -109,7 +142,7 @@ export default function AuthPage() {
     if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Email me a sign-in link’.");return;}
     const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
     try{
-      const redirectTo=`${window.location.origin}/auth?next=${encodeURIComponent(nextPath())}`;
+      const redirectTo=`${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
       const {error}=await supabase.auth.signInWithOtp({email:value,options:{emailRedirectTo:redirectTo,shouldCreateUser:false}});
       if(error)throw error;
       setMessage("Sign-in link sent. Open the email on this device and you’ll be returned to Teaching CPD. Platform Admin accounts then open the Owner Portal automatically.");
@@ -122,7 +155,7 @@ export default function AuthPage() {
     if(!value){setShowFallback(true);setMessage("Enter your email address first, then choose ‘Reset password’.");return;}
     const supabase=getSupabaseBrowserClient();setBusy(true);setMessage("");
     try{
-      const redirectTo=`${window.location.origin}/reset-password`;
+      const redirectTo=`${appOrigin()}/reset-password`;
       const {error}=await supabase.auth.resetPasswordForEmail(value,{redirectTo});
       if(error)throw error;
       setMessage("Password reset email sent. Open the link in that email to choose a new password.");
@@ -174,4 +207,23 @@ export default function AuthPage() {
 function nextPath() {
   if (typeof window === "undefined") return "/";
   return safeNextPath(new URLSearchParams(window.location.search).get("next"));
+}
+
+function appOrigin() {
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
+    return window.location.origin;
+  }
+  return (process.env.NEXT_PUBLIC_APP_URL || STAFF_DEVELOPMENT_ORIGIN).replace(/\/+$/, "");
+}
+
+function formatOAuthError(raw: string) {
+  const value = raw.replace(/\+/g, " ");
+  const lower = value.toLowerCase();
+  if (lower.includes("provider") && (lower.includes("enabled") || lower.includes("unsupported"))) {
+    return "That school sign-in provider is not enabled yet. Enable the Google or Microsoft provider in the Staff Development Supabase Auth settings, then try again.";
+  }
+  if (lower.includes("redirect") || lower.includes("callback")) {
+    return "School sign-in could not return to Staff Development. Check that https://schoolcpd.vercel.app/auth is in the Supabase Auth redirect allow list and try again.";
+  }
+  return value;
 }
