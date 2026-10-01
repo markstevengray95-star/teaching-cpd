@@ -29,7 +29,8 @@ export function readStartingPoint(course: Course, raw?: string) {
 }
 
 export function recommendedFocus(course: Course, percent: number, weakTopics: string[]) {
-  const reading = course.modules.find(m => m.type === "content");
+  const reading = course.modules.find(m => m.type === "content" && !m.title.startsWith("Reference · "))
+    || course.modules.find(m => m.type === "content");
   const caseModule = course.modules.find(m => m.type === "scenario");
   const check = course.modules.find(m => m.type === "quiz" && questionsForModule(m).some(q => weakTopics.includes(q.topic)));
   const ids = percent >= 80 ? [caseModule?.id, check?.id] : [reading?.id, check?.id, caseModule?.id];

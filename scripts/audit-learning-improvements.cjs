@@ -13,6 +13,10 @@ for (const course of courses) {
   for (const percent of [0, 50, 100]) {
     const focus = recommendedFocus(course, percent, [questions[0].topic]);
     assert.ok(focus.moduleIds.length);
+    if(percent<80 && course.modules.some(m=>m.type==='content' && !m.title.startsWith('Reference · '))) {
+      const first=course.modules.find(m=>m.id===focus.moduleIds[0]);
+      assert.equal(first.type,'content');assert.ok(!first.title.startsWith('Reference · '));
+    }
     focus.moduleIds.forEach(id => assert.ok(course.modules.some(m => m.id === id)));
   }
   const examples = [];

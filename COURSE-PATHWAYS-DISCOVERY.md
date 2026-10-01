@@ -25,3 +25,26 @@ school safety, pastoral support and sustainable leadership. Role filtering,
 per-course completion, whole-pathway time and the next unfinished course use
 the existing CPD progress record. A pathway is a suggested sequence, not a new
 qualification or an enforced prerequisite. No new personal data is collected.
+Courses in a pathway expose their position and next course inside the workspace.
+The starting-point recommendation selects substantive reading before references.
+
+## Course discovery
+
+Ten learning-need groups cover every course. Search combines whole-course
+teaching text, learning goals and audience tags, handles multi-word queries and
+TA/AFL abbreviations, and prioritises direct title matches. Filters combine
+role, maximum available time, refresher/core format, category, level and
+existing completion status. Sorting is explicit: continue first / short primers,
+shortest, or alphabetical. Cards show the learning goal and refresher parent.
+
+The four main filters stay visible; additional filters and sorting are an
+accessible disclosure. Result counts, empty-state recovery and clear-all work
+without changing learner progress or collecting new profile data.
+
+Verification includes TypeScript, full catalogue audits and pure-function
+tests of editorial idempotence, retained assessment content, all pathway IDs,
+next unfinished course, historical completion, every learning-need / role
+filter, time bounds, multi-word search and sort order. A local rendered preview
+with mocked progress checks combined filters, empty results and reset, saved
+pathway completion, opening the next course and responsive layout. This is
+not an authenticated production persistence test or specialist content approval.

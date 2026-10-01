@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { categoryOrder, courses, type Course, type Module, type Role } from "@/lib/catalogue";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { CourseWorkspace } from "./components/CourseWorkspace";
-import CoursePathways from "./components/CoursePathways";
+import CourseDiscovery from "./components/CourseDiscovery";
 import { isAssessmentBank } from "@/lib/assessmentQuestions";
 
 type Profile = { id: string; name: string; email: string; role: Role; department: string };
@@ -186,10 +186,8 @@ function Dashboard({ profile, progress, stats, openCourse, setView, leader }: { 
   </>;
 }
 
-function CourseLibrary({ progress, search, setSearch, category, setCategory, openCourse }: { progress: ProgressState; search: string; setSearch: (s: string) => void; category: string; setCategory: (s: string) => void; openCourse: (c: Course) => void }) {
-  const [length, setLength] = useState("All");
-  const filtered = courses.filter(c => (length === "All" || (length === "Short" ? c.duration <= 20 : c.duration === Number(length))) && (category === "All" || c.category === category) && `${c.title} ${c.summary} ${c.category}`.toLowerCase().includes(search.toLowerCase()));
-return <><section className="pageTitle"><div><span className="eyebrow">COURSE LIBRARY</span><h1>Professional learning, built for practice.</h1><p>Interactive courses with animated visuals, knowledge checks, scenarios, practice activities and reflection.</p></div></section><CoursePathways progress={progress} openCourse={openCourse}/><div className="filters"><input className="search" placeholder="Search courses…" value={search} onChange={e => setSearch(e.target.value)} /><div className="chips"><button className={category === "All" ? "chip active" : "chip"} onClick={() => setCategory("All")}>All</button>{categoryOrder.map(cat => <button key={cat} className={category === cat ? "chip active" : "chip"} onClick={() => setCategory(cat)}>{cat}</button>)}</div></div><div className="courseLengthFilter"><label>Planned course length<select value={length} onChange={e => setLength(e.target.value)}><option value="All">All lengths</option><option value="Short">Short courses · 15–20 minutes</option>{[45,60,75,90].map(minutes => <option key={minutes} value={minutes}>{minutes} minutes</option>)}</select></label><p>Focused refreshers and varied core courses. Timings are guided pacing estimates; optional extended practice and Course Lab add time.</p></div><div className="libraryMeta"><strong>{filtered.length} courses</strong><span>Cloud-saved progress</span></div><div className="cardGrid">{filtered.map(c => <CourseCard key={c.id} course={c} state={progress[c.id]} onClick={() => openCourse(c)} />)}</div></>;
+function CourseLibrary(props: React.ComponentProps<typeof CourseDiscovery>) {
+  return <CourseDiscovery {...props}/>;
 }
 
 function MyCPD({ progress, openCourse }: { progress: ProgressState; openCourse: (c: Course) => void }) {
