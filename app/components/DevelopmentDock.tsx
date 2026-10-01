@@ -33,7 +33,7 @@ export default function DevelopmentDock() {
     return () => { active = false; };
   }, []);
 
-  if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
+  if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/test-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
 
   const learning: LinkItem[] = [
     ["/development", "Development cycle"],
@@ -90,7 +90,7 @@ export default function DevelopmentDock() {
     );
   }
   if (role === "Admin") manage.push(["/staff-access", "Staff access"], ["/staff-sync", "Staff sync"]);
-  if (platformAdmin) manage.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"]);
+  if (platformAdmin) manage.push(["/owner-portal", "Owner portal"], ["/platform", "Platform"], ["/test-logins", "Test logins"]);
 
   const groups: LinkGroup[] = [
     { label: "Learn", links: learning },
