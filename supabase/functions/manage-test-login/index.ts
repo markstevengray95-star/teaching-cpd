@@ -139,9 +139,6 @@ Deno.serve(async (req: Request) => {
     let userId = existingProfile?.user_id as string | undefined;
     let created = false;
 
-    // A previous provisioning attempt may have created the Auth user before a
-    // later database trigger failed. Recover that safe test-only orphan rather
-    // than trying to create the same synthetic email again.
     if (!userId) {
       const { data: orphanUserId, error: orphanLookupError } = await admin.rpc(
         "lookup_platform_test_user_by_email",
@@ -205,13 +202,17 @@ Deno.serve(async (req: Request) => {
       }, { onConflict: "organisation_id,user_id" });
     if (membershipError) throw membershipError;
 
+    // This compatibility profile belongs to the older Staff Development data
+    // model. Its preferred_organization_id references public.school_organizations,
+    // not Teaching CPD's public.organisations table. Keep it null and use the
+    // Teaching CPD profile/membership records above for product authorization.
     const { error: combinedProfileError } = await admin
       .from("staff_development_profiles")
       .upsert({
         user_id: userId,
         display_name: displayName,
         department: "Testing",
-        preferred_organization_id: testOrg.id,
+        preferred_organization_id: null,
         username,
         platform_role: "admin",
         updated_at: new Date().toISOString(),
