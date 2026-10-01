@@ -86,6 +86,7 @@ export default function DevelopmentDock() {
       ["/presentation-overhaul-final", "Presentation QA"],
       ["/course-quality-dashboard", "Final course QA"],
       ["/school-access", "School access"],
+      ["/school-reporting", "School reporting"],
       ["/admin", "CPD admin"],
     );
   }

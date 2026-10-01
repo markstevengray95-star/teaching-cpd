@@ -114,6 +114,7 @@ import "./five-feature-suite.css";
 import "./ai-platform.css";
 import "./course-learning-layout.css";
 import "./course-discovery.css";
+import "./school-operations.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD Hub",
