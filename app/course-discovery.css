@@ -1,0 +1,20 @@
+.learningPathways {margin:24px 0 32px;padding:24px;background:var(--panel,#fff);border:1px solid #d8e1e9;border-radius:18px;color:#183346}
+.pathwayHeading {display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:20px}
+.pathwayHeading h2,.pathwayHeading h3 {margin:8px 0}.pathwayHeading p {max-width:72ch;color:#536677;line-height:1.6}
+.pathwayHeading label {display:grid;gap:8px;min-width:200px}.learningPathways select,.discoveryFilters select {padding:10px;border:1px solid #b8c8d3;border-radius:8px;background:white;color:#183346}
+.pathwayGrid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pathwayCard {display:grid;gap:12px;padding:18px;text-align:left;border:1px solid #c9d5de;border-radius:12px;background:#f8fafc;color:#183346;cursor:pointer}
+.pathwayCard.selected {border-color:#166b64;box-shadow:0 0 0 2px #166b64}.pathwayCard strong {font-size:1.08rem}.pathwayCard span,.pathwayCard small {line-height:1.5}
+.pathwayDetail {margin-top:22px;padding-top:20px;border-top:1px solid #d8e1e9}.pathwayDetail ol {list-style:none;padding:0}.pathwayDetail li {display:flex;gap:18px;justify-content:space-between;align-items:center;padding:18px 0;border-top:1px solid #d8e1e9}.pathwayDetail li p {margin:8px 0}.pathwayDetail li span {color:#536677;font-size:.9rem}
+.learningPathways button:focus-visible,.courseDiscovery button:focus-visible,.courseDiscovery input:focus-visible,.courseDiscovery select:focus-visible {outline:3px solid #1d7870;outline-offset:3px}
+@media(max-width:700px) {.learningPathways {padding:16px}.pathwayGrid {grid-template-columns:1fr}.pathwayHeading,.pathwayDetail li {flex-direction:column}.pathwayHeading label {width:100%}.pathwayDetail button {max-width:100%;white-space:normal}}
+.discoverySearch {display:grid;gap:8px;margin:20px 0}.discoverySearch label,.discoveryFilters label {font-weight:600;font-size:.9rem}.discoverySearch input {width:100%;padding:14px}
+.discoverySearch input.search {max-width:none}
+.discoveryExtraFilters {margin-top:16px}.discoveryExtraFilters summary {cursor:pointer;color:#166b64;font-weight:600;padding:10px 0}.discoveryExtraFilters[open] .discoveryFilters {margin-top:10px}
+.coursePathwayLinks {padding:10px 24px;border-bottom:1px solid #d8e1e9;flex-shrink:0;max-height:30vh;overflow:auto}.coursePathwayLinks summary {cursor:pointer;color:#166b64;font-weight:600}.coursePathwayLinks p {margin:8px 0;line-height:1.5}.coursePathwayLinks button {max-width:100%;white-space:normal}
+.discoveryFilters {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.discoveryFilters label {display:grid;gap:8px;min-width:0}.discoveryFilters select {width:100%;min-width:0}
+.discoveryMeta {display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:14px}.discoveryHint {color:#536677;font-size:.9rem;line-height:1.6;margin:4px 0 24px}
+.discoveryCard h2 {font-size:1.18rem;line-height:1.4;margin:12px 0}.discoveryOutcome {border-top:1px solid #d8e1e9;padding-top:12px;margin:12px 0}.discoveryOutcome span {font-size:.8rem;font-weight:700;color:#166b64}.discoveryOutcome p {margin:6px 0}.discoveryParent {font-size:.85rem;color:#536677}
+.discoveryEmpty {padding:32px;border:1px dashed #b8c8d3;border-radius:16px}.discoveryCard {min-width:0;overflow-wrap:anywhere}.discoveryCard .courseCardFoot {gap:10px;flex-wrap:wrap}.discoveryCard>.textButton {display:block;margin-top:12px}
+@media(max-width:1000px) {.discoveryFilters {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px) {.discoveryFilters {grid-template-columns:1fr}.courseDiscovery .pageTitle {flex-direction:column;align-items:stretch}.discoveryMeta {align-items:flex-start}.courseDiscovery .cardGrid {grid-template-columns:1fr}.courseDiscovery button {white-space:normal}}

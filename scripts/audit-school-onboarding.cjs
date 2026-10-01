@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
+require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,f);
+const {pilotChecks,schoolTutorial,setupChecks}=require('../lib/schoolOnboarding.ts');
+assert.equal(schoolTutorial.length,7);assert.equal(new Set(schoolTutorial.map(s=>s.id)).size,7);
+schoolTutorial.forEach(s=>{assert.ok(s.reading.length>120);assert.equal(s.tasks.length,3);assert.ok(s.href.startsWith('/'));});
+assert.equal(setupChecks(null).filter(c=>c.done).length,0);
+const snapshot={name:'Fixture',access_allowed:false,domains:1,members:1,directory:50,policies:1,requirements:1,assignments:1,checkpoints:pilotChecks.map(c=>({checkpoint_id:c.id,completed:true}))};
+let checks=setupChecks(snapshot);assert.equal(checks.find(c=>c.title==='Subscription permits access').done,false);
+assert.equal(checks.find(c=>c.title==='Pilot members connected').done,false);
+assert.equal(checks.filter(c=>c.done).length,5,'Manual confirmations and directory imports do not imply live access or joined staff');
+snapshot.access_allowed=true;snapshot.members=2;assert.equal(setupChecks(snapshot).filter(c=>c.done).length,7);
+const sql=fs.readFileSync('supabase/migrations/20261001110401_school_onboarding_checkpoints.sql','utf8');
+assert.ok(sql.includes('enable row level security'));assert.ok(sql.includes('set search_path'));
+pilotChecks.forEach(c=>assert.ok(sql.includes("'"+c.id+"'")));
+assert.ok(!fs.readFileSync('app/launch-readiness/page.tsx','utf8').includes('trial_ends_at'));
+console.log('PASS: seven tutorial pages, live configuration separate from four manual pilot checks, schema agreement');

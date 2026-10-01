@@ -184,7 +184,7 @@ export default function CourseBeforeAfterPhase18Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderStudio(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderStudio(modal));
       });
     };
     apply();

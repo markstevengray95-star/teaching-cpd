@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { parsePracticeOption } from "@/lib/practiceOptionParsing";
 
 type PracticeItem = { index: number; tag: string; label: string; button: HTMLButtonElement };
 
@@ -22,9 +23,8 @@ function escapeHtml(value: string) {
 }
 
 function parseItem(button: HTMLButtonElement, index: number): PracticeItem {
-  const raw = clean(button.textContent);
-  const match = raw.match(/^\[([^\]]+)\]\s*(.*)$/);
-  return { index, tag: match?.[1] || "", label: match?.[2] || raw, button };
+  const parsed = parsePracticeOption(clean(button.textContent));
+  return { index, tag: button.dataset.practiceTag || parsed.tag, label: parsed.label.replace(/^\d+(?=[A-Za-z])/, ""), button };
 }
 
 function mixed<T>(items: T[]) {
@@ -383,7 +383,7 @@ export default function CoursePracticePhase4Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach(modal => {
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach(modal => {
           const article = modal.querySelector<HTMLElement>(".moduleContent");
           if (article) buildForArticle(modal, article, completedKeys);
         });

@@ -197,7 +197,7 @@ export default function CourseProgressiveCasePhase4Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderCase(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderCase(modal));
       });
     };
     apply();

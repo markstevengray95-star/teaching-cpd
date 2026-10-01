@@ -248,7 +248,7 @@ export default function CourseMissionSimulationPhase11to12Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach(decorate);
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach(decorate);
       });
     };
     apply();

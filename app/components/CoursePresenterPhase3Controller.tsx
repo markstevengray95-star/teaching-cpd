@@ -124,7 +124,7 @@ export default function CoursePresenterPhase3Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(updatePresenter);
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(updatePresenter);
       });
     };
     apply();
@@ -132,7 +132,7 @@ export default function CoursePresenterPhase3Controller() {
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ["class"] });
 
     const timer = window.setInterval(() => {
-      document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => {
+      document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => {
         const output = modal.querySelector<HTMLElement>(".phase3SessionTimer");
         const start = Number(modal.dataset.phase3Start || Date.now());
         if (!output) return;
@@ -143,7 +143,7 @@ export default function CoursePresenterPhase3Controller() {
 
     const onKey = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLElement && (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) || event.target.isContentEditable)) return;
-      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode)");
+      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)");
       if (!modal) return;
       if (event.key.toLowerCase() === "n") {
         event.preventDefault();

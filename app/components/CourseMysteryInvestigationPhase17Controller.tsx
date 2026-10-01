@@ -181,7 +181,7 @@ export default function CourseMysteryInvestigationPhase17Controller() {
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => renderMystery(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => renderMystery(modal));
       });
     };
     apply();

@@ -6,8 +6,8 @@ import { applyAccessibilityPreferences, readAccessibilityPreferences } from "@/l
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { claimSchoolAccess } from "@/lib/schoolAccess";
 
-const PUBLIC_PREFIXES = ["/auth", "/admin-login", "/owner-login", "/reset-password", "/access", "/join", "/offline", "/verify"];
-const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/platform", "/owner-portal"];
+const PUBLIC_PREFIXES = ["/auth", "/admin-login", "/owner-login", "/reset-password", "/access", "/join", "/offline", "/verify", "/procurement"];
+const SELF_GUARDED_SETUP_PREFIXES = ["/organisation", "/school-access", "/school-onboarding", "/platform", "/owner-portal"];
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 export default function AppShellEnhancements() {

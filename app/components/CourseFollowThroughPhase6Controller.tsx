@@ -56,7 +56,7 @@ export default function CourseFollowThroughPhase6Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach(modal => {
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach(modal => {
           if (!isComplete(modal)) return;
           const title = clean(modal.querySelector(".courseModalHead h2")?.textContent);
           const course = courses.find(item => item.title === title);

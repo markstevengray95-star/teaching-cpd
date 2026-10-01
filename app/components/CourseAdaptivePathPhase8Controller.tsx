@@ -23,5 +23,5 @@ function render(modal:HTMLElement){
 function renderDetail(label:string,prompt:string,transfer:string){return `<span>YOUR ROUTE · ${escapeHtml(label)}</span><strong>${escapeHtml(prompt)}</strong><p>${escapeHtml(transfer)}</p><small>Use the normal activity response box below to record your adapted version.</small>`;}
 
 export default function CourseAdaptivePathPhase8Controller(){
-  useEffect(()=>{let queued=false;const apply=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;document.querySelectorAll<HTMLElement>(".courseModal").forEach(render);});};apply();const observer=new MutationObserver(apply);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});return()=>observer.disconnect();},[]);return null;
+  useEffect(()=>{let queued=false;const apply=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(render);});};apply();const observer=new MutationObserver(apply);observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["class"]});return()=>observer.disconnect();},[]);return null;
 }

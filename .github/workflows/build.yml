@@ -18,3 +18,5 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build current CPD app
         run: npm run build
+      - name: Audit course timing, tasks and migration parity
+        run: npm run audit:courses

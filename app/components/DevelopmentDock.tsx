@@ -35,6 +35,8 @@ export default function DevelopmentDock() {
 
   if (pathname.startsWith("/auth") || pathname.startsWith("/admin-login") || pathname.startsWith("/owner-login") || pathname.startsWith("/test-login") || pathname.startsWith("/access") || pathname.startsWith("/join") || pathname.startsWith("/verify") || pathname.startsWith("/reset-password")) return null;
 
+  if (pathname.startsWith("/procurement")) return null;
+
   const learning: LinkItem[] = [
     ["/development", "Development cycle"],
     ["/pathways/personal", "Personal pathway"],
@@ -78,6 +80,8 @@ export default function DevelopmentDock() {
     manage.push(["/live-presenter", "Presenter 2.0"], ["/facilitator", "Facilitator packs"], ["/improvement/programmes", "Improvement → CPD"]);
   }
   if (["CPD Lead", "Admin"].includes(role)) {
+    manage.push(["/procurement", "School procurement pack"]);
+    manage.push(["/school-onboarding", "School setup & tutorial"]);
     manage.push(
       ["/ai-course-builder", "AI course builder"],
       ["/policy-training", "Policy training"],
@@ -86,6 +90,7 @@ export default function DevelopmentDock() {
       ["/presentation-overhaul-final", "Presentation QA"],
       ["/course-quality-dashboard", "Final course QA"],
       ["/school-access", "School access"],
+      ["/school-reporting", "School reporting"],
       ["/admin", "CPD admin"],
     );
   }

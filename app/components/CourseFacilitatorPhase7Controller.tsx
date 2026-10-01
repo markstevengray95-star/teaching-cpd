@@ -200,7 +200,7 @@ export default function CourseFacilitatorPhase7Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal").forEach(modal => updateConsole(modal));
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.shortCoursePresentation)").forEach(modal => updateConsole(modal));
       });
     };
     apply();
@@ -213,7 +213,7 @@ export default function CourseFacilitatorPhase7Controller() {
 
     const keyHandler = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLElement && (["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName) || event.target.isContentEditable)) return;
-      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode)");
+      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)");
       if (!modal) return;
       if (event.key.toLowerCase() === "g") {
         event.preventDefault();

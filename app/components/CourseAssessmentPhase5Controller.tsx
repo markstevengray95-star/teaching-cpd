@@ -210,7 +210,7 @@ export default function CourseAssessmentPhase5Controller() {
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach(modal => {
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach(modal => {
           const article = modal.querySelector<HTMLElement>(".moduleContent");
           if (article) buildAssessment(modal, article, completedKeys);
         });

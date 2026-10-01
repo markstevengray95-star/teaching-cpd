@@ -41,7 +41,7 @@ export default function AdminSlideUnlockController() {
       scheduled = true;
       window.requestAnimationFrame(() => {
         scheduled = false;
-        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode)").forEach((modal) => {
+        document.querySelectorAll<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)").forEach((modal) => {
           modal.dataset.adminSlideUnlocked = "true";
           modal.querySelectorAll<HTMLButtonElement>(".moduleNav button").forEach((button) => {
             if (button.disabled) button.disabled = false;
@@ -66,7 +66,7 @@ export default function AdminSlideUnlockController() {
       if (isTypingTarget(event.target)) return;
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
 
-      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode)");
+      const modal = document.querySelector<HTMLElement>(".courseModal:not(.labMode):not(.shortCoursePresentation)");
       if (!modal) return;
       const buttons = Array.from(modal.querySelectorAll<HTMLButtonElement>(".moduleNav button"));
       const currentIndex = buttons.findIndex((button) => button.classList.contains("current"));
