@@ -103,18 +103,17 @@ export default function AuthPage() {
     }
   }
 
-  async function schoolOAuth(provider: "google" | "azure") {
+  async function schoolOAuth() {
     const supabase = getSupabaseBrowserClient();
     setBusy(true);
     setMessage("");
     try {
       const redirectTo = `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
+        provider: "google",
         options: {
           redirectTo,
           queryParams: { prompt: "select_account" },
-          ...(provider === "azure" ? { scopes: "email" } : {}),
         },
       });
       if (error) throw error;
@@ -207,25 +206,18 @@ export default function AuthPage() {
   return <main className="phasePage authPhasePage schoolAuthPage">
     <section className="phaseHero compactHero schoolAuthHero">
       <span className="eyebrow">TEACHING CPD · SCHOOL ACCESS</span>
-      <h1>Use your school account.</h1>
-      <p>If your school has purchased the School plan, any member of staff using its verified school email domain can create an account and join automatically. After signup, staff can also choose a username and use that instead of their email when signing in.</p>
-      <div className="schoolAccessFlow" aria-label="School access process">
-        <span><b>1</b> School subscription</span><i>→</i><span><b>2</b> Verified domain</span><i>→</i><span><b>3</b> Staff creates/signs into account</span><i>→</i><span><b>4</b> Automatic school access</span>
-      </div>
-      <div className="schoolAuthTrust"><span>✓ Email or username login</span><span>✓ School-scoped data</span><span>✓ Admin-controlled roles</span></div>
+      <h1>Welcome to Teaching CPD</h1>
+      <p>Sign in to continue your professional development, save your progress and access your school’s training.</p>
     </section>
 
     <section className="phaseCard authCard schoolAuthCard">
       {!hasSupabaseConfig() && <div className="phaseNotice">The authentication service is not connected.</div>}
-      <div className="schoolAuthHeading"><span className="eyebrow">STAFF SIGN IN / CREATE ACCOUNT</span><h2>Continue with your school identity</h2><p>First time here? Create an account with your school email. Once it is confirmed, you can choose a username for future sign-ins.</p></div>
-      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
-      <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={() => schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
-
-      <div className="schoolDomainRule"><strong>Username sign-in is supported</strong><p>Staff can sign in with their school email or a unique username. Accounts created by the Platform Owner under Managed logins are already authorised and enter the site directly without school-domain verification.</p></div>
+      <div className="schoolAuthHeading"><span className="eyebrow">YOUR ACCOUNT</span><h2>Sign in</h2><p>Use Google or sign in with your email and password.</p></div>
+      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth()}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Choose your Google account</small></span></button>
 
       <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a><a className="textButton" href="/owner-login">Platform Owner sign in</a></div>
-      <button className="textButton schoolFallbackToggle" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide password sign in" : "Use email or username + password"}</button>
-      {showFallback && <form className="schoolFallbackForm" onSubmit={passwordSubmit}>
+      <button className="secondary schoolFallbackToggle" aria-expanded={showFallback} aria-controls="password-sign-in" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide password sign in" : "Sign in with email or username"}</button>
+      {showFallback && <form id="password-sign-in" className="schoolFallbackForm" onSubmit={passwordSubmit}>
         {passwordMode === "signup" && <>
           <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
           <label>Department<input required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Science" /></label>
@@ -238,7 +230,7 @@ export default function AuthPage() {
       </form>}
 
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Email remains attached to normal school accounts for confirmation, password resets and school-domain access. Platform Owner-created managed usernames are pre-authorised and use the access level you assign.</p>
+      <p className="schoolAuthFinePrint">Use your school email to connect to your school’s subscription.</p>
     </section>
   </main>;
 }
@@ -263,7 +255,7 @@ function formatOAuthError(raw: string) {
   const value = raw.replace(/\+/g, " ");
   const lower = value.toLowerCase();
   if (lower.includes("provider") && (lower.includes("enabled") || lower.includes("unsupported"))) {
-    return "That school sign-in provider is not enabled yet. Enable the Google or Microsoft provider in the Staff Development Supabase Auth settings, then try again.";
+    return "That school sign-in provider is not enabled yet. Enable the Google provider in the Staff Development Supabase Auth settings, then try again.";
   }
   if (lower.includes("redirect") || lower.includes("callback")) {
     return "School sign-in could not return to Staff Development. Check that https://schoolcpd.vercel.app/auth is in the Supabase Auth redirect allow list and try again.";

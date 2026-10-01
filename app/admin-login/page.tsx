@@ -30,10 +30,10 @@ export default function AdminLoginPage(){
     }catch(error){setMessage(error instanceof Error?error.message:"Unable to complete School Admin sign-in.");setBusy(false);}
   }
 
-  async function schoolOAuth(provider:"google"|"azure"){
+  async function schoolOAuth(){
     const c=getSupabaseBrowserClient();setBusy(true);setMessage("");
     try{
-      const {error}=await c.auth.signInWithOAuth({provider,options:{redirectTo:`${window.location.origin}/admin-login`,...(provider==="azure"?{scopes:"email"}:{})}});
+      const {error}=await c.auth.signInWithOAuth({provider:"google",options:{redirectTo:`${window.location.origin}/admin-login`}});
       if(error)throw error;
     }catch(error){setMessage(error instanceof Error?error.message:"Unable to start School Admin sign-in.");setBusy(false);}
   }
@@ -51,9 +51,8 @@ export default function AdminLoginPage(){
     <section className="phaseCard authCard schoolAuthCard adminLoginCard">
       {!hasSupabaseConfig()&&<div className="phaseNotice">The authentication service is not connected.</div>}
       <div className="schoolAuthHeading"><span className="eyebrow">ADMIN ACCESS</span><h2>Continue with your school administrator account</h2><p>The nominated purchaser is promoted to School Admin on their first verified school sign-in. Existing Admins can then promote other staff.</p></div>
-      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={()=>schoolOAuth("google")}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
-      <button type="button" className="schoolProviderButton microsoft" disabled={busy} onClick={()=>schoolOAuth("azure")}><span className="providerMark microsoftMark"><i/><i/><i/><i/></span><span><strong>Continue with Microsoft</strong><small>Microsoft 365 / Entra school account</small></span></button>
-      <div className="adminLoginDivider"><span>or use the password fallback</span></div>
+      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={()=>schoolOAuth()}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Google Workspace school account</small></span></button>
+      <div className="adminLoginDivider"><span>or sign in with email</span></div>
       <form className="schoolFallbackForm" onSubmit={passwordSignIn}><label>School email<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@school.org.uk"/></label><label>Password<input required minLength={8} type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="primary full" disabled={busy}>{busy?"Checking Admin access…":"Sign in as School Admin"}</button></form>
       {message&&<div className="feedback" role="status">{message}</div>}
       <div className="adminLoginLinks"><a href="/auth">Staff sign in / create account</a><button className="textButton" type="button" onClick={signOut}>Sign out current account</button></div>
