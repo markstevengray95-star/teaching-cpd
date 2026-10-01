@@ -155,6 +155,13 @@
 .readingPaceControls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 14px 0; }
 .readingPaceControls span { font-size: 12px; }
 .learningToolPanel .practiceFeedback button { margin: 6px 6px 6px 0; text-align: left; }
+.learningToolBar button { min-height: 40px; }
+#main-content .academyPresentation .phase4AdvancedSlide .optionList { display: none !important; }
+.learningToolPanel a { color: #135c7c; text-decoration: underline; overflow-wrap: anywhere; }
+.learningToolPanel .sourceReviewDates { display: grid; grid-template-columns: minmax(120px,1fr) 2fr; gap: 12px; }
+.sourceReviewDates dt { font-weight: 700; }
+.sourceReviewDates dd { margin: 0; line-height: 1.65; }
+@media (max-width: 600px) { .learningToolPanel .sourceReviewDates { grid-template-columns: 1fr; gap: 6px; } .sourceReviewDates dd { margin-bottom: 12px; } }
 .learningToolPanel :is(button,input,textarea,summary,select,a):focus-visible { outline: 3px solid #2675b1; outline-offset: 3px; }
 @media (max-width: 600px) { .learningToolBar { padding: 8px 12px; } .learningToolBar span { display: none; } .learningToolPanel { padding: 16px; } }
 @media (max-width: 850px) { #main-content .academyPresentation .courseLabViewport { padding: 12px; } .evidenceScene { grid-template-columns: 1fr; } .relatedCourseStrip { padding: 8px 16px; max-height: 80px; } }
