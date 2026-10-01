@@ -57,6 +57,14 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     });
 
+    const { data: reserved, error: reservedError } = await admin
+      .from("staff_development_reserved_usernames")
+      .select("username")
+      .eq("username", username)
+      .maybeSingle();
+    if (reservedError) throw reservedError;
+    if (reserved) return json({ error: "That username is reserved. Choose another one." }, 409);
+
     const { data: conflict, error: conflictError } = await admin
       .from("staff_development_profiles")
       .select("user_id")
