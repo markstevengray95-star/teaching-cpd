@@ -1,0 +1,167 @@
+name: Apply timetable curriculum expansion
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, 'Run timetable curriculum expansion')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch timetable planner
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/components/StaffTimetableHub.tsx')
+          s = p.read_text()
+
+          import_line = '''import {
+            curriculumStages,
+            getCurriculumLessons,
+            getCurriculumSubjects,
+            getCurriculumUnit,
+            getCurriculumUnits,
+            inferCurriculumStage,
+            normaliseCurriculumSubject,
+          } from "./staffTimetableCurriculum";\n'''
+          anchor = 'import Link from "next/link";\n'
+          if import_line not in s:
+              s = s.replace(anchor, anchor + import_line, 1)
+
+          old_tone = '''function subjectTone(subject: string) {
+            const key = subject.toLowerCase();
+            if (key.includes("physics")) return "tone-blue";
+            if (key.includes("biology")) return "tone-green";
+            if (key.includes("chemistry")) return "tone-purple";
+            if (key.includes("math")) return "tone-amber";
+            if (key.includes("geography")) return "tone-teal";
+            if (key.includes("science")) return "tone-cyan";
+            return "tone-neutral";
+          }'''
+          new_tone = '''function subjectTone(subject: string) {
+            const key = subject.toLowerCase();
+            if (key.includes("physics")) return "tone-blue";
+            if (key.includes("biology")) return "tone-green";
+            if (key.includes("chemistry")) return "tone-purple";
+            if (key.includes("math")) return "tone-amber";
+            if (key.includes("geography")) return "tone-teal";
+            if (key.includes("english") || key.includes("literature") || key.includes("language")) return "tone-rose";
+            if (key.includes("history")) return "tone-slate";
+            if (key.includes("science")) return "tone-cyan";
+            return "tone-neutral";
+          }'''
+          if old_tone in s:
+              s = s.replace(old_tone, new_tone, 1)
+
+          start = s.index('function PlanEditor(')
+          end = s.index('function ItemEditor(', start)
+          plan_editor = r'''function PlanEditor({ lesson, readOnly, onClose, onSave }: { lesson: Lesson; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void }) {
+            const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan });
+            const inferredStage = (curriculumStages.includes(plan.curriculumStage as (typeof curriculumStages)[number]) ? plan.curriculumStage : inferCurriculumStage(lesson.className)) as (typeof curriculumStages)[number];
+            const inferredSubject = normaliseCurriculumSubject(plan.curriculumSubject || lesson.subject);
+            const [bankStage, setBankStage] = useState<string>(inferredStage);
+            const [bankSubject, setBankSubject] = useState<string>(inferredSubject);
+            const initialUnits = getCurriculumUnits(inferredStage, inferredSubject);
+            const [bankUnit, setBankUnit] = useState<string>(initialUnits.some((item) => item.unit === plan.curriculumUnit) ? plan.curriculumUnit : (initialUnits[0]?.unit || ""));
+            const [bankLessonIndex, setBankLessonIndex] = useState<number>(() => Math.max(0, plan.sequencePosition || 0));
+
+            const availableSubjects = getCurriculumSubjects(bankStage);
+            const availableUnits = getCurriculumUnits(bankStage, bankSubject);
+            const availableLessons = getCurriculumLessons(bankStage, bankSubject, bankUnit);
+            const selectedUnit = getCurriculumUnit(bankStage, bankSubject, bankUnit);
+            const selectedTemplate = availableLessons[bankLessonIndex] || availableLessons[0];
+
+            const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "") => <label className={multiline ? "wide" : ""}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
+
+            function changeStage(next: string) {
+              setBankStage(next);
+              const subjects = getCurriculumSubjects(next);
+              const nextSubject = subjects.includes(bankSubject as never) ? bankSubject : (normaliseCurriculumSubject(lesson.subject) || subjects[0] || "");
+              setBankSubject(nextSubject);
+              const units = getCurriculumUnits(next, nextSubject);
+              setBankUnit(units[0]?.unit || "");
+              setBankLessonIndex(0);
+            }
+
+            function changeSubject(next: string) {
+              setBankSubject(next);
+              const units = getCurriculumUnits(bankStage, next);
+              setBankUnit(units[0]?.unit || "");
+              setBankLessonIndex(0);
+            }
+
+            function changeUnit(next: string) {
+              setBankUnit(next);
+              setBankLessonIndex(0);
+            }
+
+            function applySuggestedLesson() {
+              if (!selectedTemplate) return;
+              setPlan((current) => ({
+                ...current,
+                curriculumStage: bankStage,
+                curriculumSubject: bankSubject,
+                curriculumUnit: bankUnit,
+                sequencePosition: Math.max(0, bankLessonIndex),
+                topic: selectedTemplate.title,
+                vocabulary: selectedTemplate.vocabulary,
+                objectives: selectedTemplate.objectives,
+                sequence: selectedTemplate.sequence,
+                assessment: selectedTemplate.assessment,
+              }));
+            }
+
+            return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+              <section className="ttCurriculumPicker">
+                <div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>Choose a stage, subject, unit and lesson to pre-fill the plan. You can edit every field afterwards.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div>
+                <div className="ttCurriculumPickerGrid">
+                  <label><span>Stage</span><select disabled={readOnly} value={bankStage} onChange={(event) => changeStage(event.target.value)}>{curriculumStages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
+                  <label><span>Subject</span><select disabled={readOnly} value={bankSubject} onChange={(event) => changeSubject(event.target.value)}><option value="">Manual / another subject</option>{availableSubjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
+                  <label className="wide"><span>Unit / topic</span><select disabled={readOnly || !bankSubject} value={bankUnit} onChange={(event) => changeUnit(event.target.value)}><option value="">Choose a unit</option>{availableUnits.map((item) => <option key={item.unit} value={item.unit}>{item.unit}</option>)}</select></label>
+                  <label className="wide"><span>Suggested lesson</span><select disabled={readOnly || !availableLessons.length} value={Math.min(bankLessonIndex, Math.max(availableLessons.length - 1, 0))} onChange={(event) => setBankLessonIndex(Number(event.target.value))}><option value={0}>{availableLessons.length ? "Choose from the sequence" : "No built-in sequence for this subject"}</option>{availableLessons.map((item, index) => <option key={`${item.title}-${index}`} value={index}>{index + 1}. {item.title}</option>)}</select></label>
+                </div>
+                {selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}
+                {!bankSubject && <p className="ttCurriculumNote">This subject can still be planned manually below. The built-in bank currently provides English, Geography and History at KS3, GCSE and A level.</p>}
+              </section>
+              <div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title",false,"e.g. Coastal erosion landforms")}{field("curriculumStage","Curriculum stage",false,"KS3, GCSE, A level")}{field("curriculumSubject","Curriculum subject",false,lesson.subject)}{field("curriculumUnit","Curriculum unit",false,"e.g. AQA GCSE – The challenge of natural hazards")}{field("vocabulary","Key vocabulary",false,"Key terms for this lesson")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("sequence","Lesson content / teaching sequence",true,"Starter, explanation/model, guided practice, independent application, review…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("assessment","Assessment / checks for understanding",true,"Hinge question, exam question, exit ticket…")}{field("teacherNotes","Teacher notes",true,"Misconceptions, adaptations, follow-up, reminders…")}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
+          }
+
+          '''
+          s = s[:start] + plan_editor + s[end:]
+          p.write_text(s)
+
+          css = Path('app/components/StaffTimetableHub.css')
+          c = css.read_text()
+          marker = '.ttCurriculumPicker{'
+          if marker not in c:
+              c += '''\n.tone-rose{--tone:#c15d82;background:#fff5f8}.tone-slate{--tone:#6f7185;background:#f7f7fa}.ttCurriculumPicker{margin:15px 0 18px;padding:16px;border:1px solid #dce4f4;border-radius:15px;background:linear-gradient(145deg,#f8faff,#f5fbff)}.ttCurriculumPickerHead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}.ttCurriculumPickerHead>div{display:grid;gap:3px}.ttCurriculumPickerHead strong{font-size:13px;color:#2b3d65}.ttCurriculumPickerHead span{font-size:11px;color:#718097;line-height:1.45}.ttCurriculumPickerGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ttCurriculumPickerGrid label{display:grid;gap:5px}.ttCurriculumPickerGrid label.wide{grid-column:1/-1}.ttCurriculumPickerGrid label>span{font-size:10px;color:#66748a;font-weight:850;text-transform:uppercase;letter-spacing:.05em}.ttCurriculumPickerGrid select{min-width:0;border:1px solid #d5dce7;border-radius:9px;background:#fff;color:#26344d;padding:9px 10px;font:inherit}.ttCurriculumNote{margin:10px 0 0!important;padding:9px 10px;border-radius:9px;background:#fff;color:#68768c!important;font-size:11px!important;line-height:1.5!important}@media(max-width:680px){.ttCurriculumPickerHead{flex-direction:column}.ttCurriculumPickerHead .ttButton{width:100%}.ttCurriculumPickerGrid{grid-template-columns:1fr}.ttCurriculumPickerGrid label.wide{grid-column:auto}}\n'''
+              css.write_text(c)
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Build app
+        run: npm run build
+      - name: Commit curriculum planner integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/components/StaffTimetableHub.tsx app/components/StaffTimetableHub.css
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Integrate curriculum lesson bank into timetable planning"
+            git push
+          fi
