@@ -44,6 +44,7 @@ export default function AppNavigation() {
     const { data: listener } = client.auth.onAuthStateChange(event => {
       if (event === "SIGNED_OUT") { revision++; setAccess(noAccess); }
       else if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        revision++;
         setAccess(noAccess);
         clearTimeout(timer);
         // Auth callbacks must not await another Supabase operation.

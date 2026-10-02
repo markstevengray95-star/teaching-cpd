@@ -30,10 +30,13 @@ export function CourseWorkspace({ course: concise, state, onClose, onComplete, o
   const firstIncomplete = course.modules.findIndex((module) => !completed.includes(module.id));
   const [index, setIndex] = useState(firstIncomplete < 0 ? 0 : firstIncomplete);
   const [showLab, setShowLab] = useState(false);
+  const [contentsOpen, setContentsOpen] = useState(false);
   const [showTakeaway, setShowTakeaway] = useState(false);
   const [showStart, setShowStart] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false), [showSources, setShowSources] = useState(false);
+  const toolsMenuRef = useRef<HTMLDetailsElement>(null);
   function selectTool(tool: "start" | "takeaway" | "followup" | "sources") {
+    toolsMenuRef.current?.removeAttribute("open");
     setShowLab(false);
     setShowStart(tool === "start" && !showStart); setShowTakeaway(tool === "takeaway" && !showTakeaway);
     setShowFollowUp(tool === "followup" && !showFollowUp); setShowSources(tool === "sources" && !showSources);
@@ -82,14 +85,32 @@ export function CourseWorkspace({ course: concise, state, onClose, onComplete, o
       {related.length > 0 && <div className="relatedCourseStrip"><span>{isShort ? "Continue with the key course:" : "Linked short courses:"}</span>{related.map(c => <button className="textButton" key={c.id} onClick={() => onOpenCourse(c)}>{c.title} · {c.duration} min</button>)}</div>}
       <div className="courseProgress"><div><span>{done} of {course.modules.length} modules complete</span><strong>{percent}%</strong></div><div className="progress"><span style={{ width: `${percent}%` }} /></div></div>
       <CoursePathwayLinks course={concise} onOpenCourse={onOpenCourse}/>
-      <nav className="learningToolBar" aria-label="Optional course learning tools"><button type="button" className="secondary" aria-pressed={showStart} onClick={() => selectTool("start")}>{showStart ? "Back to course modules" : "Find my focus"}</button><button type="button" className="secondary" aria-pressed={showTakeaway} onClick={() => selectTool("takeaway")}>{showTakeaway ? "Back to course modules" : "Practical takeaway"}</button><button type="button" className="secondary" aria-pressed={showFollowUp} onClick={() => selectTool("followup")}>{showFollowUp ? "Back to course modules" : "Follow-up learning"}</button><button type="button" className="secondary" aria-pressed={showSources} onClick={() => selectTool("sources")}>{showSources ? "Back to course modules" : "Sources & access"}</button></nav>
+      <div className="courseLearningUtilities">
+        <details ref={toolsMenuRef} className="learningToolsMenu"><summary>Learning tools</summary><div>
+          <button type="button" onClick={()=>selectTool("start")}>Find my focus</button>
+          <button type="button" onClick={()=>selectTool("takeaway")}>Practical takeaway</button>
+          <button type="button" onClick={()=>selectTool("followup")}>Follow-up learning</button>
+          <button type="button" onClick={()=>selectTool("sources")}>Sources & access</button>
+        </div></details>
+        {(showStart || showTakeaway || showFollowUp || showSources) && <button type="button" className="textButton" onClick={()=>{setShowStart(false);setShowTakeaway(false);setShowFollowUp(false);setShowSources(false);}}>← Back to course modules</button>}
+      </div>
       <div className="courseLabViewport" hidden={!showStart}><CoursePersonalisation key={course.id} course={course} saved={state?.reflections[personalisationKey]} onSave={onSaveMeta} onSelectModule={id => { const target = course.modules.findIndex(m => m.id === id); if (target >= 0) { setIndex(target); setShowStart(false); } }}/></div>
       <div className="courseLabViewport" hidden={!showTakeaway}><CourseTakeaway key={course.id} course={course} saved={state?.reflections[toolkitKey]} onSave={onSaveMeta}/></div>
       <div className="courseLabViewport" hidden={!showFollowUp}><CourseFollowUp key={course.id} course={course} completedAt={state?.completedAt} saved={state?.reflections[followUpKey]} onSave={onSaveMeta}/></div>
       <div className="courseLabViewport" hidden={!showSources}><CourseSources course={course}/></div>
       {showLab && <div className="courseLabViewport"><CourseLab course={course} allCourses={courses} savedMeta={state?.reflections || {}} completedCount={done} totalModules={course.modules.length} onSaveMeta={onSaveMeta} onOpenCourse={item => { const target = courses.find(candidate => candidate.id === item.id); if (target) onOpenCourse(target); }} /></div>}
       <div className="moduleLayout" hidden={showTakeaway || showLab || showStart || showFollowUp || showSources}>
-        <aside className="moduleNav" aria-label="Course sections"><div className="courseMapTitle">Your learning path<small>{isShort ? "Three steps · 15–20 minute practice" : "Five sections · one practical outcome"}</small></div>{sections.map((group, groupIndex) => <details key={group.id} className="courseSection" open={group.id === section.id}><summary><span>{groupIndex + 1}</span><div><strong>{group.title}</strong><small>{completedModuleCount({ ...course, modules: course.modules.slice(group.start, group.end) }, completed)} / {group.end - group.start} complete</small></div></summary>{course.modules.slice(group.start, group.end).map((item, offset) => { const itemIndex = group.start + offset; return <button key={item.id} aria-current={itemIndex === index ? "step" : undefined} className={`${itemIndex === index ? "current" : ""} ${completed.includes(item.id) ? "done" : ""}`} onClick={() => setIndex(itemIndex)}><span>{completed.includes(item.id) ? "✓" : itemIndex + 1}</span><div><strong>{item.title}</strong><small>{moduleLabels[item.type]}</small></div></button>; })}</details>)}</aside>
+        <button type="button" className="mobileCourseContents" aria-expanded={contentsOpen} aria-controls="course-module-map" onClick={()=>setContentsOpen(value=>!value)}>Course contents <span>{section.title} · {index+1}/{course.modules.length}</span><span aria-hidden="true">{contentsOpen?"−":"+"}</span></button>
+        <aside id="course-module-map" className={`moduleNav ${contentsOpen?"mobileContentsOpen":""}`} aria-label="Course sections">
+          <div className="courseMapTitle">Your learning path<small>{isShort ? "Three steps · 15–20 minute practice" : "Five sections · one practical outcome"}</small></div>
+          {sections.map((group, groupIndex) => <details key={group.id} className="courseSection" open={group.id === section.id}>
+            <summary><span>{groupIndex+1}</span><div><strong>{group.title}</strong><small>{completedModuleCount({...course,modules:course.modules.slice(group.start,group.end)},completed)} / {group.end-group.start} complete</small></div></summary>
+            {course.modules.slice(group.start,group.end).map((item,offset)=>{
+              const itemIndex=group.start+offset;
+              return <button key={item.id} aria-current={itemIndex===index?"step":undefined} className={`${itemIndex===index?"current":""} ${completed.includes(item.id)?"done":""}`} onClick={()=>{setIndex(itemIndex);setContentsOpen(false);}}><span>{completed.includes(item.id)?"✓":itemIndex+1}</span><div><strong>{item.title}</strong><small>{moduleLabels[item.type]}</small></div></button>;
+            })}
+          </details>)}
+        </aside>
         <div className="academySlideViewport"><div className="learningSectionBanner"><span>{section.title}</span><p>{section.purpose}</p><small>{index - section.start + 1} / {section.end - section.start} in this section · planned {(module.minutes ?? 1).toFixed(1)} min</small></div>
         <ModuleViewer key={module.id} course={course} module={module} stage={stage} completed={completed.includes(module.id)} savedResponse={state?.reflections[module.id] || ""} savedPractice={state?.reflections[`presentation:${module.id}:practice`] || ""} onSavePractice={value => onSaveMeta(`presentation:${module.id}:practice`, value)} onComplete={onComplete} onPrevious={() => setIndex((value) => Math.max(0, value - 1))} onNext={() => setIndex((value) => Math.min(course.modules.length - 1, value + 1))} index={index} total={course.modules.length} />
         </div>

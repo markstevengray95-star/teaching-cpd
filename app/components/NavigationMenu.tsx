@@ -15,7 +15,10 @@ export default function NavigationMenu({ access, pathname, search = "" }: { acce
   const current = available.filter(tool => isNavigationActive(pathname, search, tool.href)).sort((a,b) => b.href.length - a.href.length)[0];
 
   useEffect(() => {
-    if (open && !dialog.current?.open) dialog.current?.showModal();
+    if (open && !dialog.current?.open) {
+      dialog.current?.showModal();
+      dialog.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+    }
     if (!open && dialog.current?.open) dialog.current?.close();
   }, [open]);
   useEffect(() => { setOpen(false); }, [pathname, search]);
@@ -33,7 +36,7 @@ export default function NavigationMenu({ access, pathname, search = "" }: { acce
       </div>
     </header>
     {current && <div className="navigationBreadcrumb"><span>{current.group}</span><span aria-hidden="true">/</span><strong>{current.label}</strong></div>}
-    <dialog ref={dialog} id="app-tools-dialog" className="toolDirectoryDialog" aria-labelledby="tools-dialog-title" onCancel={() => setOpen(false)} onClose={() => setOpen(false)} onClick={event => { if (event.target === event.currentTarget) closeMenu(); }}>
+    <dialog ref={dialog} id="app-tools-dialog" className="toolDirectoryDialog" aria-labelledby="tools-dialog-title" onCancel={() => setOpen(false)} onClose={() => setOpen(false)} onKeyDown={event=>{if(event.key==="Escape"){event.preventDefault();closeMenu();}}} onClick={event => { if (event.target === event.currentTarget) closeMenu(); }}>
       <div className="toolDirectoryBody">
         <div className="toolDirectoryHeading"><div><h2 id="tools-dialog-title">Find your next task</h2><p>Every tool in one place. Search or choose a category.</p></div><button type="button" onClick={closeMenu} aria-label="Close tools menu">✕</button></div>
         <nav className="toolDirectoryQuickLinks" aria-label="Main destinations">{primary.map(item => <a key={item.label} href={item.href}>{item.label}</a>)}</nav>
