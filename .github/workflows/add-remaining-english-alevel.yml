@@ -1,0 +1,53 @@
+name: Add remaining English A-level curriculum
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, 'Run remaining English A-level curriculum')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Add remaining AQA English A-level routes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/components/staffTimetableCurriculum.ts')
+          s = p.read_text()
+          anchor = '  // KS3 GEOGRAPHY\n'
+          if 'AQA English Language & Literature – Telling stories' not in s:
+              extra = '''  // A LEVEL ENGLISH LANGUAGE & LITERATURE (AQA 7707)\n  unit("A level", "English", "AQA English Language & Literature – Telling stories", [\n    "Methods of language analysis for literary and non-literary texts", "Remembered places: representation of place", "Remembered places: viewpoint and perspective", "Remembered places: comparing representations", "Imagined worlds: point of view", "Imagined worlds: genre", "Imagined worlds: character and world-building", "Poetic voices: voice and identity", "Poetic voices: form and function", "Poetic voices: language and structure", "Connecting linguistic and literary methods", "Paper 1 synoptic practice",\n  ], "AQA 7707. Set texts should be selected from the current specification for the cohort."),\n  unit("A level", "English", "AQA English Language & Literature – Exploring conflict", [\n    "Methods of language analysis in conflict texts", "Writing about society: individual and society", "Re-creative writing: transforming viewpoint", "Re-creative writing: voice and style", "Critical commentary: explaining language choices", "Critical commentary: evaluating effects", "Dramatic encounters: conflict in dialogue", "Dramatic encounters: character and power", "Dramatic encounters: stagecraft and discourse", "Comparing methods across literary and non-literary discourse", "Timed re-creative writing and commentary", "Paper 2 synoptic practice",\n  ], "AQA 7707. Set texts should be selected from the current specification for the cohort."),\n  unit("A level", "English", "AQA English Language & Literature – Making connections", [\n    "Choosing a literary and non-literary connection", "Framing a focused investigation question", "Selecting a literary text", "Collecting appropriate non-literary material", "Methods of language analysis", "Comparative analytical framework", "Research and contextual reading", "Planning the investigation", "Analysing literary discourse", "Analysing non-literary discourse", "Making comparative connections", "Drafting and referencing", "Evaluation and final review",\n  ], "AQA 7707 non-exam assessment. The investigation makes connections between literary and non-literary discourse."),\n\n  // A LEVEL ENGLISH LITERATURE B (AQA 7717)\n  literatureUnit("A level", "AQA English Literature B – Aspects of tragedy", ["Tragic genre conventions", "Tragic protagonist and conflict", "Suffering, reversal and recognition", "Tragic endings and audience response", "Unseen tragedy methods", "Connecting texts through genre"], "AQA 7717 Literary genres Option 1A. Check the current/2027 text list for the cohort."),\n  literatureUnit("A level", "AQA English Literature B – Aspects of comedy", ["Comic genre conventions", "Comic character and relationships", "Misunderstanding, disorder and resolution", "Satire and social criticism", "Unseen comedy methods", "Connecting texts through genre"], "AQA 7717 Literary genres Option 1B. Check the current/2027 text list for the cohort."),\n  literatureUnit("A level", "AQA English Literature B – Elements of crime writing", ["Crime-writing genre conventions", "Crime, transgression and morality", "Victims, investigators and criminals", "Setting, suspense and revelation", "Unseen crime-writing methods", "Connecting texts through genre"], "AQA 7717 Texts and genres Option 2A. Check the current/2027 text list for the cohort."),\n  literatureUnit("A level", "AQA English Literature B – Elements of political and social protest writing", ["Protest-writing genre conventions", "Power and resistance", "Political systems and social structures", "Voice, ideology and representation", "Unseen protest-writing methods", "Connecting texts through genre"], "AQA 7717 Texts and genres Option 2B. Check the current/2027 text list for the cohort."),\n  unit("A level", "English", "AQA English Literature B – Theory and independence", [\n    "Introduction to literary theory", "Narrative theory and ways of reading", "Marxist approaches", "Feminist approaches", "Post-colonial approaches", "Eco-critical approaches", "Value and the literary canon", "Selecting independent texts", "Framing a comparative question", "Using critical material", "Planning the independent study", "Drafting and referencing", "Evaluating interpretations", "Final review",\n  ], "AQA 7717 non-exam assessment. Use the specification's permitted approaches and current text requirements."),\n\n'''
+              if anchor not in s:
+                  raise SystemExit('Geography anchor not found')
+              s = s.replace(anchor, extra + anchor, 1)
+              p.write_text(s)
+          PY
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build app
+        run: npm run build
+      - name: Audit courses
+        run: npm run audit:courses
+      - name: Commit English A-level expansion
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/components/staffTimetableCurriculum.ts
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Complete AQA English A-level timetable curriculum routes"
+            git push
+          fi
