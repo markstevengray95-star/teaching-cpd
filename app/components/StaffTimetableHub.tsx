@@ -27,12 +27,14 @@ import {
   nextDate,
   reflowMediumTermPlan,
 } from "./staffTimetableMediumTerm";
+import StaffTimetableLessonResources, { type TimetableAttachedResource } from "./StaffTimetableLessonResources";
+import StaffTimetableProgress from "./StaffTimetableProgress";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
 type WeekKey = "W1" | "W2";
 type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
-type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "homework" | "workload" | "changes" | "tools";
+type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "homework" | "workload" | "changes" | "tools";
 
 type LessonPlan = {
   lessonDate: string;
@@ -64,6 +66,7 @@ type LessonPlan = {
   homeworkTask: string;
   exitTicket: string;
   reflection: string;
+  generatedResources: TimetableAttachedResource[];
 };
 
 type GeneratedLessonPlan = Pick<LessonPlan,
@@ -187,7 +190,7 @@ function blankPlan(): LessonPlan {
     lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", examPractice: "", teacherNotes: "",
     curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1,
     planningMode: "simple", priorKnowledge: "", retrieval: "", misconceptions: "", teacherExplanation: "", modelling: "", guidedPractice: "", independentPractice: "",
-    sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "",
+    sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "", generatedResources: [],
   };
 }
 function blankWorkspace(): WorkspaceData {
@@ -616,7 +619,7 @@ export default function StaffTimetableHub() {
     mutate((current) => ({ ...current, mediumTermPlans: current.mediumTermPlans.filter((item) => item.className !== visibleClass) }));
   }
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ version: 3, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ version: 5, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
@@ -651,7 +654,7 @@ export default function StaffTimetableHub() {
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
 
       <nav className="ttWorkspaceNav noPrint" aria-label="Timetable workspace">
-        {(["today","timetable","planning","mediumterm","classes","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
+        {(["today","timetable","planning","mediumterm","classes","progress","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",progress:"Progress",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
       </nav>
 
       {tab === "today" && <section className="ttDashboardShell">
@@ -708,6 +711,14 @@ export default function StaffTimetableHub() {
             <label><span>Course / specification</span><select disabled={demo} value={currentClassProfile.courseId} onChange={(event) => saveClassProfile({ courseId: event.target.value })}>{profileCourses.map((item) => <option key={item.id} value={item.id}>{item.title}{item.code && item.code !== "KS3" ? ` · ${item.code}` : ""}</option>)}</select></label>
           </div>{nextProfileLesson ? <div className="ttNextLesson"><small>NEXT SUGGESTED LESSON</small><strong>{nextProfileLesson.title}</strong><span>{nextProfileLesson.unitTitle} · {nextProfileLesson.subtopicTitle}</span><button className="ttButton primary" disabled={demo} onClick={() => { const nextBlank = selectedClassLessons.find((item) => !item.plan.topic); if (nextBlank) { setPlanLessonId(nextBlank.id); setTab("planning"); } }}>Plan next lesson</button></div> : <div className="ttEmptyPreview"><strong>Sequence complete or not configured</strong><span>Choose the class course above or review already planned lessons.</span></div>}<div className="ttButtonRow"><button className="ttButton primary" disabled={demo || !selectedProfileCourse} onClick={autoPopulateCourseSequence}>Auto-fill blank lessons from course</button></div><details className="ttCustomSequence"><summary>Custom sequence override</summary><p>Use this only when your department teaches a different order.</p><textarea className="ttSequenceBox" value={curriculumText || active.curriculumSequences[visibleClass]?.join("\n") || ""} disabled={demo} onChange={(event) => setCurriculumText(event.target.value)} placeholder={'Lesson 1\nLesson 2\nLesson 3'} /><div className="ttButtonRow"><button className="ttButton" disabled={demo} onClick={saveCurriculumSequence}>Save custom sequence</button><button className="ttButton" disabled={demo} onClick={autoPopulateSequence}>Use custom sequence</button></div></details><div className="ttIntegrationLinks"><Link href="/curriculum">Open full curriculum hub</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/resource-generator">Create resources</Link></div></article></div>}
       </section>}
+
+      {tab === "progress" && <StaffTimetableProgress
+        lessons={active.lessons}
+        profiles={active.classCurriculumProfiles}
+        mediumTermPlans={active.mediumTermPlans}
+        today={today}
+        onOpenMediumTerm={(className) => { setClassSelection(className); setTab("mediumterm"); }}
+      />}
 
       {tab === "homework" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">HOMEWORK & MARKING</span><h2>Homework tracker</h2></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "homework" })}>+ Add homework</button>}</div><div className="ttKpiGrid"><div><small>Outstanding</small><strong>{openHomework.length}</strong></div><div><small>Overdue</small><strong>{overdueHomework.length}</strong></div><div><small>Waiting to mark</small><strong>{markingQueue.length}</strong></div><div><small>Returned</small><strong>{active.homework.filter((item) => item.status === "Returned").length}</strong></div></div><div className="ttDataList">{active.homework.slice().sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999")).map((item) => <button key={item.id} className={`ttDataRow ${item.dueDate < today && isOpenHomework(item) ? "urgent" : ""}`} onClick={() => !demo && setItemEditor({ kind: "homework", id: item.id })}><div><b>{item.dueDate ? formatDate(item.dueDate) : "No due date"}</b><small>{item.status}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.subject}{item.priority === "High" ? " · High priority" : ""}</span></div><span className="ttRowAction">{demo ? "Demo" : "Edit"}</span></button>)}{!active.homework.length && <div className="ttEmptyPreview"><span>No homework tasks yet.</span></div>}</div></section>}
 
@@ -872,7 +883,7 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
     setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 4</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASES 4–5</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
     <div className="ttPlanModeBar"><div className="ttPlanModeSwitch"><button type="button" className={plan.planningMode === "simple" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "simple" }))}>Simple</button><button type="button" className={plan.planningMode === "detailed" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "detailed" }))}>Detailed</button></div><div className="ttPlanCompletion"><span>Detailed plan</span><b>{detailedComplete}/{detailedKeys.length}</b><i><em style={{ width: `${Math.round(detailedComplete / detailedKeys.length * 100)}%` }} /></i></div>{!readOnly && <button type="button" className="ttButton" onClick={buildDetailedStructure}>Build detailed structure</button>}</div>
     <section className="ttLessonGenerator"><div className="ttLessonGeneratorHead"><div><span className="staffTimetableEyebrow">ONE-CLICK LESSON GENERATION</span><h3>Generate the full lesson</h3><p>Build an editable 55-minute lesson from the selected curriculum topic, including retrieval, explanation, modelling, practice, checks, exam-style application, homework, adaptations and exit ticket.</p></div><span className={`ttGeneratorBadge ${generationSource || "ready"}`}>{generatingLesson ? "Generating…" : generationSource === "ai" ? "AI generated" : generationSource === "template" ? "Built-in fallback" : "Ready"}</span></div><label className="ttGeneratorRequirements"><span>Optional teacher requirements</span><textarea disabled={readOnly || generatingLesson} value={teacherRequirements} onChange={(event) => setTeacherRequirements(event.target.value)} placeholder="e.g. practical lesson, stronger exam technique focus, include paired discussion, keep independent task to 15 minutes…" /></label><div className="ttGeneratorActions">{!readOnly && <><button type="button" className="ttButton primary" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(false)}>{generatingLesson ? "Generating lesson…" : "Generate full lesson"}</button><button type="button" className="ttButton" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(true)}>Regenerate planning sections</button></>}<span>{generationMessage || "Generation fills blank sections by default, so existing teacher edits are preserved."}</span></div><div className="ttGeneratorNote"><b>Teacher review required.</b><span>Generated content is a planning draft, not an official exam-board resource or mark scheme. Check subject accuracy, suitability and timings before teaching.</span></div></section>
     <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
@@ -884,6 +895,28 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
       <label><span>Sub-topic</span><select disabled={readOnly} value={subtopicId} onChange={(event) => changeSubtopic(event.target.value)}>{subtopics.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
       <label className="wide"><span>Lesson sequence</span><select disabled={readOnly || !lessons.length} value={Math.min(lessonIndex, Math.max(lessons.length - 1, 0))} onChange={(event) => setLessonIndex(Number(event.target.value))}>{lessons.length ? lessons.map((item, index) => <option key={`${item.id}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No lessons in this selection</option>}</select></label>
     </div>{selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}</section>
+    <StaffTimetableLessonResources
+      context={{
+        subject: lesson.subject || subject,
+        className: lesson.className,
+        stage,
+        examBoard,
+        course: selectedCourse?.title || courseId,
+        unit: selectedUnit?.title || plan.curriculumUnit,
+        subtopic: selectedSubtopic?.title || plan.curriculumSubtopic,
+        topic: plan.topic || selectedTemplate?.title || "",
+        objectives: plan.objectives || selectedTemplate?.objectives || "",
+        vocabulary: plan.vocabulary || selectedTemplate?.vocabulary || "",
+        sequence: plan.sequence || selectedTemplate?.sequence || "",
+        assessment: plan.assessment || selectedTemplate?.assessment || "",
+        retrieval: plan.retrieval,
+        misconceptions: plan.misconceptions,
+        examPractice: plan.examPractice,
+      }}
+      resources={plan.generatedResources || []}
+      readOnly={readOnly}
+      onChange={(generatedResources) => setPlan((current) => ({ ...current, generatedResources }))}
+    />
     <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>1</span><div><h3>Core lesson</h3><p>The essentials shown in both planning modes.</p></div></div><div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("vocabulary","Key vocabulary",true,"Subject-specific language pupils need to understand and use")}{field("sequence","Lesson content / sequence",true,"Starter → explanation/model → practice → review")}{field("assessment","Checks for understanding",true,"Hinge questions, cold call, mini-whiteboards, exam question, exit ticket…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("teacherNotes","Teacher notes",true,"Reminders, class-specific logistics or follow-up")}</div></section>
     {plan.planningMode === "detailed" && <div className="ttDetailedPlan">
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>2</span><div><h3>Connect to prior learning</h3><p>Make prerequisites and retrieval explicit before new learning.</p></div></div><div className="ttFormGrid">{field("priorKnowledge","Prior knowledge",true,"What must pupils already know or be able to do?")}{field("retrieval","Retrieval starter",true,"3–5 short questions or prompts")}{field("misconceptions","Likely misconceptions",true,"What wrong ideas or errors are most likely, and how will you expose them?")}</div></section>
