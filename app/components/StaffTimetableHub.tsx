@@ -2,6 +2,15 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  curriculumStages,
+  getCurriculumLessons,
+  getCurriculumSubjects,
+  getCurriculumUnit,
+  getCurriculumUnits,
+  inferCurriculumStage,
+  normaliseCurriculumSubject,
+} from "./staffTimetableCurriculum";
 import "./StaffTimetableHub.css";
 
 type WeekKey = "W1" | "W2";
@@ -193,6 +202,8 @@ function subjectTone(subject: string) {
   if (key.includes("chemistry")) return "tone-purple";
   if (key.includes("math")) return "tone-amber";
   if (key.includes("geography")) return "tone-teal";
+  if (key.includes("english") || key.includes("literature") || key.includes("language")) return "tone-rose";
+  if (key.includes("history")) return "tone-slate";
   if (key.includes("science")) return "tone-cyan";
   return "tone-neutral";
 }
@@ -527,8 +538,73 @@ function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { f
 
 function PlanEditor({ lesson, readOnly, onClose, onSave }: { lesson: Lesson; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void }) {
   const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan });
+  const inferredStage = (curriculumStages.includes(plan.curriculumStage as (typeof curriculumStages)[number]) ? plan.curriculumStage : inferCurriculumStage(lesson.className)) as (typeof curriculumStages)[number];
+  const inferredSubject = normaliseCurriculumSubject(plan.curriculumSubject || lesson.subject);
+  const [bankStage, setBankStage] = useState<string>(inferredStage);
+  const [bankSubject, setBankSubject] = useState<string>(inferredSubject);
+  const initialUnits = getCurriculumUnits(inferredStage, inferredSubject);
+  const [bankUnit, setBankUnit] = useState<string>(initialUnits.some((item) => item.unit === plan.curriculumUnit) ? plan.curriculumUnit : (initialUnits[0]?.unit || ""));
+  const [bankLessonIndex, setBankLessonIndex] = useState<number>(() => Math.max(0, plan.sequencePosition || 0));
+
+  const availableSubjects = getCurriculumSubjects(bankStage);
+  const availableUnits = getCurriculumUnits(bankStage, bankSubject);
+  const availableLessons = getCurriculumLessons(bankStage, bankSubject, bankUnit);
+  const selectedUnit = getCurriculumUnit(bankStage, bankSubject, bankUnit);
+  const selectedTemplate = availableLessons[bankLessonIndex] || availableLessons[0];
+
   const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "") => <label className={multiline ? "wide" : ""}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title",false,"e.g. Electric fields and Coulomb's law")}{field("curriculumStage","Curriculum stage",false,"KS3, GCSE, A level")}{field("curriculumSubject","Curriculum subject",false,lesson.subject)}{field("curriculumUnit","Curriculum unit",false,"e.g. 4.2 Electricity")}{field("vocabulary","Key vocabulary",false,"field strength, charge, force…")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("sequence","Lesson content / teaching sequence",true,"Starter, explanation/model, worked examples, activity, independent practice, plenary…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("assessment","Assessment / checks for understanding",true,"Hinge question, exam question, exit ticket…")}{field("teacherNotes","Teacher notes",true,"Misconceptions, adaptations, follow-up, reminders…")}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
+
+  function changeStage(next: string) {
+    setBankStage(next);
+    const subjects = getCurriculumSubjects(next);
+    const nextSubject = subjects.includes(bankSubject as "English" | "Geography" | "History") ? bankSubject : (normaliseCurriculumSubject(lesson.subject) || subjects[0] || "");
+    setBankSubject(nextSubject);
+    const units = getCurriculumUnits(next, nextSubject);
+    setBankUnit(units[0]?.unit || "");
+    setBankLessonIndex(0);
+  }
+
+  function changeSubject(next: string) {
+    setBankSubject(next);
+    const units = getCurriculumUnits(bankStage, next);
+    setBankUnit(units[0]?.unit || "");
+    setBankLessonIndex(0);
+  }
+
+  function changeUnit(next: string) {
+    setBankUnit(next);
+    setBankLessonIndex(0);
+  }
+
+  function applySuggestedLesson() {
+    if (!selectedTemplate) return;
+    setPlan((current) => ({
+      ...current,
+      curriculumStage: bankStage,
+      curriculumSubject: bankSubject,
+      curriculumUnit: bankUnit,
+      sequencePosition: Math.max(0, bankLessonIndex),
+      topic: selectedTemplate.title,
+      vocabulary: selectedTemplate.vocabulary,
+      objectives: selectedTemplate.objectives,
+      sequence: selectedTemplate.sequence,
+      assessment: selectedTemplate.assessment,
+    }));
+  }
+
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+    <section className="ttCurriculumPicker">
+      <div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>Choose a stage, subject, unit and lesson to pre-fill the plan. You can edit every field afterwards.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div>
+      <div className="ttCurriculumPickerGrid">
+        <label><span>Stage</span><select disabled={readOnly} value={bankStage} onChange={(event) => changeStage(event.target.value)}>{curriculumStages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
+        <label><span>Subject</span><select disabled={readOnly} value={bankSubject} onChange={(event) => changeSubject(event.target.value)}><option value="">Manual / another subject</option>{availableSubjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
+        <label className="wide"><span>Unit / topic</span><select disabled={readOnly || !bankSubject} value={bankUnit} onChange={(event) => changeUnit(event.target.value)}><option value="">Choose a unit</option>{availableUnits.map((item) => <option key={item.unit} value={item.unit}>{item.unit}</option>)}</select></label>
+        <label className="wide"><span>Suggested lesson</span><select disabled={readOnly || !availableLessons.length} value={Math.min(bankLessonIndex, Math.max(availableLessons.length - 1, 0))} onChange={(event) => setBankLessonIndex(Number(event.target.value))}>{availableLessons.length ? availableLessons.map((item, index) => <option key={`${item.title}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No built-in sequence for this subject</option>}</select></label>
+      </div>
+      {selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}
+      {!bankSubject && <p className="ttCurriculumNote">This subject can still be planned manually below. The built-in bank currently provides English, Geography and History at KS3, GCSE and A level.</p>}
+    </section>
+    <div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title",false,"e.g. Coastal erosion landforms")}{field("curriculumStage","Curriculum stage",false,"KS3, GCSE, A level")}{field("curriculumSubject","Curriculum subject",false,lesson.subject)}{field("curriculumUnit","Curriculum unit",false,"e.g. AQA GCSE – The challenge of natural hazards")}{field("vocabulary","Key vocabulary",false,"Key terms for this lesson")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("sequence","Lesson content / teaching sequence",true,"Starter, explanation/model, guided practice, independent application, review…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("assessment","Assessment / checks for understanding",true,"Hinge question, exam question, exit ticket…")}{field("teacherNotes","Teacher notes",true,"Misconceptions, adaptations, follow-up, reminders…")}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
 }
 
 function ItemEditor({ kind, itemId, workspace, activeWorkspace, week, classes, subjects, onClose, onChange }: { kind: "homework" | "prep" | "task" | "change" | "activity" | "keyDate"; itemId?: string; workspace: WorkspaceData; activeWorkspace: WorkspaceData; week: WeekKey; classes: string[]; subjects: string[]; onClose: () => void; onChange: React.Dispatch<React.SetStateAction<WorkspaceData>> }) {
