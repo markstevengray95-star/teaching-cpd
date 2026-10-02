@@ -45,7 +45,7 @@ local role selectors, localStorage stores, external media uploads or old login
 systems were copied. This is neither an official Zones of Regulation product nor
 an official/licensed/standardised Bell Foundation test. EAL alone is not SEN.
 
-## Live records: storage installed; school activation required
+## Live records: self-service school onboarding
 
 The confirmed CPD production project is `tkjbaqkpkvomwwvwhowp`. Secure pupil
 storage was installed there on 2 October 2026 through the Supabase migration API,
@@ -69,9 +69,14 @@ provided the server-generated migration version instead.
 3. Assign canonical `send-eal` or `slt` roles only to authorised staff.
 4. The school must approve lawful processing, access, retention, backups,
    safeguarding boundaries and approved printing/sharing procedures before activation.
-5. A database administrator explicitly enables each approved organisation in
-   `private.sen_workspace_schools` with an approval timestamp. No school is enabled
-   by installation. Only existing school members/owners WITH a canonical
+5. The school owner or an actual school `owner`/`admin` member activates storage
+   in School onboarding or `/sen-setup`. They attest to all three privacy checks
+   and select named current staff with canonical `send-eal` or `slt` roles.
+   The checked database RPC enables storage immediately without provider action.
+   Each approval/change/pause records actor, time, privacy version and selected
+   staff IDs in a private append-only activation log. No school is enabled merely
+   by signing up or installing SQL. New schools use the same flow without a code update.
+   Only selected existing school members/owners WITH a current canonical
    `send-eal` or `slt` assignment can access cases. An administrator/platform role,
    editable preferred school, creator identity or legacy role cannot bypass this.
 
@@ -82,6 +87,16 @@ without names or record bodies. Updates filter the previously loaded version, so
 stale drafts cannot overwrite another staff member's change. Archive is reversible.
 An archived record must be restored before editing. Database policy is the access
 authority, not client UI visibility.
+
+Changing the approved staff list requires fresh privacy attestations. Removing a
+role or membership removes access even when an old approval still lists the user.
+Pause storage to block access while retaining records; reactivation requires fresh
+approval. It does not delete records or revoke copies already printed/downloaded.
+`supabase/sen-onboarding-setup.sql` was installed as migration
+`20261002165601_sen_self_service_onboarding`; do not reapply it.
+The base storage setup must be installed first. School onboarding uses its own
+canonical organisation lookup, not a legacy CPD pilot organisation ID. If the older
+pilot checklist cannot load, pupil-storage setup remains available independently.
 
 ## Verification
 

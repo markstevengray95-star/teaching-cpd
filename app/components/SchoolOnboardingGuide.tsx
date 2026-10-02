@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import SenSchoolSetup from "./SenSchoolSetup";
 import {pilotChecks,schoolTutorial,setupChecks,type OnboardingSnapshot,type PilotCheckId} from "@/lib/schoolOnboarding";
 export default function SchoolOnboardingGuide({snapshot,onSave,onRefresh}:{snapshot:OnboardingSnapshot|null;onSave:(id:PilotCheckId,complete:boolean)=>Promise<void>;onRefresh:()=>void}){
  const [step,setStep]=useState(0),[saving,setSaving]=useState<PilotCheckId|null>(null),[message,setMessage]=useState(""),[error,setError]=useState("");
@@ -13,6 +14,7 @@ export default function SchoolOnboardingGuide({snapshot,onSave,onRefresh}:{snaps
  return <main className="stagePage schoolOperations onboardingPage">
   <header className="stageHero"><span className="eyebrow">SCHOOL ONBOARDING</span><h1>{snapshot?snapshot.name+": setup & tutorial":"Set up your school"}</h1><p>A guided introduction for School Admins and CPD Leads, from school access to the first staff learning record.</p><nav className="schoolOperationLinks noPrint" aria-label="School setup navigation"><a href="/organisation">Organisation setup</a><a href="/school-reporting">School reporting</a><a href="/procurement">Procurement pack</a><button type="button" className="secondary" onClick={onRefresh}>Refresh configuration</button></nav></header>
   {!snapshot?<section className="stageCard"><h2>Connect a school to save your checklist</h2><p>You can read the tutorial now. Create or join your school through Organisation setup, then return here. This page does not create a school, buy a licence or grant access automatically.</p><a href="/organisation">Create or join the school</a></section>:null}
+  <SenSchoolSetup/>
   <section className="stageCard setupStatus" aria-labelledby="setup-status-title"><h2 id="setup-status-title">Live configuration: {done} / {checks.length} checks present</h2><p>These counts describe configuration, not content quality or launch approval. {snapshot?"Checked at "+snapshot.generated_at:"No school connected yet."}</p><ul>{checks.map(check=><li key={check.title}><strong>{check.done?"Present":"Needs attention"} · {check.title}</strong><span>{check.detail}</span></li>)}</ul><p>Staff directory preparation is recommended, not required: {snapshot?.directory??0} active directory rows. Failed data requests show an error, not a false zero.</p></section>
   <section className="stageCard schoolTutorial" aria-labelledby="tutorial-title">
    <h2 id="tutorial-title">Step-by-step tutorial</h2><p>Page {step+1} of {schoolTutorial.length}. Reading pages does not mark school configuration complete.</p>

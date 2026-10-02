@@ -4,6 +4,7 @@ import {getSupabaseBrowserClient} from "@/lib/supabase";
 import {schoolAdminProfile,type SchoolAdminProfile} from "@/lib/schoolAdmin";
 import {type OnboardingSnapshot,type PilotCheckId} from "@/lib/schoolOnboarding";
 import SchoolOnboardingGuide from "@/app/components/SchoolOnboardingGuide";
+import SenSchoolSetup from "@/app/components/SenSchoolSetup";
 export default function SchoolOnboardingPage(){
  const [profile,setProfile]=useState<SchoolAdminProfile|null>(null),[snapshot,setSnapshot]=useState<OnboardingSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[revision,setRevision]=useState(0);
  useEffect(()=>{let active=true;setLoading(true);setError("");setProfile(null);setSnapshot(null);
@@ -23,6 +24,6 @@ export default function SchoolOnboardingPage(){
   setSnapshot(current=>current?{...current,checkpoints:[...current.checkpoints.filter(c=>c.checkpoint_id!==id),data]}:current);
  }
  if(loading)return <main className="stagePage"><p role="status">Loading school setup…</p></main>;
- if(error||!profile)return <main className="stagePage schoolOperations"><section className="stageCard"><h1>School setup unavailable</h1><p role="alert">{error}</p><button type="button" className="primary" onClick={()=>setRevision(n=>n+1)}>Retry</button><a href="/organisation">Organisation setup</a></section></main>;
+ if(error||!profile)return <main className="stagePage schoolOperations"><SenSchoolSetup/><section className="stageCard"><h1>CPD pilot setup unavailable</h1><p role="alert">{error}</p><button type="button" className="primary" onClick={()=>setRevision(n=>n+1)}>Retry</button><a href="/organisation">Organisation setup</a></section></main>;
  return <SchoolOnboardingGuide key={profile.organisation_id||"no-school"} snapshot={snapshot} onSave={save} onRefresh={()=>setRevision(n=>n+1)}/>;
 }
