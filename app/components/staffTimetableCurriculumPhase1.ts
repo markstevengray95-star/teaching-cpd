@@ -106,7 +106,7 @@ function legacyCourse(id: string, stage: Phase1Stage, subject: "English" | "Geog
   return course(id, stage, board, subject, title, code, units);
 }
 
-const ks3Biology = course("ks3-biology", "KS3", "National curriculum", "Biology", "KS3", [
+const ks3Biology = course("ks3-biology", "KS3", "National curriculum", "Biology", "KS3 Biology", "KS3", [
   unit("Cells and organisation", [
     subtopic("Cell structure", ["Animal and plant cells", "Cell organelles and their functions", "Using microscopes", "Specialised cells"]),
     subtopic("Movement and organisation", ["Diffusion", "Osmosis", "Levels of organisation", "Tissues, organs and organ systems"]),
@@ -121,7 +121,7 @@ const ks3Biology = course("ks3-biology", "KS3", "National curriculum", "Biology"
   ]),
 ]);
 
-const ks3Chemistry = course("ks3-chemistry", "KS3", "National curriculum", "Chemistry", "KS3", [
+const ks3Chemistry = course("ks3-chemistry", "KS3", "National curriculum", "Chemistry", "KS3 Chemistry", "KS3", [
   unit("Particles, atoms and elements", [
     subtopic("Particle model", ["Solids, liquids and gases", "Changes of state", "Diffusion in particles", "Gas pressure"]),
     subtopic("Atoms and the periodic table", ["Atoms and elements", "Compounds and mixtures", "Chemical symbols and formulae", "Periodic table foundations"]),
@@ -136,7 +136,7 @@ const ks3Chemistry = course("ks3-chemistry", "KS3", "National curriculum", "Chem
   ]),
 ]);
 
-const ks3Physics = course("ks3-physics", "KS3", "National curriculum", "Physics", "KS3", [
+const ks3Physics = course("ks3-physics", "KS3", "National curriculum", "Physics", "KS3 Physics", "KS3", [
   unit("Forces and motion", [
     subtopic("Forces", ["Contact and non-contact forces", "Force diagrams", "Balanced and unbalanced forces", "Mass and weight"]),
     subtopic("Motion", ["Speed", "Distance-time graphs", "Acceleration foundations", "Pressure in fluids"]),
@@ -151,10 +151,10 @@ const ks3Physics = course("ks3-physics", "KS3", "National curriculum", "Physics"
   ]),
 ]);
 
-const ks3Science = course("ks3-science", "KS3", "National curriculum", "Science", "KS3", "KS3 Science", undefined, [] as never);
+const ks3Science = course("ks3-science", "KS3", "National curriculum", "Science", "KS3 Science", "KS3", []);
 ks3Science.units = [...ks3Biology.units, ...ks3Chemistry.units, ...ks3Physics.units];
 
-const ks3Maths = course("ks3-maths", "KS3", "National curriculum", "Maths", "KS3", [
+const ks3Maths = course("ks3-maths", "KS3", "National curriculum", "Maths", "KS3 Mathematics", "KS3", [
   unit("Number", [subtopic("Number fluency", ["Place value and ordering", "Four operations", "Factors, multiples and primes", "Fractions, decimals and percentages", "Standard form", "Estimation and bounds"])]),
   unit("Algebra", [subtopic("Expressions and equations", ["Algebraic notation", "Simplifying expressions", "Substitution", "Solving linear equations", "Sequences", "Straight-line graphs"])]),
   unit("Ratio and proportion", [subtopic("Proportional reasoning", ["Ratio notation", "Sharing in a ratio", "Direct proportion", "Percentage change", "Rates", "Scale drawings"])]),

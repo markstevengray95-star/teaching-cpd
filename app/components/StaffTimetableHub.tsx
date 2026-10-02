@@ -3,14 +3,20 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  curriculumStages,
-  getCurriculumLessons,
-  getCurriculumSubjects,
-  getCurriculumUnit,
-  getCurriculumUnits,
-  inferCurriculumStage,
-  normaliseCurriculumSubject,
-} from "./staffTimetableCurriculum";
+  ClassCurriculumProfile,
+  getCourseLessonSequence,
+  getNextSuggestedLesson,
+  getPhase1Course,
+  getPhase1Courses,
+  getPhase1ExamBoards,
+  getPhase1Lessons,
+  getPhase1Subjects,
+  getPhase1Subtopics,
+  getPhase1Units,
+  inferClassCurriculumProfile,
+  phase1Stages,
+  profileLabel,
+} from "./staffTimetableCurriculumPhase1";
 import "./StaffTimetableHub.css";
 
 type WeekKey = "W1" | "W2";
@@ -29,6 +35,9 @@ type LessonPlan = {
   curriculumStage: string;
   curriculumSubject: string;
   curriculumUnit: string;
+  curriculumSubtopic: string;
+  examBoard: string;
+  courseId: string;
   sequencePosition: number;
 };
 
@@ -118,6 +127,7 @@ type WorkspaceData = {
   keyDates: KeyDate[];
   classNotes: Record<string, string>;
   curriculumSequences: Record<string, string[]>;
+  classCurriculumProfiles: Record<string, ClassCurriculumProfile>;
 };
 
 type ImportResult = { lessons: Lesson[]; source: string };
@@ -140,10 +150,10 @@ const STORAGE_KEY = "teaching-cpd-personal-staff-timetable-v2";
 const OLD_STORAGE_KEY = "teaching-cpd-personal-staff-timetable-v1";
 
 function blankPlan(): LessonPlan {
-  return { lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "", curriculumStage: "", curriculumSubject: "", curriculumUnit: "", sequencePosition: -1 };
+  return { lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "", curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1 };
 }
 function blankWorkspace(): WorkspaceData {
-  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {} };
+  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {} };
 }
 function periodTimes(period: number) {
   const match = PERIODS.find((item) => item.period === period) || PERIODS[0];
@@ -319,6 +329,7 @@ const DEMO_WORKSPACE: WorkspaceData = (() => {
   base.tasks = [{ id: "demo_task", title: "Mark Y13 nuclear homework", type: "Marking", status: "To do", date: todayIso(), period: "P1", notes: "" }];
   base.activities = [{ id: "demo_act", week: "W1", day: "Monday", start: "16:30", end: "17:30", title: "STEM Robotics", group: "Activity group", room: "Science Lab" }];
   base.curriculumSequences["Y13 Physics"] = ["Nuclear instability", "Radioactive decay", "Half-life calculations", "Nuclear radius", "Binding energy", "Fission and chain reactions"];
+  base.classCurriculumProfiles["Y13 Physics"] = { stage: "A level", examBoard: "AQA", subject: "Physics", courseId: "aqa-alevel-physics-7408" };
   return base;
 })();
 
@@ -446,6 +457,36 @@ export default function StaffTimetableHub() {
       return { ...lesson, plan: { ...lesson.plan, topic: sequence[index], sequencePosition: index } };
     }) }));
   }
+  function saveClassProfile(patch: Partial<ClassCurriculumProfile>) {
+    if (!visibleClass || demo) return;
+    const existing = workspace.classCurriculumProfiles[visibleClass] || inferClassCurriculumProfile(visibleClass, selectedClassLessons[0]?.subject || "Science");
+    let next: ClassCurriculumProfile = { ...existing, ...patch };
+    if (patch.stage) {
+      next.examBoard = getPhase1ExamBoards(next.stage)[0];
+      next.subject = getPhase1Subjects(next.stage, next.examBoard)[0] || next.subject;
+      next.courseId = getPhase1Courses(next.stage, next.examBoard, next.subject)[0]?.id || "";
+    } else if (patch.examBoard) {
+      next.subject = getPhase1Subjects(next.stage, next.examBoard)[0] || next.subject;
+      next.courseId = getPhase1Courses(next.stage, next.examBoard, next.subject)[0]?.id || "";
+    } else if (patch.subject) {
+      next.courseId = getPhase1Courses(next.stage, next.examBoard, next.subject)[0]?.id || "";
+    }
+    mutate((current) => ({ ...current, classCurriculumProfiles: { ...current.classCurriculumProfiles, [visibleClass]: next } }));
+  }
+  function autoPopulateCourseSequence() {
+    if (!visibleClass || demo) return;
+    const profile = workspace.classCurriculumProfiles[visibleClass] || inferClassCurriculumProfile(visibleClass, selectedClassLessons[0]?.subject || "Science");
+    const sequence = getCourseLessonSequence(profile);
+    if (!sequence.length) return;
+    const targets = workspace.lessons.filter((lesson) => lesson.className === visibleClass).sort((a, b) => a.week.localeCompare(b.week) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.period - b.period);
+    mutate((current) => ({ ...current, lessons: current.lessons.map((lesson) => {
+      const index = targets.findIndex((target) => target.id === lesson.id);
+      if (index < 0 || index >= sequence.length || lesson.plan.topic) return lesson;
+      const suggestion = sequence[index];
+      return { ...lesson, plan: { ...lesson.plan, topic: suggestion.title, vocabulary: suggestion.vocabulary, objectives: suggestion.objectives, sequence: suggestion.sequence, assessment: suggestion.assessment, curriculumStage: suggestion.stage, curriculumSubject: suggestion.subject, curriculumUnit: suggestion.unitTitle, curriculumSubtopic: suggestion.subtopicTitle, examBoard: suggestion.examBoard, courseId: suggestion.courseId, sequencePosition: suggestion.sequencePosition } };
+    }) }));
+    setStatus(`Filled blank ${visibleClass} lesson plans from ${getPhase1Course(profile.courseId)?.title || profile.subject}.`);
+  }
   function exportBackup() {
     const blob = new Blob([JSON.stringify({ version: 2, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
@@ -458,6 +499,13 @@ export default function StaffTimetableHub() {
 
   const activePlanLesson = active.lessons.find((lesson) => lesson.id === planLessonId) || null;
   const selectedClassLessons = active.lessons.filter((lesson) => lesson.className === visibleClass).sort((a, b) => a.week.localeCompare(b.week) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.period - b.period);
+  const inferredClassProfile = inferClassCurriculumProfile(visibleClass, selectedClassLessons[0]?.subject || "Science");
+  const currentClassProfile = active.classCurriculumProfiles[visibleClass] || inferredClassProfile;
+  const profileBoards = getPhase1ExamBoards(currentClassProfile.stage);
+  const profileSubjects = getPhase1Subjects(currentClassProfile.stage, currentClassProfile.examBoard);
+  const profileCourses = getPhase1Courses(currentClassProfile.stage, currentClassProfile.examBoard, currentClassProfile.subject);
+  const selectedProfileCourse = getPhase1Course(currentClassProfile.courseId) || profileCourses[0];
+  const nextProfileLesson = getNextSuggestedLesson(currentClassProfile, selectedClassLessons.map((lesson) => lesson.plan.topic));
   const nextKeyDate = active.keyDates.filter((item) => item.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
   const nowCard = currentOrNext();
   const filteredPlanning = active.lessons.filter((lesson) => !search || [lesson.subject, lesson.className, lesson.plan.topic, lesson.plan.curriculumUnit].join(" ").toLowerCase().includes(search.toLowerCase()));
@@ -512,9 +560,14 @@ export default function StaffTimetableHub() {
         <div className="ttPlanningGrid">{filteredPlanning.map((lesson) => <article className="ttPlanningCard" key={lesson.id}><div className={`ttSubjectBar ${subjectTone(lesson.subject)}`} /><div><small>{lesson.week} · {lesson.day} · P{lesson.period}</small><h3>{lesson.subject} · {lesson.className}</h3><p>{lesson.plan.topic || "No lesson topic planned yet."}</p><div className="ttChipRow">{lesson.plan.curriculumStage && <span>{lesson.plan.curriculumStage}</span>}{lesson.plan.curriculumUnit && <span>{lesson.plan.curriculumUnit}</span>}{lesson.plan.lessonDate && <span>{formatDate(lesson.plan.lessonDate)}</span>}</div></div><button className="ttButton" onClick={() => setPlanLessonId(lesson.id)}>{lesson.plan.topic ? "Edit plan" : "Plan lesson"}</button></article>)}</div>
       </section>}
 
-      {tab === "classes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CLASS DASHBOARD</span><h2>Classes & curriculum sequence</h2></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
-        {!visibleClass ? <div className="ttBlankState"><h3>No classes yet</h3><p>Add or upload timetable lessons first.</p></div> : <div className="ttClassGrid"><article className="ttPanel"><div className="ttKpiGrid compact"><div><small>Lessons / cycle</small><strong>{selectedClassLessons.length}</strong></div><div><small>Open homework</small><strong>{active.homework.filter((item) => item.className === visibleClass && isOpenHomework(item)).length}</strong></div><div><small>Open prep</small><strong>{active.prep.filter((item) => item.className === visibleClass && item.status !== "Done").length}</strong></div><div><small>Planned lessons</small><strong>{selectedClassLessons.filter((item) => item.plan.topic).length}</strong></div></div><label className="ttField"><span>Class progress / next steps</span><textarea value={active.classNotes[visibleClass] || ""} disabled={demo} onChange={(event) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: event.target.value } }))} placeholder="Misconceptions, progress, follow-up, seating or planning notes…" /></label><div className="ttStackList">{selectedClassLessons.map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>{lesson.week} · {lesson.day} · P{lesson.period}</b><span>{lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned"}</small></button>)}</div></article>
-          <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Topic sequence</h2><p>Paste one lesson title per line, then auto-fill blank lesson-plan topics in timetable order.</p></div></div><textarea className="ttSequenceBox" value={curriculumText || active.curriculumSequences[visibleClass]?.join("\n") || ""} disabled={demo} onChange={(event) => setCurriculumText(event.target.value)} placeholder={'Lesson 1\nLesson 2\nLesson 3'} /><div className="ttButtonRow"><button className="ttButton" disabled={demo} onClick={saveCurriculumSequence}>Save sequence</button><button className="ttButton primary" disabled={demo} onClick={autoPopulateSequence}>Auto-populate lesson topics</button></div><div className="ttIntegrationLinks"><Link href="/curriculum">Open full curriculum hub</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/resource-generator">Create resources</Link></div></article></div>}
+      {tab === "classes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CLASS DASHBOARD · PHASE 1</span><h2>Classes & curriculum profile</h2><p className="ttMuted">Set each class once. The timetable then filters out irrelevant courses and suggests the next lesson from that specification.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
+        {!visibleClass ? <div className="ttBlankState"><h3>No classes yet</h3><p>Add or upload timetable lessons first.</p></div> : <div className="ttClassGrid"><article className="ttPanel"><div className="ttKpiGrid compact"><div><small>Lessons / cycle</small><strong>{selectedClassLessons.length}</strong></div><div><small>Open homework</small><strong>{active.homework.filter((item) => item.className === visibleClass && isOpenHomework(item)).length}</strong></div><div><small>Open prep</small><strong>{active.prep.filter((item) => item.className === visibleClass && item.status !== "Done").length}</strong></div><div><small>Planned lessons</small><strong>{selectedClassLessons.filter((item) => item.plan.topic).length}</strong></div></div><label className="ttField"><span>Class progress / next steps</span><textarea value={active.classNotes[visibleClass] || ""} disabled={demo} onChange={(event) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: event.target.value } }))} placeholder="Misconceptions, progress, follow-up or planning notes…" /></label><div className="ttStackList">{selectedClassLessons.map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>{lesson.week} · {lesson.day} · P{lesson.period}</b><span>{lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned"}</small></button>)}</div></article>
+          <article className="ttPanel ttCurriculumProfilePanel"><div className="ttPanelHeader"><div><h2>Curriculum profile</h2><p>Key Stage → exam board → subject → course. Once chosen, unrelated courses disappear from lesson planning.</p></div></div><div className="ttProfileSummary"><strong>{profileLabel(currentClassProfile)}</strong><span>{selectedProfileCourse ? `${selectedProfileCourse.units.length} units · ${getCourseLessonSequence(currentClassProfile).length} suggested lessons` : "Choose a course"}</span></div><div className="ttProfileGrid">
+            <label><span>Key Stage</span><select disabled={demo} value={currentClassProfile.stage} onChange={(event) => saveClassProfile({ stage: event.target.value as ClassCurriculumProfile["stage"] })}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label><span>Exam board</span><select disabled={demo} value={currentClassProfile.examBoard} onChange={(event) => saveClassProfile({ examBoard: event.target.value as ClassCurriculumProfile["examBoard"] })}>{profileBoards.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label><span>Subject</span><select disabled={demo} value={currentClassProfile.subject} onChange={(event) => saveClassProfile({ subject: event.target.value as ClassCurriculumProfile["subject"] })}>{profileSubjects.map((item) => <option key={item}>{item}</option>)}</select></label>
+            <label><span>Course / specification</span><select disabled={demo} value={currentClassProfile.courseId} onChange={(event) => saveClassProfile({ courseId: event.target.value })}>{profileCourses.map((item) => <option key={item.id} value={item.id}>{item.title}{item.code && item.code !== "KS3" ? ` · ${item.code}` : ""}</option>)}</select></label>
+          </div>{nextProfileLesson ? <div className="ttNextLesson"><small>NEXT SUGGESTED LESSON</small><strong>{nextProfileLesson.title}</strong><span>{nextProfileLesson.unitTitle} · {nextProfileLesson.subtopicTitle}</span><button className="ttButton primary" disabled={demo} onClick={() => { const nextBlank = selectedClassLessons.find((item) => !item.plan.topic); if (nextBlank) { setPlanLessonId(nextBlank.id); setTab("planning"); } }}>Plan next lesson</button></div> : <div className="ttEmptyPreview"><strong>Sequence complete or not configured</strong><span>Choose the class course above or review already planned lessons.</span></div>}<div className="ttButtonRow"><button className="ttButton primary" disabled={demo || !selectedProfileCourse} onClick={autoPopulateCourseSequence}>Auto-fill blank lessons from course</button></div><details className="ttCustomSequence"><summary>Custom sequence override</summary><p>Use this only when your department teaches a different order.</p><textarea className="ttSequenceBox" value={curriculumText || active.curriculumSequences[visibleClass]?.join("\n") || ""} disabled={demo} onChange={(event) => setCurriculumText(event.target.value)} placeholder={'Lesson 1\nLesson 2\nLesson 3'} /><div className="ttButtonRow"><button className="ttButton" disabled={demo} onClick={saveCurriculumSequence}>Save custom sequence</button><button className="ttButton" disabled={demo} onClick={autoPopulateSequence}>Use custom sequence</button></div></details><div className="ttIntegrationLinks"><Link href="/curriculum">Open full curriculum hub</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/resource-generator">Create resources</Link></div></article></div>}
       </section>}
 
       {tab === "homework" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">HOMEWORK & MARKING</span><h2>Homework tracker</h2></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "homework" })}>+ Add homework</button>}</div><div className="ttKpiGrid"><div><small>Outstanding</small><strong>{openHomework.length}</strong></div><div><small>Overdue</small><strong>{overdueHomework.length}</strong></div><div><small>Waiting to mark</small><strong>{markingQueue.length}</strong></div><div><small>Returned</small><strong>{active.homework.filter((item) => item.status === "Returned").length}</strong></div></div><div className="ttDataList">{active.homework.slice().sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999")).map((item) => <button key={item.id} className={`ttDataRow ${item.dueDate < today && isOpenHomework(item) ? "urgent" : ""}`} onClick={() => !demo && setItemEditor({ kind: "homework", id: item.id })}><div><b>{item.dueDate ? formatDate(item.dueDate) : "No due date"}</b><small>{item.status}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.subject}{item.priority === "High" ? " · High priority" : ""}</span></div><span className="ttRowAction">{demo ? "Demo" : "Edit"}</span></button>)}{!active.homework.length && <div className="ttEmptyPreview"><span>No homework tasks yet.</span></div>}</div></section>}
@@ -526,7 +579,7 @@ export default function StaffTimetableHub() {
       {tab === "tools" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TOOLS & BACKUP</span><h2>Workspace tools</h2></div></div><div className="ttToolsGrid"><article className="ttPanel"><h2>Backup</h2><p>Export your full timetable workspace, including lesson plans, homework, prep, tasks and changes.</p><div className="ttButtonRow"><button className="ttButton primary" onClick={exportBackup}>Export backup</button><input ref={backupRef} className="ttFileInput" type="file" accept="application/json,.json" onChange={importBackup} /><button className="ttButton" disabled={demo} onClick={() => backupRef.current?.click()}>Restore backup</button></div></article><article className="ttPanel"><h2>Key dates</h2><p>{nextKeyDate ? `Next: ${nextKeyDate.title} · ${formatDate(nextKeyDate.date)}` : "Add half terms, training days, deadlines or events."}</p>{!demo && <button className="ttButton" onClick={() => setItemEditor({ kind: "keyDate" })}>+ Add key date</button>}<div className="ttStackList">{active.keyDates.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((item) => <button className="ttAgendaRow" key={item.id} onClick={() => !demo && setItemEditor({ kind: "keyDate", id: item.id })}><b>{item.title}</b><span>{formatDate(item.date)} · {item.type}</span></button>)}</div></article><article className="ttPanel"><h2>Connected CPD tools</h2><div className="ttIntegrationLinks"><Link href="/curriculum">Curriculum planning</Link><Link href="/resource-generator">Teaching resource generator</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/calendar">School calendar</Link><Link href="/integrations">Google integrations</Link></div></article><article className="ttPanel"><h2>Workspace status</h2><p>{status}</p><div className="ttButtonRow"><button className="ttButton" onClick={printTimetable}>Print timetable</button><button className="ttButton danger" onClick={clearTimetable}>{demo ? "Exit demo" : "Clear workspace"}</button></div></article></div></section>}
 
       {editorOpen && <LessonEditor form={form} setForm={setForm} editing={Boolean(editingId)} onClose={() => setEditorOpen(false)} onDelete={deleteLesson} onSave={saveLesson} />}
-      {activePlanLesson && <PlanEditor lesson={activePlanLesson} readOnly={demo} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
+      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} readOnly={demo} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
       {itemEditor && <ItemEditor kind={itemEditor.kind} itemId={itemEditor.id} workspace={workspace} activeWorkspace={active} week={week} classes={classes} subjects={subjects} onClose={() => setItemEditor(null)} onChange={setWorkspace} />}
     </main>
   );
@@ -536,75 +589,62 @@ function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { f
   return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{DAYS.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{PERIODS.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
 }
 
-function PlanEditor({ lesson, readOnly, onClose, onSave }: { lesson: Lesson; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void }) {
+function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesson: Lesson; classProfile?: ClassCurriculumProfile; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void }) {
   const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan });
-  const inferredStage = (curriculumStages.includes(plan.curriculumStage as (typeof curriculumStages)[number]) ? plan.curriculumStage : inferCurriculumStage(lesson.className)) as (typeof curriculumStages)[number];
-  const inferredSubject = normaliseCurriculumSubject(plan.curriculumSubject || lesson.subject);
-  const [bankStage, setBankStage] = useState<string>(inferredStage);
-  const [bankSubject, setBankSubject] = useState<string>(inferredSubject);
-  const initialUnits = getCurriculumUnits(inferredStage, inferredSubject);
-  const [bankUnit, setBankUnit] = useState<string>(initialUnits.some((item) => item.unit === plan.curriculumUnit) ? plan.curriculumUnit : (initialUnits[0]?.unit || ""));
-  const [bankLessonIndex, setBankLessonIndex] = useState<number>(() => Math.max(0, plan.sequencePosition || 0));
+  const inferred = classProfile || inferClassCurriculumProfile(lesson.className, lesson.subject);
+  const [stage, setStage] = useState<ClassCurriculumProfile["stage"]>(inferred.stage);
+  const [examBoard, setExamBoard] = useState<ClassCurriculumProfile["examBoard"]>(inferred.examBoard);
+  const [subject, setSubject] = useState<ClassCurriculumProfile["subject"]>(inferred.subject);
+  const initialCourses = getPhase1Courses(inferred.stage, inferred.examBoard, inferred.subject);
+  const [courseId, setCourseId] = useState(inferred.courseId || initialCourses[0]?.id || "");
+  const initialUnits = getPhase1Units(inferred.courseId || initialCourses[0]?.id || "");
+  const initialUnit = initialUnits.find((item) => item.title === plan.curriculumUnit) || initialUnits[0];
+  const [unitId, setUnitId] = useState(initialUnit?.id || "");
+  const initialSubtopics = getPhase1Subtopics(inferred.courseId || initialCourses[0]?.id || "", initialUnit?.id || "");
+  const initialSubtopic = initialSubtopics.find((item) => item.title === plan.curriculumSubtopic) || initialSubtopics[0];
+  const [subtopicId, setSubtopicId] = useState(initialSubtopic?.id || "");
+  const [lessonIndex, setLessonIndex] = useState(Math.max(0, plan.sequencePosition || 0));
 
-  const availableSubjects = getCurriculumSubjects(bankStage);
-  const availableUnits = getCurriculumUnits(bankStage, bankSubject);
-  const availableLessons = getCurriculumLessons(bankStage, bankSubject, bankUnit);
-  const selectedUnit = getCurriculumUnit(bankStage, bankSubject, bankUnit);
-  const selectedTemplate = availableLessons[bankLessonIndex] || availableLessons[0];
+  const boards = getPhase1ExamBoards(stage);
+  const subjects = getPhase1Subjects(stage, examBoard);
+  const courses = getPhase1Courses(stage, examBoard, subject);
+  const units = getPhase1Units(courseId);
+  const subtopics = getPhase1Subtopics(courseId, unitId);
+  const lessons = getPhase1Lessons(courseId, unitId, subtopicId);
+  const selectedCourse = getPhase1Course(courseId);
+  const selectedUnit = units.find((item) => item.id === unitId);
+  const selectedSubtopic = subtopics.find((item) => item.id === subtopicId);
+  const selectedTemplate = lessons[Math.min(lessonIndex, Math.max(lessons.length - 1, 0))];
 
   const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "") => <label className={multiline ? "wide" : ""}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
 
-  function changeStage(next: string) {
-    setBankStage(next);
-    const subjects = getCurriculumSubjects(next);
-    const nextSubject = subjects.includes(bankSubject as "English" | "Geography" | "History") ? bankSubject : (normaliseCurriculumSubject(lesson.subject) || subjects[0] || "");
-    setBankSubject(nextSubject);
-    const units = getCurriculumUnits(next, nextSubject);
-    setBankUnit(units[0]?.unit || "");
-    setBankLessonIndex(0);
+  function resetFor(nextStage: ClassCurriculumProfile["stage"], nextBoard: ClassCurriculumProfile["examBoard"], nextSubject: ClassCurriculumProfile["subject"]) {
+    setStage(nextStage); setExamBoard(nextBoard); setSubject(nextSubject); const nextCourse = getPhase1Courses(nextStage, nextBoard, nextSubject)[0]; setCourseId(nextCourse?.id || ""); const nextUnit = nextCourse?.units[0]; setUnitId(nextUnit?.id || ""); setSubtopicId(nextUnit?.subtopics[0]?.id || ""); setLessonIndex(0);
   }
-
-  function changeSubject(next: string) {
-    setBankSubject(next);
-    const units = getCurriculumUnits(bankStage, next);
-    setBankUnit(units[0]?.unit || "");
-    setBankLessonIndex(0);
-  }
-
-  function changeUnit(next: string) {
-    setBankUnit(next);
-    setBankLessonIndex(0);
-  }
-
+  function changeStage(next: ClassCurriculumProfile["stage"]) { const board = getPhase1ExamBoards(next)[0]; resetFor(next, board, getPhase1Subjects(next, board)[0] || "Science"); }
+  function changeBoard(next: ClassCurriculumProfile["examBoard"]) { resetFor(stage, next, getPhase1Subjects(stage, next)[0] || subject); }
+  function changeSubject(next: ClassCurriculumProfile["subject"]) { resetFor(stage, examBoard, next); }
+  function changeCourse(next: string) { setCourseId(next); const nextUnit = getPhase1Units(next)[0]; setUnitId(nextUnit?.id || ""); setSubtopicId(nextUnit?.subtopics[0]?.id || ""); setLessonIndex(0); }
+  function changeUnit(next: string) { setUnitId(next); setSubtopicId(getPhase1Subtopics(courseId, next)[0]?.id || ""); setLessonIndex(0); }
+  function changeSubtopic(next: string) { setSubtopicId(next); setLessonIndex(0); }
   function applySuggestedLesson() {
-    if (!selectedTemplate) return;
-    setPlan((current) => ({
-      ...current,
-      curriculumStage: bankStage,
-      curriculumSubject: bankSubject,
-      curriculumUnit: bankUnit,
-      sequencePosition: Math.max(0, bankLessonIndex),
-      topic: selectedTemplate.title,
-      vocabulary: selectedTemplate.vocabulary,
-      objectives: selectedTemplate.objectives,
-      sequence: selectedTemplate.sequence,
-      assessment: selectedTemplate.assessment,
-    }));
+    if (!selectedTemplate || !selectedCourse || !selectedUnit || !selectedSubtopic) return;
+    const courseSequence = getCourseLessonSequence({ stage, examBoard, subject, courseId });
+    const sequencePosition = courseSequence.findIndex((item) => item.unitId === unitId && item.subtopicId === subtopicId && item.title === selectedTemplate.title);
+    setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
-    <section className="ttCurriculumPicker">
-      <div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>Choose a stage, subject, unit and lesson to pre-fill the plan. You can edit every field afterwards.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div>
-      <div className="ttCurriculumPickerGrid">
-        <label><span>Stage</span><select disabled={readOnly} value={bankStage} onChange={(event) => changeStage(event.target.value)}>{curriculumStages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
-        <label><span>Subject</span><select disabled={readOnly} value={bankSubject} onChange={(event) => changeSubject(event.target.value)}><option value="">Manual / another subject</option>{availableSubjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
-        <label className="wide"><span>Unit / topic</span><select disabled={readOnly || !bankSubject} value={bankUnit} onChange={(event) => changeUnit(event.target.value)}><option value="">Choose a unit</option>{availableUnits.map((item) => <option key={item.unit} value={item.unit}>{item.unit}</option>)}</select></label>
-        <label className="wide"><span>Suggested lesson</span><select disabled={readOnly || !availableLessons.length} value={Math.min(bankLessonIndex, Math.max(availableLessons.length - 1, 0))} onChange={(event) => setBankLessonIndex(Number(event.target.value))}>{availableLessons.length ? availableLessons.map((item, index) => <option key={`${item.title}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No built-in sequence for this subject</option>}</select></label>
-      </div>
-      {selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}
-      {!bankSubject && <p className="ttCurriculumNote">This subject can still be planned manually below. The built-in bank currently provides English, Geography and History at KS3, GCSE and A level.</p>}
-    </section>
-    <div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title",false,"e.g. Coastal erosion landforms")}{field("curriculumStage","Curriculum stage",false,"KS3, GCSE, A level")}{field("curriculumSubject","Curriculum subject",false,lesson.subject)}{field("curriculumUnit","Curriculum unit",false,"e.g. AQA GCSE – The challenge of natural hazards")}{field("vocabulary","Key vocabulary",false,"Key terms for this lesson")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("sequence","Lesson content / teaching sequence",true,"Starter, explanation/model, guided practice, independent application, review…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("assessment","Assessment / checks for understanding",true,"Hinge question, exam question, exit ticket…")}{field("teacherNotes","Teacher notes",true,"Misconceptions, adaptations, follow-up, reminders…")}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 1</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+    <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
+      <label><span>Key Stage</span><select disabled={readOnly} value={stage} onChange={(event) => changeStage(event.target.value as ClassCurriculumProfile["stage"])}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
+      <label><span>Exam board</span><select disabled={readOnly} value={examBoard} onChange={(event) => changeBoard(event.target.value as ClassCurriculumProfile["examBoard"])}>{boards.map((item) => <option key={item}>{item}</option>)}</select></label>
+      <label><span>Subject</span><select disabled={readOnly} value={subject} onChange={(event) => changeSubject(event.target.value as ClassCurriculumProfile["subject"])}>{subjects.map((item) => <option key={item}>{item}</option>)}</select></label>
+      <label><span>Course</span><select disabled={readOnly} value={courseId} onChange={(event) => changeCourse(event.target.value)}>{courses.map((item) => <option key={item.id} value={item.id}>{item.title}{item.code && item.code !== "KS3" ? ` · ${item.code}` : ""}</option>)}</select></label>
+      <label><span>Unit</span><select disabled={readOnly} value={unitId} onChange={(event) => changeUnit(event.target.value)}>{units.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <label><span>Sub-topic</span><select disabled={readOnly} value={subtopicId} onChange={(event) => changeSubtopic(event.target.value)}>{subtopics.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <label className="wide"><span>Lesson sequence</span><select disabled={readOnly || !lessons.length} value={Math.min(lessonIndex, Math.max(lessons.length - 1, 0))} onChange={(event) => setLessonIndex(Number(event.target.value))}>{lessons.length ? lessons.map((item, index) => <option key={`${item.id}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No lessons in this selection</option>}</select></label>
+    </div>{selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}</section>
+    <div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title")}{field("curriculumStage","Curriculum stage")}{field("examBoard","Exam board")}{field("curriculumSubject","Curriculum subject")}{field("curriculumUnit","Curriculum unit")}{field("curriculumSubtopic","Curriculum sub-topic")}{field("vocabulary","Key vocabulary")}{field("objectives","Learning objectives",true)}{field("sequence","Lesson content / teaching sequence",true)}{field("resources","Resources / links",true)}{field("assessment","Assessment / checks for understanding",true)}{field("teacherNotes","Teacher notes",true)}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
 }
 
 function ItemEditor({ kind, itemId, workspace, activeWorkspace, week, classes, subjects, onClose, onChange }: { kind: "homework" | "prep" | "task" | "change" | "activity" | "keyDate"; itemId?: string; workspace: WorkspaceData; activeWorkspace: WorkspaceData; week: WeekKey; classes: string[]; subjects: string[]; onClose: () => void; onChange: React.Dispatch<React.SetStateAction<WorkspaceData>> }) {
