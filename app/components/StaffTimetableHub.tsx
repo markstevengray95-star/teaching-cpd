@@ -29,12 +29,14 @@ import {
 } from "./staffTimetableMediumTerm";
 import StaffTimetableLessonResources, { type TimetableAttachedResource } from "./StaffTimetableLessonResources";
 import StaffTimetableProgress from "./StaffTimetableProgress";
+import StaffTimetableAssessments, { type AssessmentFollowUpAction, type CurriculumAssessment, type CurriculumAssessmentTopicResult } from "./StaffTimetableAssessments";
+import StaffTimetableLessonHomework, { type LessonLinkedHomework } from "./StaffTimetableLessonHomework";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
 type WeekKey = "W1" | "W2";
 type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
-type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "homework" | "workload" | "changes" | "tools";
+type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "assessments" | "homework" | "workload" | "changes" | "tools";
 
 type LessonPlan = {
   lessonDate: string;
@@ -89,17 +91,7 @@ type Lesson = {
   plan: LessonPlan;
 };
 
-type Homework = {
-  id: string;
-  className: string;
-  subject: string;
-  title: string;
-  setDate: string;
-  dueDate: string;
-  status: "To set" | "Set" | "Collected" | "Marked" | "Returned";
-  priority: "Normal" | "High";
-  notes: string;
-};
+type Homework = LessonLinkedHomework;
 
 type PrepItem = {
   id: string;
@@ -164,6 +156,7 @@ type WorkspaceData = {
   classCurriculumProfiles: Record<string, ClassCurriculumProfile>;
   mediumTermPlans: MediumTermPlan[];
   planningBlocks: PlanningBlock[];
+  assessments: CurriculumAssessment[];
 };
 
 type ImportResult = { lessons: Lesson[]; source: string };
@@ -194,7 +187,7 @@ function blankPlan(): LessonPlan {
   };
 }
 function blankWorkspace(): WorkspaceData {
-  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [] };
+  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [], assessments: [] };
 }
 function periodTimes(period: number) {
   const match = PERIODS.find((item) => item.period === period) || PERIODS[0];
@@ -241,6 +234,19 @@ function todayIso() { return new Date().toISOString().slice(0, 10); }
 function dateOffsetIso(days: number) {
   const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function shiftIsoDate(value: string, days: number) {
+  if (!value || !days) return value;
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function dateDeltaDays(from: string, to: string) {
+  if (!from || !to || from === to) return 0;
+  const a = new Date(`${from}T12:00:00`).getTime(); const b = new Date(`${to}T12:00:00`).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  return Math.round((b - a) / 86400000);
 }
 function formatDate(value: string) {
   if (!value) return "No date";
@@ -450,6 +456,7 @@ export default function StaffTimetableHub() {
   const openPrep = active.prep.filter((item) => item.status !== "Done");
   const overduePrep = openPrep.filter((item) => item.neededBy && item.neededBy < today);
   const openTasks = active.tasks.filter((item) => item.status !== "Done");
+  const followUpHomework = active.homework.filter((item) => item.followUp && item.followUp !== "None" && item.status !== "Returned");
 
   function mutate(updater: (current: WorkspaceData) => WorkspaceData) { if (!demo) setWorkspace(updater); }
   function lessonFor(day: DayName, period: number) { return weekLessons.find((lesson) => lesson.day === day && lesson.period === period); }
@@ -500,8 +507,38 @@ export default function StaffTimetableHub() {
   }
   function savePlan(nextPlan: LessonPlan) {
     if (!planLessonId) return;
-    mutate((current) => ({ ...current, lessons: current.lessons.map((lesson) => lesson.id === planLessonId ? { ...lesson, plan: nextPlan } : lesson) }));
+    mutate((current) => {
+      const previous = current.lessons.find((lesson) => lesson.id === planLessonId);
+      const dayShift = dateDeltaDays(previous?.plan.lessonDate || "", nextPlan.lessonDate || "");
+      const homework = dayShift ? current.homework.map((item) => item.sourceLessonId === planLessonId && item.autoMoveWithLesson ? { ...item, setDate: shiftIsoDate(item.setDate, dayShift), dueDate: shiftIsoDate(item.dueDate, dayShift), sourceLessonDate: nextPlan.lessonDate } : item) : current.homework;
+      return { ...current, homework, lessons: current.lessons.map((lesson) => lesson.id === planLessonId ? { ...lesson, plan: nextPlan } : lesson) };
+    });
     setPlanLessonId(null);
+  }
+  function assessmentFollowUp(action: AssessmentFollowUpAction, assessment: CurriculumAssessment, topic: CurriculumAssessmentTopicResult) {
+    if (demo) return;
+    if (action === "homework") {
+      const homework: Homework = { id: makeId("assessment_hw"), className: assessment.className, subject: assessment.subject, title: `Assessment follow-up: ${topic.title}`, setDate: today, dueDate: dateOffsetIso(7), status: "To set", priority: "Normal", notes: `Created from ${assessment.title}. Class topic score: ${topic.scorePercent ?? "—"}% (threshold ${assessment.thresholdPercent}%).`, sourceAssessmentId: assessment.id, sourceTopic: topic.title, courseId: assessment.courseId, sequencePosition: topic.sequencePosition, curriculumUnit: topic.unitTitle, curriculumSubtopic: topic.subtopicTitle, completionPercent: 0, followUp: "None" };
+      mutate((current) => ({ ...current, homework: [...current.homework, homework] })); setTab("homework"); setStatus(`Created homework for ${assessment.className}: ${topic.title}.`); return;
+    }
+    if (action === "intervention") {
+      const task: TeacherTask = { id: makeId("assessment_intervention"), title: `Intervention follow-up: ${assessment.className} · ${topic.title}`, type: "Planning", status: "To do", date: today, period: "", notes: `Class-level assessment flag from ${assessment.title}: ${topic.scorePercent ?? "—"}% against ${assessment.thresholdPercent}% threshold. Use the intervention area for individual pupil records.` };
+      mutate((current) => ({ ...current, tasks: [...current.tasks, task] })); setTab("workload"); setStatus(`Added intervention follow-up task for ${topic.title}.`); return;
+    }
+    const candidates = workspace.lessons.filter((lesson) => lesson.className === assessment.className);
+    const target = candidates.find((lesson) => !lesson.plan.topic) || null;
+    if (!target) {
+      const label = action === "reteach" ? "reteach" : action === "retrieval" ? "retrieval" : "revision";
+      const task: TeacherTask = { id: makeId("assessment_plan"), title: `Plan ${label}: ${assessment.className} · ${topic.title}`, type: "Planning", status: "To do", date: today, period: "", notes: `No blank timetable lesson was available. Assessment: ${assessment.title}; score ${topic.scorePercent ?? "—"}% against ${assessment.thresholdPercent}% threshold.` };
+      mutate((current) => ({ ...current, tasks: [...current.tasks, task] })); setTab("workload"); setStatus(`No blank ${assessment.className} lesson was available, so a planning task was added.`); return;
+    }
+    mutate((current) => ({ ...current, lessons: current.lessons.map((lesson) => {
+      if (lesson.id !== target.id) return lesson;
+      if (action === "retrieval") return { ...lesson, plan: { ...lesson.plan, retrieval: `${lesson.plan.retrieval ? `${lesson.plan.retrieval}\n\n` : ""}Assessment-responsive retrieval: write 4–6 short questions revisiting ${topic.title}, including one misconception check and one application question.`, courseId: assessment.courseId, sequencePosition: topic.sequencePosition, curriculumUnit: topic.unitTitle, curriculumSubtopic: topic.subtopicTitle } };
+      const prefix = action === "reteach" ? "Reteach" : "Revision";
+      return { ...lesson, plan: { ...lesson.plan, planningMode: "detailed", topic: `${prefix}: ${topic.title}`, courseId: assessment.courseId, sequencePosition: topic.sequencePosition, curriculumUnit: topic.unitTitle, curriculumSubtopic: topic.subtopicTitle, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}Assessment response from ${assessment.title}: ${topic.scorePercent ?? "—"}% against ${assessment.thresholdPercent}% threshold.`, retrieval: lesson.plan.retrieval || `Retrieve prerequisite knowledge for ${topic.title} before ${prefix.toLowerCase()}ing.`, homeworkTask: lesson.plan.homeworkTask || `Consolidate ${topic.title} after the responsive lesson.` } };
+    }) }));
+    setPlanLessonId(target.id); setTab("planning"); setStatus(`Prepared a ${action} response for ${assessment.className}: ${topic.title}.`);
   }
   function saveCurriculumSequence() {
     if (!visibleClass || demo) return;
@@ -619,7 +656,7 @@ export default function StaffTimetableHub() {
     mutate((current) => ({ ...current, mediumTermPlans: current.mediumTermPlans.filter((item) => item.className !== visibleClass) }));
   }
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ version: 5, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ version: 8, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
@@ -654,7 +691,7 @@ export default function StaffTimetableHub() {
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
 
       <nav className="ttWorkspaceNav noPrint" aria-label="Timetable workspace">
-        {(["today","timetable","planning","mediumterm","classes","progress","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",progress:"Progress",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
+        {(["today","timetable","planning","mediumterm","classes","progress","assessments","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",progress:"Progress",assessments:"Assessments",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
       </nav>
 
       {tab === "today" && <section className="ttDashboardShell">
@@ -720,16 +757,26 @@ export default function StaffTimetableHub() {
         onOpenMediumTerm={(className) => { setClassSelection(className); setTab("mediumterm"); }}
       />}
 
-      {tab === "homework" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">HOMEWORK & MARKING</span><h2>Homework tracker</h2></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "homework" })}>+ Add homework</button>}</div><div className="ttKpiGrid"><div><small>Outstanding</small><strong>{openHomework.length}</strong></div><div><small>Overdue</small><strong>{overdueHomework.length}</strong></div><div><small>Waiting to mark</small><strong>{markingQueue.length}</strong></div><div><small>Returned</small><strong>{active.homework.filter((item) => item.status === "Returned").length}</strong></div></div><div className="ttDataList">{active.homework.slice().sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999")).map((item) => <button key={item.id} className={`ttDataRow ${item.dueDate < today && isOpenHomework(item) ? "urgent" : ""}`} onClick={() => !demo && setItemEditor({ kind: "homework", id: item.id })}><div><b>{item.dueDate ? formatDate(item.dueDate) : "No due date"}</b><small>{item.status}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.subject}{item.priority === "High" ? " · High priority" : ""}</span></div><span className="ttRowAction">{demo ? "Demo" : "Edit"}</span></button>)}{!active.homework.length && <div className="ttEmptyPreview"><span>No homework tasks yet.</span></div>}</div></section>}
+      {tab === "assessments" && <StaffTimetableAssessments
+        lessons={active.lessons}
+        profiles={active.classCurriculumProfiles}
+        assessments={active.assessments}
+        today={today}
+        readOnly={demo}
+        onChange={(assessments) => mutate((current) => ({ ...current, assessments }))}
+        onFollowUp={assessmentFollowUp}
+      />}
 
-      {tab === "workload" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">WORKLOAD</span><h2>Practical prep & teacher tasks</h2></div><div className="ttWorkspaceActions">{!demo && <><button className="ttButton" onClick={() => setItemEditor({ kind: "prep" })}>+ Prep</button><button className="ttButton primary" onClick={() => setItemEditor({ kind: "task" })}>+ Task</button></>}</div></div><div className="ttKpiGrid"><div><small>Open prep</small><strong>{openPrep.length}</strong></div><div><small>Overdue prep</small><strong>{overduePrep.length}</strong></div><div><small>Open tasks</small><strong>{openTasks.length}</strong></div><div><small>Next free slot</small><strong className="smallStrong">{nextFreeSlot()}</strong></div></div><div className="ttSplitGrid"><article className="ttPanel"><div className="ttPanelHeader"><div><h2>Practical prep</h2></div></div><div className="ttDataList">{active.prep.map((item) => <button className={`ttDataRow compactRow ${item.priority === "High" || (item.neededBy < today && item.status !== "Done") ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "prep", id: item.id })}><div><b>{formatDate(item.neededBy)}</b><small>{item.status}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.room || item.subject}</span></div></button>)}{!active.prep.length && <div className="ttEmptyPreview"><span>No prep items yet.</span></div>}</div></article><article className="ttPanel"><div className="ttPanelHeader"><div><h2>Teacher tasks</h2></div></div><div className="ttDataList">{active.tasks.map((item) => <button className={`ttDataRow compactRow ${item.date < today && item.status !== "Done" ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "task", id: item.id })}><div><b>{formatDate(item.date)}</b><small>{item.period || "Unscheduled"}</small></div><div><strong>{item.title}</strong><span>{item.type} · {item.status}</span></div></button>)}{!active.tasks.length && <div className="ttEmptyPreview"><span>No teacher tasks yet.</span></div>}</div></article></div></section>}
+      {tab === "homework" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">HOMEWORK & MARKING</span><h2>Homework tracker</h2></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "homework" })}>+ Add homework</button>}</div><div className="ttKpiGrid"><div><small>Outstanding</small><strong>{openHomework.length}</strong></div><div><small>Overdue</small><strong>{overdueHomework.length}</strong></div><div><small>Waiting to mark</small><strong>{markingQueue.length}</strong></div><div><small>Returned</small><strong>{active.homework.filter((item) => item.status === "Returned").length}</strong></div></div><div className="ttDataList">{active.homework.slice().sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999")).map((item) => <button key={item.id} className={`ttDataRow ${item.dueDate < today && isOpenHomework(item) ? "urgent" : ""}`} onClick={() => { if (demo) return; if (item.sourceLessonId) { setPlanLessonId(item.sourceLessonId); setTab("planning"); } else setItemEditor({ kind: "homework", id: item.id }); }}><div><b>{item.dueDate ? formatDate(item.dueDate) : "No due date"}</b><small>{item.status}{typeof item.completionPercent === "number" ? ` · ${item.completionPercent}% complete` : ""}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.subject}{item.sourceTopic ? ` · ${item.sourceTopic}` : ""}{item.followUp && item.followUp !== "None" ? ` · Follow-up: ${item.followUp}` : ""}{item.priority === "High" ? " · High priority" : ""}</span></div><span className="ttRowAction">{demo ? "Demo" : item.sourceLessonId ? "Open lesson" : "Edit"}</span></button>)}{!active.homework.length && <div className="ttEmptyPreview"><span>No homework tasks yet.</span></div>}</div></section>}
+
+      {tab === "workload" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">WORKLOAD</span><h2>Practical prep & teacher tasks</h2></div><div className="ttWorkspaceActions">{!demo && <><button className="ttButton" onClick={() => setItemEditor({ kind: "prep" })}>+ Prep</button><button className="ttButton primary" onClick={() => setItemEditor({ kind: "task" })}>+ Task</button></>}</div></div><div className="ttKpiGrid"><div><small>Open prep</small><strong>{openPrep.length}</strong></div><div><small>Overdue prep</small><strong>{overduePrep.length}</strong></div><div><small>Open tasks</small><strong>{openTasks.length}</strong></div><div><small>Homework follow-up</small><strong>{followUpHomework.length}</strong></div><div><small>Next free slot</small><strong className="smallStrong">{nextFreeSlot()}</strong></div></div><div className="ttSplitGrid"><article className="ttPanel"><div className="ttPanelHeader"><div><h2>Practical prep</h2></div></div><div className="ttDataList">{active.prep.map((item) => <button className={`ttDataRow compactRow ${item.priority === "High" || (item.neededBy < today && item.status !== "Done") ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "prep", id: item.id })}><div><b>{formatDate(item.neededBy)}</b><small>{item.status}</small></div><div><strong>{item.title}</strong><span>{item.className} · {item.room || item.subject}</span></div></button>)}{!active.prep.length && <div className="ttEmptyPreview"><span>No prep items yet.</span></div>}</div></article><article className="ttPanel"><div className="ttPanelHeader"><div><h2>Teacher tasks</h2></div></div><div className="ttDataList">{active.tasks.map((item) => <button className={`ttDataRow compactRow ${item.date < today && item.status !== "Done" ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "task", id: item.id })}><div><b>{formatDate(item.date)}</b><small>{item.period || "Unscheduled"}</small></div><div><strong>{item.title}</strong><span>{item.type} · {item.status}</span></div></button>)}{!active.tasks.length && <div className="ttEmptyPreview"><span>No teacher tasks yet.</span></div>}</div></article></div></section>}
 
       {tab === "changes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CHANGES & COVER</span><h2>Timetable changes</h2><p className="ttMuted">Record cancellations, room changes, cover and one-off notes without changing the normal timetable.</p></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "change" })}>+ Add change</button>}</div><div className="ttDataList">{active.changes.slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")).map((item) => { const lesson = active.lessons.find((lesson) => lesson.id === item.lessonId); return <button className={`ttDataRow ${item.type === "Cancelled" ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "change", id: item.id })}><div><b>{formatDate(item.date)}</b><small>{item.type}</small></div><div><strong>{lesson ? `${lesson.week} · ${lesson.day} · P${lesson.period} · ${lesson.className}` : "Lesson"}</strong><span>{[item.room,item.detail,item.notes].filter(Boolean).join(" · ") || "No extra detail"}</span></div></button>; })}{!active.changes.length && <div className="ttEmptyPreview"><span>No timetable changes recorded.</span></div>}</div></section>}
 
       {tab === "tools" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TOOLS & BACKUP</span><h2>Workspace tools</h2></div></div><div className="ttToolsGrid"><article className="ttPanel"><h2>Backup</h2><p>Export your full timetable workspace, including lesson plans, homework, prep, tasks and changes.</p><div className="ttButtonRow"><button className="ttButton primary" onClick={exportBackup}>Export backup</button><input ref={backupRef} className="ttFileInput" type="file" accept="application/json,.json" onChange={importBackup} /><button className="ttButton" disabled={demo} onClick={() => backupRef.current?.click()}>Restore backup</button></div></article><article className="ttPanel"><h2>Key dates</h2><p>{nextKeyDate ? `Next: ${nextKeyDate.title} · ${formatDate(nextKeyDate.date)}` : "Add half terms, training days, deadlines or events."}</p>{!demo && <button className="ttButton" onClick={() => setItemEditor({ kind: "keyDate" })}>+ Add key date</button>}<div className="ttStackList">{active.keyDates.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((item) => <button className="ttAgendaRow" key={item.id} onClick={() => !demo && setItemEditor({ kind: "keyDate", id: item.id })}><b>{item.title}</b><span>{formatDate(item.date)} · {item.type}</span></button>)}</div></article><article className="ttPanel"><h2>Connected CPD tools</h2><div className="ttIntegrationLinks"><Link href="/curriculum">Curriculum planning</Link><Link href="/resource-generator">Teaching resource generator</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/calendar">School calendar</Link><Link href="/integrations">Google integrations</Link></div></article><article className="ttPanel"><h2>Workspace status</h2><p>{status}</p><div className="ttButtonRow"><button className="ttButton" onClick={printTimetable}>Print timetable</button><button className="ttButton danger" onClick={clearTimetable}>{demo ? "Exit demo" : "Clear workspace"}</button></div></article></div></section>}
 
       {editorOpen && <LessonEditor form={form} setForm={setForm} editing={Boolean(editingId)} onClose={() => setEditorOpen(false)} onDelete={deleteLesson} onSave={saveLesson} />}
-      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} readOnly={demo} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
+      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} homework={active.homework} readOnly={demo} onHomeworkChange={(homework) => mutate((current) => ({ ...current, homework }))} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
       {itemEditor && <ItemEditor kind={itemEditor.kind} itemId={itemEditor.id} workspace={workspace} activeWorkspace={active} week={week} classes={classes} subjects={subjects} onClose={() => setItemEditor(null)} onChange={setWorkspace} />}
     </main>
   );
@@ -739,7 +786,7 @@ function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { f
   return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{DAYS.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{PERIODS.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
 }
 
-function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesson: Lesson; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile }) {
+function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onSave, classProfile }: { lesson: Lesson; homework: Homework[]; readOnly: boolean; onHomeworkChange: (homework: Homework[]) => void; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile }) {
   const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan, planningMode: lesson.plan?.planningMode || "simple" });
   const inferred = classProfile || inferClassCurriculumProfile(lesson.className, lesson.subject);
   const [stage, setStage] = useState<ClassCurriculumProfile["stage"]>((phase1Stages.includes(plan.curriculumStage as ClassCurriculumProfile["stage"]) ? plan.curriculumStage : inferred.stage) as ClassCurriculumProfile["stage"]);
@@ -883,7 +930,7 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
     setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASES 4–5</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASES 4–5 & 8</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
     <div className="ttPlanModeBar"><div className="ttPlanModeSwitch"><button type="button" className={plan.planningMode === "simple" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "simple" }))}>Simple</button><button type="button" className={plan.planningMode === "detailed" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "detailed" }))}>Detailed</button></div><div className="ttPlanCompletion"><span>Detailed plan</span><b>{detailedComplete}/{detailedKeys.length}</b><i><em style={{ width: `${Math.round(detailedComplete / detailedKeys.length * 100)}%` }} /></i></div>{!readOnly && <button type="button" className="ttButton" onClick={buildDetailedStructure}>Build detailed structure</button>}</div>
     <section className="ttLessonGenerator"><div className="ttLessonGeneratorHead"><div><span className="staffTimetableEyebrow">ONE-CLICK LESSON GENERATION</span><h3>Generate the full lesson</h3><p>Build an editable 55-minute lesson from the selected curriculum topic, including retrieval, explanation, modelling, practice, checks, exam-style application, homework, adaptations and exit ticket.</p></div><span className={`ttGeneratorBadge ${generationSource || "ready"}`}>{generatingLesson ? "Generating…" : generationSource === "ai" ? "AI generated" : generationSource === "template" ? "Built-in fallback" : "Ready"}</span></div><label className="ttGeneratorRequirements"><span>Optional teacher requirements</span><textarea disabled={readOnly || generatingLesson} value={teacherRequirements} onChange={(event) => setTeacherRequirements(event.target.value)} placeholder="e.g. practical lesson, stronger exam technique focus, include paired discussion, keep independent task to 15 minutes…" /></label><div className="ttGeneratorActions">{!readOnly && <><button type="button" className="ttButton primary" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(false)}>{generatingLesson ? "Generating lesson…" : "Generate full lesson"}</button><button type="button" className="ttButton" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(true)}>Regenerate planning sections</button></>}<span>{generationMessage || "Generation fills blank sections by default, so existing teacher edits are preserved."}</span></div><div className="ttGeneratorNote"><b>Teacher review required.</b><span>Generated content is a planning draft, not an official exam-board resource or mark scheme. Check subject accuracy, suitability and timings before teaching.</span></div></section>
     <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
@@ -916,6 +963,12 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
       resources={plan.generatedResources || []}
       readOnly={readOnly}
       onChange={(generatedResources) => setPlan((current) => ({ ...current, generatedResources }))}
+    />
+    <StaffTimetableLessonHomework
+      lesson={{ id: lesson.id, className: lesson.className, subject: lesson.subject, lessonDate: plan.lessonDate, topic: plan.topic || selectedTemplate?.title || "", homeworkTask: plan.homeworkTask, courseId: plan.courseId || courseId, sequencePosition: plan.sequencePosition, curriculumUnit: plan.curriculumUnit || selectedUnit?.title || "", curriculumSubtopic: plan.curriculumSubtopic || selectedSubtopic?.title || "" }}
+      homework={homework}
+      readOnly={readOnly}
+      onChange={onHomeworkChange}
     />
     <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>1</span><div><h3>Core lesson</h3><p>The essentials shown in both planning modes.</p></div></div><div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("vocabulary","Key vocabulary",true,"Subject-specific language pupils need to understand and use")}{field("sequence","Lesson content / sequence",true,"Starter → explanation/model → practice → review")}{field("assessment","Checks for understanding",true,"Hinge questions, cold call, mini-whiteboards, exam question, exit ticket…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("teacherNotes","Teacher notes",true,"Reminders, class-specific logistics or follow-up")}</div></section>
     {plan.planningMode === "detailed" && <div className="ttDetailedPlan">
