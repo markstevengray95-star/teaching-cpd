@@ -18,6 +18,8 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build current CPD app
         run: npm run build
+      - name: Audit completed roadmap phases 21 to 31
+        run: npm run audit:roadmap
       - name: Audit course timing, tasks and migration parity
         run: npm run audit:courses
       - name: Audit navigation, role visibility and course links
