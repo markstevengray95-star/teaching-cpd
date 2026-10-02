@@ -6,6 +6,7 @@ import { MediumTermPlan, MediumTermSession } from "./staffTimetableMediumTerm";
 import { CurriculumAssessment } from "./StaffTimetableAssessments";
 import { LessonLinkedHomework } from "./StaffTimetableLessonHomework";
 import { TimetableAttachedResource } from "./StaffTimetableLessonResources";
+import StaffTimetableNextLesson, { type NextLessonSuggestion } from "./StaffTimetableNextLesson";
 import "./StaffTimetableClassWorkspace.css";
 
 type ClassLesson = {
@@ -27,6 +28,13 @@ type ClassLesson = {
     sequencePosition?: number;
     planningMode?: string;
     generatedResources?: TimetableAttachedResource[];
+    vocabulary?: string;
+    objectives?: string;
+    sequence?: string;
+    assessment?: string;
+    reflectionOutcome?: "" | "went-well" | "needs-revisiting" | "not-completed";
+    reflectionNote?: string;
+    reflectionUpdatedAt?: string;
   };
 };
 
@@ -71,6 +79,7 @@ export default function StaffTimetableClassWorkspace({
   onOpenMediumTerm,
   onOpenAssessments,
   onOpenHomework,
+  onApplyNextSuggestion,
   onNotesChange,
 }: {
   classes: string[];
@@ -88,6 +97,7 @@ export default function StaffTimetableClassWorkspace({
   onOpenMediumTerm: () => void;
   onOpenAssessments: () => void;
   onOpenHomework: () => void;
+  onApplyNextSuggestion: (suggestion: NextLessonSuggestion) => void;
   onNotesChange: (value: string) => void;
 }) {
   const [section, setSection] = useState<Section>("overview");
@@ -131,7 +141,7 @@ export default function StaffTimetableClassWorkspace({
 
   return <div className="ttClassWorkspace">
     <div className="ttClassWorkspaceHero">
-      <div><span>PHASE 9 · CLASS-SPECIFIC PLANNING</span><h2>{className || "Class workspace"}</h2><p>{profileLabel(inferred)}{course?.code ? ` · ${course.code}` : ""}</p></div>
+      <div><span>PHASES 9–10 · CLASS-SPECIFIC PLANNING</span><h2>{className || "Class workspace"}</h2><p>{profileLabel(inferred)}{course?.code ? ` · ${course.code}` : ""}</p></div>
       <div className="ttClassWorkspaceHeroActions"><label><span>Class</span><select value={className} onChange={(event) => onSelectClass(event.target.value)}>{classes.map((item) => <option key={item}>{item}</option>)}</select></label><button className="ttButton" onClick={onOpenMediumTerm}>Medium-term plan</button></div>
     </div>
 
@@ -148,6 +158,17 @@ export default function StaffTimetableClassWorkspace({
       <button type="button" className="today" onClick={() => openTimeline(current)} disabled={!current}><small>TODAY</small><strong>{current?.topic || "No class lesson today"}</strong><span>{current ? `${formatDate(current.date)} · ${current.meta}` : "Use the timetable or dated plan for context"}</span></button>
       <button type="button" className="next" onClick={() => openTimeline(next)} disabled={!next}><small>NEXT LESSON</small><strong>{next?.topic || "No next dated lesson yet"}</strong><span>{next ? `${formatDate(next.date)} · ${next.meta}` : "Extend the medium-term plan to schedule more"}</span></button>
     </div>
+
+    <StaffTimetableNextLesson
+      className={className}
+      lessons={lessons}
+      profile={profile}
+      assessments={assessments}
+      mediumTermPlans={mediumTermPlans}
+      today={today}
+      readOnly={readOnly}
+      onApply={onApplyNextSuggestion}
+    />
 
     <nav className="ttClassWorkspaceNav" aria-label={`${className} workspace sections`}>{(Object.keys(sectionLabels) as Section[]).map((item) => <button type="button" key={item} className={section === item ? "active" : ""} onClick={() => setSection(item)}>{sectionLabels[item]}{item === "homework" && openHomework.length ? <i>{openHomework.length}</i> : item === "assessments" && weakTopics ? <i>{weakTopics}</i> : item === "resources" && uniqueResources.length ? <i>{uniqueResources.length}</i> : null}</button>)}</nav>
 
