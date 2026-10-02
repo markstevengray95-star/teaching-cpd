@@ -18,7 +18,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
       - name: Patch timetable planner
         shell: bash
         run: |
@@ -88,7 +87,7 @@ jobs:
             function changeStage(next: string) {
               setBankStage(next);
               const subjects = getCurriculumSubjects(next);
-              const nextSubject = subjects.includes(bankSubject as never) ? bankSubject : (normaliseCurriculumSubject(lesson.subject) || subjects[0] || "");
+              const nextSubject = subjects.includes(bankSubject as "English" | "Geography" | "History") ? bankSubject : (normaliseCurriculumSubject(lesson.subject) || subjects[0] || "");
               setBankSubject(nextSubject);
               const units = getCurriculumUnits(next, nextSubject);
               setBankUnit(units[0]?.unit || "");
@@ -130,7 +129,7 @@ jobs:
                   <label><span>Stage</span><select disabled={readOnly} value={bankStage} onChange={(event) => changeStage(event.target.value)}>{curriculumStages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
                   <label><span>Subject</span><select disabled={readOnly} value={bankSubject} onChange={(event) => changeSubject(event.target.value)}><option value="">Manual / another subject</option>{availableSubjects.map((subject) => <option key={subject} value={subject}>{subject}</option>)}</select></label>
                   <label className="wide"><span>Unit / topic</span><select disabled={readOnly || !bankSubject} value={bankUnit} onChange={(event) => changeUnit(event.target.value)}><option value="">Choose a unit</option>{availableUnits.map((item) => <option key={item.unit} value={item.unit}>{item.unit}</option>)}</select></label>
-                  <label className="wide"><span>Suggested lesson</span><select disabled={readOnly || !availableLessons.length} value={Math.min(bankLessonIndex, Math.max(availableLessons.length - 1, 0))} onChange={(event) => setBankLessonIndex(Number(event.target.value))}><option value={0}>{availableLessons.length ? "Choose from the sequence" : "No built-in sequence for this subject"}</option>{availableLessons.map((item, index) => <option key={`${item.title}-${index}`} value={index}>{index + 1}. {item.title}</option>)}</select></label>
+                  <label className="wide"><span>Suggested lesson</span><select disabled={readOnly || !availableLessons.length} value={Math.min(bankLessonIndex, Math.max(availableLessons.length - 1, 0))} onChange={(event) => setBankLessonIndex(Number(event.target.value))}>{availableLessons.length ? availableLessons.map((item, index) => <option key={`${item.title}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No built-in sequence for this subject</option>}</select></label>
                 </div>
                 {selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}
                 {!bankSubject && <p className="ttCurriculumNote">This subject can still be planned manually below. The built-in bank currently provides English, Geography and History at KS3, GCSE and A level.</p>}
@@ -144,15 +143,16 @@ jobs:
 
           css = Path('app/components/StaffTimetableHub.css')
           c = css.read_text()
-          marker = '.ttCurriculumPicker{'
-          if marker not in c:
+          if '.ttCurriculumPicker{' not in c:
               c += '''\n.tone-rose{--tone:#c15d82;background:#fff5f8}.tone-slate{--tone:#6f7185;background:#f7f7fa}.ttCurriculumPicker{margin:15px 0 18px;padding:16px;border:1px solid #dce4f4;border-radius:15px;background:linear-gradient(145deg,#f8faff,#f5fbff)}.ttCurriculumPickerHead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px}.ttCurriculumPickerHead>div{display:grid;gap:3px}.ttCurriculumPickerHead strong{font-size:13px;color:#2b3d65}.ttCurriculumPickerHead span{font-size:11px;color:#718097;line-height:1.45}.ttCurriculumPickerGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ttCurriculumPickerGrid label{display:grid;gap:5px}.ttCurriculumPickerGrid label.wide{grid-column:1/-1}.ttCurriculumPickerGrid label>span{font-size:10px;color:#66748a;font-weight:850;text-transform:uppercase;letter-spacing:.05em}.ttCurriculumPickerGrid select{min-width:0;border:1px solid #d5dce7;border-radius:9px;background:#fff;color:#26344d;padding:9px 10px;font:inherit}.ttCurriculumNote{margin:10px 0 0!important;padding:9px 10px;border-radius:9px;background:#fff;color:#68768c!important;font-size:11px!important;line-height:1.5!important}@media(max-width:680px){.ttCurriculumPickerHead{flex-direction:column}.ttCurriculumPickerHead .ttButton{width:100%}.ttCurriculumPickerGrid{grid-template-columns:1fr}.ttCurriculumPickerGrid label.wide{grid-column:auto}}\n'''
               css.write_text(c)
           PY
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Build app
         run: npm run build
+      - name: Audit courses
+        run: npm run audit:courses
       - name: Commit curriculum planner integration
         shell: bash
         run: |
