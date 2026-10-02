@@ -1,0 +1,37 @@
+name: Apply timetable Phase 1 v2
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, 'Run timetable Phase 1 v2')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Apply migration
+        run: python scripts/apply_timetable_phase1.py
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build app
+        run: npm run build
+      - name: Audit courses
+        run: npm run audit:courses
+      - name: Commit Phase 1
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/components/StaffTimetableHub.tsx app/components/StaffTimetableHub.css app/components/staffTimetableCurriculumPhase1.ts
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Complete Phase 1 smart curriculum profiles for staff timetable"
+            git push
+          fi
