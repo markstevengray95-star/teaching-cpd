@@ -45,28 +45,28 @@ local role selectors, localStorage stores, external media uploads or old login
 systems were copied. This is neither an official Zones of Regulation product nor
 an official/licensed/standardised Bell Foundation test. EAL alone is not SEN.
 
-## Live records: disabled until school approval and database setup
+## Live records: storage installed; school activation required
 
-The confirmed CPD production project is `tkjbaqkpkvomwwvwhowp`. The currently
-connected Supabase account exposes a DIFFERENT project. Do not apply this SQL to
-that other project. No production schema or pupil records were changed.
+The confirmed CPD production project is `tkjbaqkpkvomwwvwhowp`. Secure pupil
+storage was installed there on 2 October 2026 through the Supabase migration API,
+registered as `20261002150055_sen_department_workspace`. Do not apply it to a
+different project or create a duplicate migration. No pupil records were seeded.
+At installation there were no school organisations, so no school was activated.
 
 The app calls `sen_workspace_access(org_id)` and fails closed if the function is
 missing, access is denied or the school is not enabled. General staff tools still
 work. The separately labelled fictional demo is in memory only; reload clears it.
 Do not enter real pupil information in demo or temporary toolkit notes.
 
-`supabase/sen-department-setup.sql` is reviewed rollout SQL, not an automatically
-registered migration. The official CLI failed while opening its local settings
-directory on this Windows host. Once tooling and the correct project connection
-are available:
+`supabase/sen-department-setup.sql` is the reviewed SQL used for that registered
+migration, not a script to rerun on application deployment. The official CLI could
+not open its local settings directory on this Windows host; the migration API
+provided the server-generated migration version instead.
 
-1. Confirm the production project, existing school membership and canonical role
-   assignment tables. Review the SQL in a staging copy first.
-2. Run `supabase migration new sen_department_workspace`, copy the rollout SQL into
-   that CLI-generated file, and commit it before applying through the approved
-   database deployment process. Do not generate a second migration if already applied.
-3. Apply and run database security/performance advisors on the correct project.
+1. Confirm the production project and the existing migration history before any
+   further database changes. Make future changes as separate reviewed migrations.
+2. Configure the actual school organisation and its named staff memberships.
+3. Assign canonical `send-eal` or `slt` roles only to authorised staff.
 4. The school must approve lawful processing, access, retention, backups,
    safeguarding boundaries and approved printing/sharing procedures before activation.
 5. A database administrator explicitly enables each approved organisation in
@@ -89,7 +89,13 @@ authority, not client UI visibility.
 in-memory PostgreSQL engine (PGlite, test-only dependency). It checks activation,
 roles/membership, cross-school isolation, anonymous denial, invalid records,
 immutable organisation, no deletes, concurrency, archive/restore, audit and role
-revocation. This is NOT evidence that the production database was migrated.
+revocation. Production migration history and table metadata separately confirm
+installation and RLS on both record tables and the private activation table.
+Security/performance advisors were run after installation. The private activation
+table intentionally has no client policies or grants; only the checked server
+helper reads it. Leaked-password protection remains a pre-existing Auth warning.
+End-to-end production save/reload testing still requires an approved school and
+authorised staff; no real pupil data was used to test installation.
 Run normal course/navigation audits and a production build as well.
 
 ## Deliberate boundaries / remaining integration work

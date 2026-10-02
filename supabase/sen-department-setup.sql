@@ -1,6 +1,6 @@
--- Reviewed rollout SQL, NOT an automatically generated migration.
--- Generate a migration with `supabase migration new sen_department_workspace`,
--- copy this SQL into it, and apply ONLY to the confirmed Teaching CPD project.
+-- Installed on Teaching CPD project tkjbaqkpkvomwwvwhowp via migration API.
+-- Server-registered migration: 20261002150055_sen_department_workspace.
+-- Deployment receipt/source only: do not rerun or register a duplicate migration.
 -- No school is enabled by this script. Activation requires an approved access/
 -- retention/privacy review; do not insert identifiable pupils during testing.
 begin;
@@ -12,6 +12,7 @@ create table if not exists private.sen_workspace_schools (
  check (not enabled or approved_at is not null)
 );
 revoke all on private.sen_workspace_schools from public, anon, authenticated;
+alter table private.sen_workspace_schools enable row level security;
 
 -- Intentionally no administrator/platform/legacy role or creator override.
 -- Both a real school membership and a canonical SEND/EAL or SLT assignment
