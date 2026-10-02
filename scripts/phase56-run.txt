@@ -1,1 +1,1 @@
-Run the timetable Phase 5 resource-pack and Phase 6 curriculum-progression integration.
+Retry the timetable Phase 5 resource-pack and Phase 6 curriculum-progression integration after workflow setup fix.
