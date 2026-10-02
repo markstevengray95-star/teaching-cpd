@@ -56,10 +56,11 @@ const areaConfig: Record<WholeSchoolArea, AreaConfig> = {
     ],
   },
   school: {
-    eyebrow: "SCHOOL", title: "Whole-school Operations", description: "Shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area.", accent: "School systems",
+    eyebrow: "SCHOOL", title: "Whole-school Operations", description: "Personal staff tools, timetable, shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area.", accent: "School systems",
     tools: [
       { title: "School Calendar", description: "See meetings, deadlines, CPD, trips and shared school events, plus private personal items.", href: "/calendar", icon: "◷", badge: "Phase 44" },
       { title: "Staff Directory", description: "Find colleagues by department, role and expertise.", href: "/directory", icon: "◎", badge: "Phase 45" },
+      { title: "Staff Timetable", description: "Upload your timetable to auto-fill a personal two-week schedule, edit lessons and free periods, or open the separate demo timetable.", href: "/staff-timetable", icon: "◷", badge: "Staff tool" },
       { title: "School Improvement Plan", description: "Track strategic priorities, ownership, milestones, evidence and impact.", href: "/school-improvement", icon: "↗", roles: leadershipRoles, badge: "Phase 46" },
       { title: "Department Improvement Plans", description: "Track department priorities and connect them to whole-school improvement.", href: "/department-plans", icon: "▦", roles: leadershipRoles, badge: "Phase 47" },
       { title: "Forms & Approvals", description: "Submit school requests and track decisions in one workflow.", href: "/forms", icon: "✓", badge: "Phase 49" },
