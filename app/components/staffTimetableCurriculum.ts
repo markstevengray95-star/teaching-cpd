@@ -142,6 +142,26 @@ const BANK: CurriculumUnitSpec[] = [
     "Choosing texts and a comparative focus", "Building a research question", "Historicist approaches", "Critical interpretations", "Research and note-making", "Planning a comparative argument", "Using primary texts effectively", "Integrating secondary criticism", "Drafting analytical sections", "Referencing", "Editing the investigation", "Final review",
   ]),
 
+  // A LEVEL ENGLISH LANGUAGE & LITERATURE (AQA 7707)
+  unit("A level", "English", "AQA English Language & Literature – Telling stories", [
+    "Methods of language analysis for literary and non-literary texts", "Remembered places: representation of place", "Remembered places: viewpoint and perspective", "Remembered places: comparing representations", "Imagined worlds: point of view", "Imagined worlds: genre", "Imagined worlds: character and world-building", "Poetic voices: voice and identity", "Poetic voices: form and function", "Poetic voices: language and structure", "Connecting linguistic and literary methods", "Paper 1 synoptic practice",
+  ], "AQA 7707. Set texts should be selected from the current specification for the cohort."),
+  unit("A level", "English", "AQA English Language & Literature – Exploring conflict", [
+    "Methods of language analysis in conflict texts", "Writing about society: individual and society", "Re-creative writing: transforming viewpoint", "Re-creative writing: voice and style", "Critical commentary: explaining language choices", "Critical commentary: evaluating effects", "Dramatic encounters: conflict in dialogue", "Dramatic encounters: character and power", "Dramatic encounters: stagecraft and discourse", "Comparing methods across literary and non-literary discourse", "Timed re-creative writing and commentary", "Paper 2 synoptic practice",
+  ], "AQA 7707. Set texts should be selected from the current specification for the cohort."),
+  unit("A level", "English", "AQA English Language & Literature – Making connections", [
+    "Choosing a literary and non-literary connection", "Framing a focused investigation question", "Selecting a literary text", "Collecting appropriate non-literary material", "Methods of language analysis", "Comparative analytical framework", "Research and contextual reading", "Planning the investigation", "Analysing literary discourse", "Analysing non-literary discourse", "Making comparative connections", "Drafting and referencing", "Evaluation and final review",
+  ], "AQA 7707 non-exam assessment. The investigation makes connections between literary and non-literary discourse."),
+
+  // A LEVEL ENGLISH LITERATURE B (AQA 7717)
+  literatureUnit("A level", "AQA English Literature B – Aspects of tragedy", ["Tragic genre conventions", "Tragic protagonist and conflict", "Suffering, reversal and recognition", "Tragic endings and audience response", "Unseen tragedy methods", "Connecting texts through genre"], "AQA 7717 Literary genres Option 1A. Check the current/2027 text list for the cohort."),
+  literatureUnit("A level", "AQA English Literature B – Aspects of comedy", ["Comic genre conventions", "Comic character and relationships", "Misunderstanding, disorder and resolution", "Satire and social criticism", "Unseen comedy methods", "Connecting texts through genre"], "AQA 7717 Literary genres Option 1B. Check the current/2027 text list for the cohort."),
+  literatureUnit("A level", "AQA English Literature B – Elements of crime writing", ["Crime-writing genre conventions", "Crime, transgression and morality", "Victims, investigators and criminals", "Setting, suspense and revelation", "Unseen crime-writing methods", "Connecting texts through genre"], "AQA 7717 Texts and genres Option 2A. Check the current/2027 text list for the cohort."),
+  literatureUnit("A level", "AQA English Literature B – Elements of political and social protest writing", ["Protest-writing genre conventions", "Power and resistance", "Political systems and social structures", "Voice, ideology and representation", "Unseen protest-writing methods", "Connecting texts through genre"], "AQA 7717 Texts and genres Option 2B. Check the current/2027 text list for the cohort."),
+  unit("A level", "English", "AQA English Literature B – Theory and independence", [
+    "Introduction to literary theory", "Narrative theory and ways of reading", "Marxist approaches", "Feminist approaches", "Post-colonial approaches", "Eco-critical approaches", "Value and the literary canon", "Selecting independent texts", "Framing a comparative question", "Using critical material", "Planning the independent study", "Drafting and referencing", "Evaluating interpretations", "Final review",
+  ], "AQA 7717 non-exam assessment. Use the specification's permitted approaches and current text requirements."),
+
   // KS3 GEOGRAPHY
   unit("KS3", "Geography", "Geographical skills and enquiry", [
     "Using atlases and coordinates", "Scale and distance", "Grid references", "Contours and relief", "Interpreting maps", "Graphs and geographical data", "GIS foundations", "Forming enquiry questions", "Collecting fieldwork data", "Presenting and evaluating findings",
