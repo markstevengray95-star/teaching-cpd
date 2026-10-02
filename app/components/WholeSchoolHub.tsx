@@ -56,10 +56,11 @@ const areaConfig: Record<WholeSchoolArea, AreaConfig> = {
     ],
   },
   school: {
-    eyebrow: "SCHOOL", title: "Whole-school Operations", description: "Shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area.", accent: "School systems",
+    eyebrow: "SCHOOL", title: "Whole-school Operations", description: "Personal staff tools, timetable, shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area.", accent: "School systems",
     tools: [
       { title: "School Calendar", description: "See meetings, deadlines, CPD, trips and shared school events, plus private personal items.", href: "/calendar", icon: "◷", badge: "Phase 44" },
       { title: "Staff Directory", description: "Find colleagues by department, role and expertise.", href: "/directory", icon: "◎", badge: "Phase 45" },
+      { title: "Staff Timetable", description: "Upload your timetable to auto-fill a personal two-week schedule, edit lessons and free periods, or open the separate demo timetable.", href: "/staff-timetable", icon: "◷", badge: "Staff tool" },
       { title: "School Improvement Plan", description: "Track strategic priorities, ownership, milestones, evidence and impact.", href: "/school-improvement", icon: "↗", roles: leadershipRoles, badge: "Phase 46" },
       { title: "Department Improvement Plans", description: "Track department priorities and connect them to whole-school improvement.", href: "/department-plans", icon: "▦", roles: leadershipRoles, badge: "Phase 47" },
       { title: "Forms & Approvals", description: "Submit school requests and track decisions in one workflow.", href: "/forms", icon: "✓", badge: "Phase 49" },
@@ -103,6 +104,14 @@ function roleCanSee(role: RoleId, card: ToolCard) {
   return card.roles.includes(role);
 }
 
+const everydayTools: Record<WholeSchoolArea, string[]> = {
+  teach: ["/resource-generator", "/teaching-learning", "/curriculum", "/department-hub"],
+  students: ["/pastoral", "/regulation-behaviour", "/send-eal", "/interventions"],
+  develop: ["/", "/professional-learning", "/portfolio", "/coaching", "/needs-audit", "/pathways/personal"],
+  school: ["/staff-timetable", "/calendar", "/directory", "/forms", "/trips", "/notices"],
+  resources: ["/search", "/policies", "/resource-library", "/files", "/school-assistant", "/knowledge-base"],
+};
+
 export default function WholeSchoolHub({ area }: { area: WholeSchoolArea }) {
   const [role, setRole] = useState<RoleId>("teacher");
   const [authorizedRole, setAuthorizedRole] = useState<RoleId | null>(null);
@@ -128,19 +137,31 @@ export default function WholeSchoolHub({ area }: { area: WholeSchoolArea }) {
   const canPreview = authorizedRole === "super-admin";
   const visibleTools = useMemo(() => config.tools.filter((tool) => roleCanSee(role, tool)), [config.tools, role]);
   const matchingTools = visibleTools.filter(tool => (tool.title+" "+tool.description).toLowerCase().includes(search.trim().toLowerCase()));
+  const searching = Boolean(search.trim());
+  const priority = everydayTools[area];
+  const startTools = priority.flatMap(href => visibleTools.filter(tool => tool.href === href));
+  const extraTools = visibleTools.filter(tool => !priority.includes(tool.href));
+  const managementTools = extraTools.filter(tool => tool.roles && tool.roles.every(item => leadershipRoles.includes(item)));
+  const otherTools = extraTools.filter(tool => !managementTools.includes(tool));
   const roleLabel = STAFF_ROLE_LABELS[role];
 
   function changeRole(nextRole: RoleId) { if (canPreview) setRole(nextRole); }
+  function cards(tools: ToolCard[]) {
+    return <div className="wholeSchoolToolGrid">{tools.map((tool) => <Link key={tool.href} href={tool.href} className="wholeSchoolToolCard"><div className="wholeSchoolToolIcon">{tool.icon}</div><div className="wholeSchoolToolCopy"><div className="wholeSchoolToolTitleRow"><h3>{tool.title}</h3>{tool.badge==="Restricted" && <span>{tool.badge}</span>}</div><p>{tool.description}</p><strong>Open tool →</strong></div></Link>)}</div>;
+  }
 
   return (
     <main className="wholeSchoolHub">
       <header className="wholeSchoolHeader">
         <div className="wholeSchoolRole">{canPreview ? <><span>Preview as</span><select value={role} onChange={(event) => changeRole(event.target.value as RoleId)}>{roles.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></> : <><span>Your role</span><strong>{authorizedRole ? STAFF_ROLE_LABELS[authorizedRole] : "Checking…"}</strong></>}</div>
       </header>
-      <section className="wholeSchoolHero"><div><span className="wholeSchoolEyebrow">{config.eyebrow}</span><h1>{config.title}</h1><p>{config.description}</p><div className="wholeSchoolHeroMeta"><span>{config.accent}</span><span>{visibleTools.length} tools for {roleLabel}</span></div></div><div className="wholeSchoolHeroCard"><span>WHOLE-SCHOOL PLATFORM</span><strong>Teaching CPD and school systems together.</strong><p>CPD, inclusion, improvement, operations and resources now share one clear navigation structure.</p></div></section>
-      <section className="wholeSchoolSectionHeading"><div><span>{canPreview ? "ADMIN PREVIEW" : "YOUR ACCESS"}</span><h2>{roleLabel} tools</h2></div><p>{canPreview ? "Previewing changes what the super admin sees here; it never changes the account’s real permissions." : "Your signed-in school role controls this view."}</p></section>
-      <div className="wholeSchoolToolSearch"><label>Find a tool in this area<input type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search by task or topic…"/></label><p role="status">{matchingTools.length} tools</p></div>
-      <section className="wholeSchoolToolGrid">{matchingTools.map((tool) => <Link key={`${tool.title}-${tool.href}`} href={tool.href} className="wholeSchoolToolCard"><div className="wholeSchoolToolIcon">{tool.icon}</div><div className="wholeSchoolToolCopy"><div className="wholeSchoolToolTitleRow"><h3>{tool.title}</h3>{tool.badge && !tool.badge.startsWith("Phase") && tool.badge!=="Existing" && <span>{tool.badge}</span>}</div><p>{tool.description}</p><strong>Open tool →</strong></div></Link>)}</section>
+      <section className="wholeSchoolHero"><div><span className="wholeSchoolEyebrow">{config.eyebrow}</span><h1>{config.title}</h1><p>{config.description}</p><div className="wholeSchoolHeroMeta"><span>{config.accent}</span><span>{roleLabel}</span></div></div></section>
+      <section className="wholeSchoolSectionHeading"><div><span>{canPreview ? "ADMIN PREVIEW" : "YOUR ACCESS"}</span><h2>{searching ? "Search results" : "Start here"}</h2></div><p>{canPreview ? "Previewing changes what the super admin sees here; it never changes the account’s real permissions." : "Common tasks first. More specialist tools are grouped below."}</p></section>
+      <div className="wholeSchoolToolSearch"><label>Find a tool in this area<input type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search by task or topic…"/></label><p role="status">{searching ? matchingTools.length + " matching tools" : "Search includes specialist tools"}</p></div>
+      {searching ? cards(matchingTools) : <>
+        {cards(startTools)}
+        <div className="wholeSchoolAdditionalTools">{[{title:"More tools in this area",tools:otherTools},{title:"Leadership & school management",tools:managementTools}].filter(group=>group.tools.length).map(group=><details key={area + role + group.title}><summary>{group.title}<span>{group.tools.length}</span></summary>{cards(group.tools)}</details>)}</div>
+      </>}
       {matchingTools.length === 0 && <section className="wholeSchoolEmpty"><strong>{search.trim()?"No tools match your search.":"No tools are assigned to this role in this area yet."}</strong><p>{search.trim()?"Try a shorter search or clear it to see every available tool.":"Open All tools to choose another area."}</p>{search.trim()&&<button type="button" className="secondary" onClick={()=>setSearch("")}>Clear search</button>}</section>}
     </main>
   );

@@ -35,11 +35,12 @@ for (const role of [null,"teacher","tutor","hod","pastoral","send-eal","slt","ad
 }
 const hrefs = context => nav.visibleNavigationTools(context).map(tool=>tool.href);
 assert.ok(!hrefs(staff).includes("/admin")); assert.ok(!hrefs(staff).includes("/school-reporting"));
-assert.ok(!hrefs(staff).includes("/staff-access")); assert.ok(!hrefs(staff).includes("/school"));
+assert.ok(!hrefs(staff).includes("/staff-access")); assert.ok(hrefs(staff).includes("/school"));
+assert.ok(hrefs(staff).includes("/staff-timetable"));
 assert.ok(hrefs(lead).includes("/school-reporting")); assert.ok(!hrefs(lead).includes("/staff-access"));
 assert.ok(hrefs(admin).includes("/staff-access")); assert.ok(!hrefs(admin).includes("/admin"));
 assert.ok(hrefs(owner).includes("/admin")); assert.ok(hrefs(owner).includes("/managed-logins"));
-assert.equal(nav.primaryNavigation(staff)[3].href, "/resources");
+assert.equal(nav.primaryNavigation(staff)[3].href, "/school");
 assert.equal(nav.primaryNavigation(lead)[3].href, "/school");
 assert.ok(nav.searchNavigationTools(nav.visibleNavigationTools(staff), "SAFEGUARDING").some(tool=>tool.href==="/safeguarding"));
 assert.ok(nav.searchNavigationTools(nav.visibleNavigationTools(lead), "school reporting").some(tool=>tool.href==="/school-reporting"));
@@ -61,5 +62,28 @@ assert.ok(!workspace.includes('<nav className="learningToolBar"'));
 for (const label of ["Find my focus","Practical takeaway","Follow-up learning","Sources & access","Back to course modules"]) assert.ok(workspace.includes(label),"Preserve course tool: "+label);
 const hub=fs.readFileSync(path.join(__dirname,"../app/components/WholeSchoolHub.tsx"),"utf8");
 assert.ok(!hub.includes('<nav className="wholeSchoolTopNav"'));
-assert.ok(hub.includes("matchingTools.map"));
+assert.ok(hub.includes("cards(matchingTools)"));
+assert.ok(hub.includes("wholeSchoolAdditionalTools"));
+for (const context of [staff, lead, admin, owner, access(null)]) {
+  const tools = nav.visibleNavigationTools(context);
+  const common = nav.commonNavigationTools(tools);
+  assert.ok(common.length <= 6);
+  assert.ok(common.every(tool => tools.includes(tool)));
+  const categorized = [];
+  for (const category of nav.navigationCategories) {
+    const collection = nav.navigationCategoryTools(tools, category.id);
+    assert.ok(collection.featured.length <= 5);
+    assert.deepEqual(new Set([...collection.featured,...collection.additional]),new Set(collection.members));
+    assert.ok(collection.members.every(tool => tools.includes(tool)));
+    categorized.push(...collection.members);
+  }
+  assert.equal(categorized.length, tools.length, "Each tool belongs to exactly one task category");
+  assert.deepEqual(new Set(categorized), new Set(tools), "Every authorised tool remains discoverable");
+}
+const menu=fs.readFileSync(path.join(__dirname,"../app/components/NavigationMenu.tsx"),"utf8");
+assert.ok(menu.includes("Everyday shortcuts"));
+assert.ok(menu.includes("selected.additional.filter"));
+assert.ok(menu.includes("All categories"));
+assert.ok(menu.includes("categoryHeading.current?.focus()"));
+assert.ok(menu.includes("categoryButtons.current.get(previousCategory.current)?.focus()"));
 console.log(JSON.stringify({destinations:unique.size,roles:10,primaryDestinations:4,result:"PASS"}));

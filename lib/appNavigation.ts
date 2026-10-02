@@ -68,6 +68,7 @@ export const navigationTools: NavigationTool[] = [
   ]),
   ...entries("School essentials", [
     ["/school", "School overview", "School operations and shared workflows."],
+    ["/staff-timetable", "My timetable & lesson planner", "Your timetable, medium-term plans and lesson resources."],
     ["/school-hub", "School development hub", "Policies, INSET, induction and governance."],
     ["/calendar", "School calendar", "Events, deadlines and personal reminders."],
     ["/notices", "School notices", "Updates and required acknowledgements."],
@@ -156,8 +157,31 @@ export function searchNavigationTools(tools: NavigationTool[], query: string) {
   const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return tools.filter(tool => words.every(word => `${tool.label} ${tool.description} ${tool.group}`.toLocaleLowerCase().includes(word)));
 }
+export const navigationCategories = [
+  { id: "learn", title: "Learn & complete CPD", description: "Courses, pathways, required training and certificates.", groups: ["Learning"], featured: ["/micro-cpd", "/pathways", "/training", "/certificates", "/subject-cpd"] },
+  { id: "practice", title: "Plan, practise & reflect", description: "Choose a focus, try it in class and record the impact.", groups: ["Practice & reflection"], featured: ["/needs-audit", "/actions", "/simulator", "/portfolio", "/coaching"] },
+  { id: "classroom", title: "Teaching & pupil support", description: "Lesson resources, classroom strategies and inclusive support.", groups: ["Teaching & student support"], featured: ["/resource-generator", "/teaching-learning", "/send-eal", "/pastoral", "/curriculum"] },
+  { id: "school", title: "School day & resources", description: "Timetable, calendar, policies, people and school information.", groups: ["School essentials", "Resources & help"], featured: ["/staff-timetable", "/calendar", "/notices", "/policies", "/directory"] },
+  { id: "manage", title: "Manage CPD & school setup", description: "Reporting, live sessions, course authoring and administration.", groups: ["Manage CPD", "Administration", "Platform administration"], featured: ["/school-reporting", "/live", "/school-onboarding", "/school-access", "/builder"] },
+] as const;
+export type NavigationCategoryId = typeof navigationCategories[number]["id"];
+const commonDestinations = ["/?view=mycpd", "/staff-timetable", "/resource-generator", "/calendar", "/policies", "/certificates"];
+export function commonNavigationTools(tools: NavigationTool[]) {
+  const byHref = new Map(tools.map(tool => [tool.href, tool]));
+  return commonDestinations.flatMap(href => byHref.has(href) ? [byHref.get(href)!] : []);
+}
+export function navigationCategoryTools(tools: NavigationTool[], id: NavigationCategoryId) {
+  const category = navigationCategories.find(item => item.id === id)!;
+  const members = tools.filter(tool => (category.groups as readonly string[]).includes(tool.group));
+  const byHref = new Map(members.map(tool => [tool.href, tool]));
+  const featured = category.featured.flatMap(href => byHref.has(href) ? [byHref.get(href)!] : []);
+  const featuredHrefs = new Set(featured.map(tool => tool.href));
+  const additional = members.filter(tool => !featuredHrefs.has(tool.href));
+  return { category, members, featured, additional };
+}
 export function primaryNavigation(access: NavigationAccess) {
-  const school = Boolean(access.role && hasStaffPermission(access.role, "school:view"));
+  const schoolPermission = permissionForPath("/school");
+  const school = Boolean(access.role && (!schoolPermission || hasStaffPermission(access.role, schoolPermission)));
   return [
     { href: "/dashboard", label: "Home" },
     { href: "/", label: "Courses" },

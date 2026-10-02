@@ -33,7 +33,7 @@ const routeGroups: Record<Exclude<AreaId, "home">, string[]> = {
     "/ai-coach", "/coach",
   ],
   school: [
-    "/school", "/calendar", "/notices", "/directory", "/school-improvement", "/department-plans",
+    "/school", "/staff-timetable", "/calendar", "/notices", "/directory", "/school-improvement", "/department-plans",
     "/forms", "/trips", "/compliance", "/induction", "/leadership-dashboard", "/department-analytics",
     "/recognition", "/staff-voice", "/notifications", "/integrations", "/admin-centre", "/organisation",
     "/school-hub", "/departments", "/improvement", "/leadership", "/school-access", "/staff-access",
