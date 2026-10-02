@@ -20,6 +20,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - name: Correct current lesson-editor selector
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply_timetable_phases10_11.py')
+          s = p.read_text()
+          s = s.replace('    <div className="ttModalActions">', '    <div className="ttModalActions ttStickyPlanActions">')
+          p.write_text(s)
+          PY
       - run: python3 scripts/apply_timetable_phases10_11.py
       - run: npm install --no-audit --no-fund
       - run: npm run build
