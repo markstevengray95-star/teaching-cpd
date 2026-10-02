@@ -23,7 +23,7 @@ const routeGroups: Record<Exclude<AreaId, "home">, string[]> = {
     "/subject-cpd", "/standards", "/learning-walks", "/department-cpd",
   ],
   students: [
-    "/students", "/pastoral", "/regulation-behaviour", "/send-eal", "/interventions",
+    "/students", "/pastoral", "/sen", "/regulation-behaviour", "/send-eal", "/interventions",
     "/regulation-room", "/zones", "/zone-quest", "/zones-school", "/zones-cpd",
   ],
   develop: [
