@@ -1,0 +1,32 @@
+name: Apply timetable phases 12 and 13
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - scripts/phase1213-run.txt
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: python3 scripts/apply_timetable_phases12_13.py
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - run: npm run audit:courses
+      - name: Commit integrated timetable
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add app/components/StaffTimetableHub.tsx app/components/StaffTimetableHub.css app/components/StaffTimetableClassWorkspace.tsx
+          git diff --cached --quiet || git commit -m "Complete timetable phases 12 and 13"
+          git push origin main
