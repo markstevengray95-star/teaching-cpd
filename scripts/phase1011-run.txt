@@ -1,1 +1,1 @@
-Run the Phase 10 next-lesson intelligence and Phase 11 quick-reflection integration.
+Retry the Phase 10 next-lesson intelligence and Phase 11 quick-reflection integration after selector fix.
