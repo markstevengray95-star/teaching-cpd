@@ -49,6 +49,19 @@ type LessonPlan = {
   examBoard: string;
   courseId: string;
   sequencePosition: number;
+  planningMode: "simple" | "detailed";
+  priorKnowledge: string;
+  retrieval: string;
+  misconceptions: string;
+  teacherExplanation: string;
+  modelling: string;
+  guidedPractice: string;
+  independentPractice: string;
+  sendEalAdaptations: string;
+  stretchChallenge: string;
+  homeworkTask: string;
+  exitTicket: string;
+  reflection: string;
 };
 
 type Lesson = {
@@ -162,7 +175,12 @@ const STORAGE_KEY = "teaching-cpd-personal-staff-timetable-v2";
 const OLD_STORAGE_KEY = "teaching-cpd-personal-staff-timetable-v1";
 
 function blankPlan(): LessonPlan {
-  return { lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "", curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1 };
+  return {
+    lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "",
+    curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1,
+    planningMode: "simple", priorKnowledge: "", retrieval: "", misconceptions: "", teacherExplanation: "", modelling: "", guidedPractice: "", independentPractice: "",
+    sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "",
+  };
 }
 function blankWorkspace(): WorkspaceData {
   return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [] };
@@ -662,7 +680,7 @@ export default function StaffTimetableHub() {
       </>}
 
       {tab === "planning" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">LESSON CONTENT</span><h2>Lesson planning</h2><p className="ttMuted">Plan directly against timetable lessons, then see the topic on the timetable and class dashboard.</p></div><div className="ttWorkspaceActions"><input className="ttSearch" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search class, subject or topic" /><Link className="ttButton" href="/curriculum">Curriculum Hub</Link><Link className="ttButton" href="/resource-generator">Resource Generator</Link></div></div>
-        <div className="ttPlanningGrid">{filteredPlanning.map((lesson) => <article className="ttPlanningCard" key={lesson.id}><div className={`ttSubjectBar ${subjectTone(lesson.subject)}`} /><div><small>{lesson.week} · {lesson.day} · P{lesson.period}</small><h3>{lesson.subject} · {lesson.className}</h3><p>{lesson.plan.topic || "No lesson topic planned yet."}</p><div className="ttChipRow">{lesson.plan.curriculumStage && <span>{lesson.plan.curriculumStage}</span>}{lesson.plan.curriculumUnit && <span>{lesson.plan.curriculumUnit}</span>}{lesson.plan.lessonDate && <span>{formatDate(lesson.plan.lessonDate)}</span>}</div></div><button className="ttButton" onClick={() => setPlanLessonId(lesson.id)}>{lesson.plan.topic ? "Edit plan" : "Plan lesson"}</button></article>)}</div>
+        <div className="ttPlanningGrid">{filteredPlanning.map((lesson) => <article className="ttPlanningCard" key={lesson.id}><div className={`ttSubjectBar ${subjectTone(lesson.subject)}`} /><div><small>{lesson.week} · {lesson.day} · P{lesson.period}</small><h3>{lesson.subject} · {lesson.className}</h3><p>{lesson.plan.topic || "No lesson topic planned yet."}</p><div className="ttChipRow">{lesson.plan.curriculumStage && <span>{lesson.plan.curriculumStage}</span>}{lesson.plan.curriculumUnit && <span>{lesson.plan.curriculumUnit}</span>}{lesson.plan.lessonDate && <span>{formatDate(lesson.plan.lessonDate)}</span>}{lesson.plan.planningMode === "detailed" && <span>Detailed</span>}{lesson.plan.exitTicket && <span>Exit ticket ready</span>}</div></div><button className="ttButton" onClick={() => setPlanLessonId(lesson.id)}>{lesson.plan.topic ? "Edit plan" : "Plan lesson"}</button></article>)}</div>
       </section>}
 
       {tab === "mediumterm" && <section className="ttWorkspace ttMtpShell"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">PHASE 2 · MEDIUM-TERM PLANNING</span><h2>Automatic curriculum map</h2><p className="ttMuted">Turn the repeating W1/W2 timetable into dated lessons across a term. Holidays, INSET, assessment blocks, trips and cancellations are skipped, while missed lessons can roll forward automatically.</p></div><div className="ttMtpToolbar"><div className="ttMtpToolbarLeft"><select value={visibleClass} onChange={(event) => setClassSelection(event.target.value)}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div></div>
@@ -702,18 +720,20 @@ function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { f
   return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{DAYS.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{PERIODS.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
 }
 
-function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesson: Lesson; classProfile?: ClassCurriculumProfile; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void }) {
-  const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan });
+function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesson: Lesson; readOnly: boolean; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile }) {
+  const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan, planningMode: lesson.plan?.planningMode || "simple" });
   const inferred = classProfile || inferClassCurriculumProfile(lesson.className, lesson.subject);
-  const [stage, setStage] = useState<ClassCurriculumProfile["stage"]>(inferred.stage);
-  const [examBoard, setExamBoard] = useState<ClassCurriculumProfile["examBoard"]>(inferred.examBoard);
-  const [subject, setSubject] = useState<ClassCurriculumProfile["subject"]>(inferred.subject);
-  const initialCourses = getPhase1Courses(inferred.stage, inferred.examBoard, inferred.subject);
-  const [courseId, setCourseId] = useState(inferred.courseId || initialCourses[0]?.id || "");
-  const initialUnits = getPhase1Units(inferred.courseId || initialCourses[0]?.id || "");
+  const [stage, setStage] = useState<ClassCurriculumProfile["stage"]>((phase1Stages.includes(plan.curriculumStage as ClassCurriculumProfile["stage"]) ? plan.curriculumStage : inferred.stage) as ClassCurriculumProfile["stage"]);
+  const initialBoard = (plan.examBoard || inferred.examBoard) as ClassCurriculumProfile["examBoard"];
+  const [examBoard, setExamBoard] = useState<ClassCurriculumProfile["examBoard"]>(initialBoard);
+  const initialSubject = (plan.curriculumSubject || inferred.subject) as ClassCurriculumProfile["subject"];
+  const [subject, setSubject] = useState<ClassCurriculumProfile["subject"]>(initialSubject);
+  const initialCourses = getPhase1Courses(stage, initialBoard, initialSubject);
+  const [courseId, setCourseId] = useState(plan.courseId || inferred.courseId || initialCourses[0]?.id || "");
+  const initialUnits = getPhase1Units(plan.courseId || inferred.courseId || initialCourses[0]?.id || "");
   const initialUnit = initialUnits.find((item) => item.title === plan.curriculumUnit) || initialUnits[0];
   const [unitId, setUnitId] = useState(initialUnit?.id || "");
-  const initialSubtopics = getPhase1Subtopics(inferred.courseId || initialCourses[0]?.id || "", initialUnit?.id || "");
+  const initialSubtopics = getPhase1Subtopics(plan.courseId || inferred.courseId || initialCourses[0]?.id || "", initialUnit?.id || "");
   const initialSubtopic = initialSubtopics.find((item) => item.title === plan.curriculumSubtopic) || initialSubtopics[0];
   const [subtopicId, setSubtopicId] = useState(initialSubtopic?.id || "");
   const [lessonIndex, setLessonIndex] = useState(Math.max(0, plan.sequencePosition || 0));
@@ -728,8 +748,10 @@ function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesso
   const selectedUnit = units.find((item) => item.id === unitId);
   const selectedSubtopic = subtopics.find((item) => item.id === subtopicId);
   const selectedTemplate = lessons[Math.min(lessonIndex, Math.max(lessons.length - 1, 0))];
+  const detailedKeys: (keyof LessonPlan)[] = ["priorKnowledge","retrieval","misconceptions","teacherExplanation","modelling","guidedPractice","independentPractice","sendEalAdaptations","stretchChallenge","homeworkTask","exitTicket","reflection"];
+  const detailedComplete = detailedKeys.filter((key) => String(plan[key] || "").trim()).length;
 
-  const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "") => <label className={multiline ? "wide" : ""}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
+  const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "", className = "") => <label className={`${multiline ? "wide" : ""} ${className}`.trim()}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
 
   function resetFor(nextStage: ClassCurriculumProfile["stage"], nextBoard: ClassCurriculumProfile["examBoard"], nextSubject: ClassCurriculumProfile["subject"]) {
     setStage(nextStage); setExamBoard(nextBoard); setSubject(nextSubject); const nextCourse = getPhase1Courses(nextStage, nextBoard, nextSubject)[0]; setCourseId(nextCourse?.id || ""); const nextUnit = nextCourse?.units[0]; setUnitId(nextUnit?.id || ""); setSubtopicId(nextUnit?.subtopics[0]?.id || ""); setLessonIndex(0);
@@ -740,6 +762,43 @@ function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesso
   function changeCourse(next: string) { setCourseId(next); const nextUnit = getPhase1Units(next)[0]; setUnitId(nextUnit?.id || ""); setSubtopicId(nextUnit?.subtopics[0]?.id || ""); setLessonIndex(0); }
   function changeUnit(next: string) { setUnitId(next); setSubtopicId(getPhase1Subtopics(courseId, next)[0]?.id || ""); setLessonIndex(0); }
   function changeSubtopic(next: string) { setSubtopicId(next); setLessonIndex(0); }
+
+  function detailedDefaults(topic: string, objectives: string, vocabulary: string) {
+    const focus = topic || "the lesson focus";
+    return {
+      priorKnowledge: `Identify the prerequisite knowledge pupils need before ${focus}. Link back to the most relevant previous learning.`,
+      retrieval: `3–5 short retrieval questions on prerequisite knowledge for ${focus}. Include one question that checks a likely prerequisite misconception.`,
+      misconceptions: `Anticipate the most likely misconceptions about ${focus}. Plan one check that exposes each misconception before independent practice.`,
+      teacherExplanation: objectives ? `Explicitly explain and chunk the core knowledge needed to meet: ${objectives}` : `Explicitly explain and chunk the core knowledge for ${focus}.`,
+      modelling: `Model one high-quality example for ${focus}. Think aloud, make decisions visible and annotate the success criteria.`,
+      guidedPractice: `Complete a scaffolded example together. Use targeted questioning, then gradually remove prompts as pupils become more secure.`,
+      independentPractice: `Pupils apply ${focus} independently. Start with a core task, then increase challenge while checking for accuracy and understanding.`,
+      sendEalAdaptations: `Reduce unnecessary language/cognitive load without reducing the core learning: chunk instructions, pre-teach key vocabulary${vocabulary ? ` (${vocabulary})` : ""}, provide a model/visual, allow processing time and check understanding discreetly.`,
+      stretchChallenge: `Require deeper explanation, justification, comparison or transfer of ${focus} to an unfamiliar context rather than simply adding more work.`,
+      homeworkTask: `Set a short task that consolidates ${focus} and includes retrieval from earlier learning.`,
+      exitTicket: `Use 2–3 questions that directly test the lesson objectives for ${focus}, including one item that reveals the key misconception.`,
+    };
+  }
+
+  function buildDetailedStructure() {
+    const defaults = detailedDefaults(plan.topic || selectedTemplate?.title || "", plan.objectives || selectedTemplate?.objectives || "", plan.vocabulary || selectedTemplate?.vocabulary || "");
+    setPlan((current) => ({
+      ...current,
+      planningMode: "detailed",
+      priorKnowledge: current.priorKnowledge || defaults.priorKnowledge,
+      retrieval: current.retrieval || defaults.retrieval,
+      misconceptions: current.misconceptions || defaults.misconceptions,
+      teacherExplanation: current.teacherExplanation || defaults.teacherExplanation,
+      modelling: current.modelling || defaults.modelling,
+      guidedPractice: current.guidedPractice || defaults.guidedPractice,
+      independentPractice: current.independentPractice || defaults.independentPractice,
+      sendEalAdaptations: current.sendEalAdaptations || defaults.sendEalAdaptations,
+      stretchChallenge: current.stretchChallenge || defaults.stretchChallenge,
+      homeworkTask: current.homeworkTask || defaults.homeworkTask,
+      exitTicket: current.exitTicket || defaults.exitTicket,
+    }));
+  }
+
   function applySuggestedLesson() {
     if (!selectedTemplate || !selectedCourse || !selectedUnit || !selectedSubtopic) return;
     const courseSequence = getCourseLessonSequence({ stage, examBoard, subject, courseId });
@@ -747,7 +806,8 @@ function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesso
     setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 1</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 3</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+    <div className="ttPlanModeBar"><div className="ttPlanModeSwitch"><button type="button" className={plan.planningMode === "simple" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "simple" }))}>Simple</button><button type="button" className={plan.planningMode === "detailed" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "detailed" }))}>Detailed</button></div><div className="ttPlanCompletion"><span>Detailed plan</span><b>{detailedComplete}/{detailedKeys.length}</b><i><em style={{ width: `${Math.round(detailedComplete / detailedKeys.length * 100)}%` }} /></i></div>{!readOnly && <button type="button" className="ttButton" onClick={buildDetailedStructure}>Build detailed structure</button>}</div>
     <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
       <label><span>Key Stage</span><select disabled={readOnly} value={stage} onChange={(event) => changeStage(event.target.value as ClassCurriculumProfile["stage"])}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
       <label><span>Exam board</span><select disabled={readOnly} value={examBoard} onChange={(event) => changeBoard(event.target.value as ClassCurriculumProfile["examBoard"])}>{boards.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -757,7 +817,15 @@ function PlanEditor({ lesson, classProfile, readOnly, onClose, onSave }: { lesso
       <label><span>Sub-topic</span><select disabled={readOnly} value={subtopicId} onChange={(event) => changeSubtopic(event.target.value)}>{subtopics.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
       <label className="wide"><span>Lesson sequence</span><select disabled={readOnly || !lessons.length} value={Math.min(lessonIndex, Math.max(lessons.length - 1, 0))} onChange={(event) => setLessonIndex(Number(event.target.value))}>{lessons.length ? lessons.map((item, index) => <option key={`${item.id}-${index}`} value={index}>{index + 1}. {item.title}</option>) : <option value={0}>No lessons in this selection</option>}</select></label>
     </div>{selectedUnit?.note && <p className="ttCurriculumNote">{selectedUnit.note}</p>}</section>
-    <div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title")}{field("curriculumStage","Curriculum stage")}{field("examBoard","Exam board")}{field("curriculumSubject","Curriculum subject")}{field("curriculumUnit","Curriculum unit")}{field("curriculumSubtopic","Curriculum sub-topic")}{field("vocabulary","Key vocabulary")}{field("objectives","Learning objectives",true)}{field("sequence","Lesson content / teaching sequence",true)}{field("resources","Resources / links",true)}{field("assessment","Assessment / checks for understanding",true)}{field("teacherNotes","Teacher notes",true)}</div><div className="ttModalActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
+    <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>1</span><div><h3>Core lesson</h3><p>The essentials shown in both planning modes.</p></div></div><div className="ttFormGrid"><label><span>Lesson date</span><input type="date" disabled={readOnly} value={plan.lessonDate} onChange={(event) => setPlan((current) => ({ ...current, lessonDate: event.target.value }))} /></label>{field("topic","Topic / lesson title")}{field("objectives","Learning objectives",true,"What should pupils know, understand or be able to do?")}{field("vocabulary","Key vocabulary",true,"Subject-specific language pupils need to understand and use")}{field("sequence","Lesson content / sequence",true,"Starter → explanation/model → practice → review")}{field("assessment","Checks for understanding",true,"Hinge questions, cold call, mini-whiteboards, exam question, exit ticket…")}{field("resources","Resources / links",true,"Slides, worksheet, textbook pages, equipment, links…")}{field("teacherNotes","Teacher notes",true,"Reminders, class-specific logistics or follow-up")}</div></section>
+    {plan.planningMode === "detailed" && <div className="ttDetailedPlan">
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>2</span><div><h3>Connect to prior learning</h3><p>Make prerequisites and retrieval explicit before new learning.</p></div></div><div className="ttFormGrid">{field("priorKnowledge","Prior knowledge",true,"What must pupils already know or be able to do?")}{field("retrieval","Retrieval starter",true,"3–5 short questions or prompts")}{field("misconceptions","Likely misconceptions",true,"What wrong ideas or errors are most likely, and how will you expose them?")}</div></section>
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>3</span><div><h3>Teach and model</h3><p>Plan the explanation and make expert thinking visible.</p></div></div><div className="ttFormGrid">{field("teacherExplanation","Teacher explanation",true,"Chunk the new knowledge and identify the key explanation points")}{field("modelling","Worked example / modelling",true,"What will you model and what thinking will you narrate?")}</div></section>
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>4</span><div><h3>Practise and check</h3><p>Move from supported practice toward independent application.</p></div></div><div className="ttFormGrid">{field("guidedPractice","Guided practice",true,"Scaffolded examples, questioning and supported rehearsal")}{field("independentPractice","Independent practice",true,"What will pupils do independently to secure the learning?")}{field("exitTicket","Exit ticket",true,"2–3 final questions directly aligned to the objectives")}</div></section>
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>5</span><div><h3>Access and challenge</h3><p>Support access to the same core learning and plan purposeful stretch.</p></div></div><div className="ttFormGrid">{field("sendEalAdaptations","SEND / EAL adaptations",true,"Chunking, visuals, vocabulary, modelling, processing time, accessible task design…")}{field("stretchChallenge","Stretch / challenge",true,"Deeper explanation, evaluation, transfer or unfamiliar application")}</div><div className="ttInclusionNote"><b>Keep this lesson-focused.</b><span>Use approved school systems for individual pupil plans, medical information or sensitive records.</span></div></section>
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>6</span><div><h3>Consolidate and reflect</h3><p>Close the learning loop without creating unnecessary planning workload.</p></div></div><div className="ttFormGrid">{field("homeworkTask","Homework / consolidation",true,"A short consolidation or retrieval task linked to this lesson")}{field("reflection","Teacher reflection",true,"What worked? What needs revisiting? What should change next time?")}</div></section>
+    </div>}
+    <div className="ttModalActions ttStickyPlanActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
 }
 
 function ItemEditor({ kind, itemId, workspace, activeWorkspace, week, classes, subjects, onClose, onChange }: { kind: "homework" | "prep" | "task" | "change" | "activity" | "keyDate"; itemId?: string; workspace: WorkspaceData; activeWorkspace: WorkspaceData; week: WeekKey; classes: string[]; subjects: string[]; onClose: () => void; onChange: React.Dispatch<React.SetStateAction<WorkspaceData>> }) {
