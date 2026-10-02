@@ -205,14 +205,18 @@ export function generateMediumTermPlan(input: GenerateInput): MediumTermPlan {
 export function reflowMediumTermPlan(plan: MediumTermPlan, input: Omit<GenerateInput, "startSequencePosition">, fromDate: string): MediumTermPlan {
   const courseSequence = getCourseLessonSequence(plan.profile);
   const frozen = plan.sessions.filter((session) => session.date < fromDate || session.status === "complete");
-  const completedPositions = new Set(frozen.filter((session) => session.status === "complete").map((session) => session.sequencePosition));
+  const consumedPositions = new Set(
+    frozen
+      .filter((session) => session.status === "complete" || (session.status === "planned" && session.date < fromDate))
+      .map((session) => session.sequencePosition),
+  );
   let nextPosition = plan.startSequencePosition;
-  while (completedPositions.has(nextPosition)) nextPosition += 1;
+  while (consumedPositions.has(nextPosition)) nextPosition += 1;
 
   const slots = slotsForInput({ ...input, profile: plan.profile, className: plan.className, startSequencePosition: nextPosition }, fromDate);
   const future = slots
     .map((slot) => {
-      while (completedPositions.has(nextPosition)) nextPosition += 1;
+      while (consumedPositions.has(nextPosition)) nextPosition += 1;
       const curriculum = courseSequence[nextPosition];
       if (!curriculum) return null;
       const session = sessionFrom(slot, curriculum, plan.className);
