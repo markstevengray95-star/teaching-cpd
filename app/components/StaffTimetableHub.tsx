@@ -39,12 +39,13 @@ import { type DepartmentSchemeCopy, type DepartmentSchemeLesson, type Department
 import StaffTimetableLeadershipSync from "./StaffTimetableLeadershipSync";
 import StaffTimetableLeadershipLink from "./StaffTimetableLeadershipLink";
 import { reorderMediumTermPlanSessions } from "./StaffTimetablePlanningCalendar";
+import StaffTimetableWeeklyPlanning from "./StaffTimetableWeeklyPlanning";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
 type WeekKey = "W1" | "W2";
 type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
-type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "assessments" | "homework" | "workload" | "changes" | "tools";
+type WorkspaceTab = "today" | "weekly" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "assessments" | "homework" | "workload" | "changes" | "tools";
 
 type LessonPlan = {
   lessonDate: string;
@@ -768,13 +769,13 @@ export default function StaffTimetableHub() {
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
 
       <nav className="ttWorkspaceNav noPrint" aria-label="Timetable workspace">
-        {(["today","timetable","planning","mediumterm","classes","progress","assessments","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",progress:"Progress",assessments:"Assessments",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
+        {(["today","weekly","timetable","planning","mediumterm","classes","progress","assessments","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",weekly:"Plan week",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",progress:"Progress",assessments:"Assessments",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
       </nav>
 
       {tab === "today" && <section className="ttDashboardShell">
         <div className="ttDashboardHero">
           <div><span className="staffTimetableEyebrow">MORNING BRIEFING</span><h2>{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h2><p>Week {week === "W1" ? "1" : "2"} · {todayLessons().length} lessons today</p></div>
-          <div className="ttDashboardHeroActions noPrint"><button className="ttButton primary" onClick={() => setTab("planning")}>Plan a lesson</button><button className="ttButton" onClick={() => setItemEditor({ kind: "task" })}>+ Task</button><button className="ttButton" onClick={() => setTab("timetable")}>Open timetable</button></div>
+          <div className="ttDashboardHeroActions noPrint"><button className="ttButton primary" onClick={() => setTab("weekly")}>Plan the week</button><button className="ttButton" onClick={() => setTab("planning")}>Plan a lesson</button><button className="ttButton" onClick={() => setItemEditor({ kind: "task" })}>+ Task</button><button className="ttButton" onClick={() => setTab("timetable")}>Open timetable</button></div>
         </div>
         <div className="ttKpiGrid">
           <div><small>Open homework</small><strong>{openHomework.length}</strong><span>{overdueHomework.length ? `${overdueHomework.length} overdue` : "Up to date"}</span></div>
@@ -790,6 +791,23 @@ export default function StaffTimetableHub() {
           <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Upcoming</h2></div></div><div className="ttStackList">{nextKeyDate && <div className="ttListRow"><b>{nextKeyDate.title}</b><span>{nextKeyDate.type} · {formatDate(nextKeyDate.date)}</span></div>}{openPrep.slice(0,3).map((item) => <div className="ttListRow" key={item.id}><b>{item.title}</b><span>{item.className} · needed {formatDate(item.neededBy)}</span></div>)}{!nextKeyDate && !openPrep.length && <div className="ttEmptyPreview"><span>No upcoming dates or prep items.</span></div>}</div></article>
         </div>
       </section>}
+
+      {tab === "weekly" && <StaffTimetableWeeklyPlanning
+        lessons={active.lessons}
+        mediumTermPlans={active.mediumTermPlans}
+        assessments={active.assessments}
+        homework={active.homework}
+        prep={active.prep}
+        tasks={active.tasks}
+        today={today}
+        readOnly={demo}
+        onOpenLesson={(lessonId) => { setPlanLessonId(lessonId); setTab("planning"); }}
+        onOpenClass={(className) => { setClassSelection(className); setTab("classes"); }}
+        onOpenMediumTerm={(className) => { setClassSelection(className); setTab("mediumterm"); }}
+        onOpenHomework={() => setTab("homework")}
+        onOpenAssessments={() => setTab("assessments")}
+        onAddTask={() => setItemEditor({ kind: "task" })}
+      />}
 
       {tab === "timetable" && <>
         <section className="ttSetupGrid noPrint">
