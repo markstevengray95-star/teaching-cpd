@@ -10,6 +10,7 @@ const tabs = [
   { id: "home", href: "/dashboard", label: "Home", icon: "⌂" },
   { id: "teach", href: "/teach", label: "Teach", icon: "✦" },
   { id: "students", href: "/students", label: "Students", icon: "◉" },
+  { id: "sen", href: "/sen", label: "SEN", icon: "◇" },
   { id: "develop", href: "/develop", label: "Develop", icon: "↗" },
   { id: "school", href: "/school", label: "School", icon: "▦" },
   { id: "resources", href: "/resources", label: "Resources", icon: "▤" },
@@ -23,9 +24,10 @@ const routeGroups: Record<Exclude<AreaId, "home">, string[]> = {
     "/subject-cpd", "/standards", "/learning-walks", "/department-cpd",
   ],
   students: [
-    "/students", "/pastoral", "/sen", "/regulation-behaviour", "/send-eal", "/interventions",
+    "/students", "/pastoral", "/regulation-behaviour", "/interventions",
     "/regulation-room", "/zones", "/zone-quest", "/zones-school", "/zones-cpd",
   ],
+  sen: ["/sen", "/send-eal"],
   develop: [
     "/develop", "/professional-learning", "/portfolio", "/coaching", "/appraisal", "/cpd",
     "/micro-cpd", "/pathways", "/training", "/development", "/actions", "/impact",
