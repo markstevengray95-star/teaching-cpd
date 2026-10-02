@@ -1,0 +1,81 @@
+name: Integrate timetable phases 16 and 17
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/phase16-17.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Integrate class planning health and cover packs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/components/StaffTimetableClassWorkspace.tsx')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  'import StaffTimetablePlanningCalendar from "./StaffTimetablePlanningCalendar";\n',
+                  'import StaffTimetablePlanningCalendar from "./StaffTimetablePlanningCalendar";\nimport StaffTimetablePlanningHealth from "./StaffTimetablePlanningHealth";\nimport StaffTimetableCoverPack from "./StaffTimetableCoverPack";\n'
+              ),
+              (
+                  '    assessment?: string;\n    reflectionOutcome?:',
+                  '    assessment?: string;\n    resources?: string;\n    teacherNotes?: string;\n    retrieval?: string;\n    teacherExplanation?: string;\n    modelling?: string;\n    guidedPractice?: string;\n    independentPractice?: string;\n    sendEalAdaptations?: string;\n    stretchChallenge?: string;\n    homeworkTask?: string;\n    exitTicket?: string;\n    reflectionOutcome?:'
+              ),
+              (
+                  'type Section = "overview" | "lessons" | "calendar" | "support" | "schemes" | "homework" | "assessments" | "resources" | "notes";',
+                  'type Section = "overview" | "lessons" | "calendar" | "health" | "cover" | "support" | "schemes" | "homework" | "assessments" | "resources" | "notes";'
+              ),
+              (
+                  'const sectionLabels: Record<Section, string> = { overview: "Overview", lessons: "Lesson plans", calendar: "Planning calendar", support: "SEND / EAL support", schemes: "Department schemes", homework: "Homework", assessments: "Assessments", resources: "Resources", notes: "Notes" };',
+                  'const sectionLabels: Record<Section, string> = { overview: "Overview", lessons: "Lesson plans", calendar: "Planning calendar", health: "Planning health", cover: "Cover pack", support: "SEND / EAL support", schemes: "Department schemes", homework: "Homework", assessments: "Assessments", resources: "Resources", notes: "Notes" };'
+              ),
+              (
+                  '<div><span>PHASES 9–10, 12–15 · CLASS-SPECIFIC PLANNING</span><h2>',
+                  '<div><span>PHASES 9–10, 12–17 · CLASS-SPECIFIC PLANNING</span><h2>'
+              ),
+              (
+                  '    {section === "calendar" && <div className="ttClassSection"><StaffTimetablePlanningCalendar plan={medium} readOnly={readOnly} onMove={(sourceId, targetId, shiftRemaining) => onMovePlannedLesson(className, sourceId, targetId, shiftRemaining)} onOpenLesson={onOpenPlan} /></div>}\n\n',
+                  '    {section === "calendar" && <div className="ttClassSection"><StaffTimetablePlanningCalendar plan={medium} readOnly={readOnly} onMove={(sourceId, targetId, shiftRemaining) => onMovePlannedLesson(className, sourceId, targetId, shiftRemaining)} onOpenLesson={onOpenPlan} /></div>}\n\n    {section === "health" && <div className="ttClassSection"><StaffTimetablePlanningHealth className={className} lessons={lessons} mediumTermPlan={medium} assessments={assessments} homework={homework} today={today} onOpenPlan={onOpenPlan} onOpenMediumTerm={onOpenMediumTerm} onOpenAssessments={onOpenAssessments} onOpenHomework={onOpenHomework} /></div>}\n\n    {section === "cover" && <div className="ttClassSection"><StaffTimetableCoverPack className={className} lessons={lessons} mediumTermPlan={medium} inclusionProfile={inclusionProfile} today={today} onOpenPlan={onOpenPlan} /></div>}\n\n'
+              ),
+          ]
+
+          for old, new in replacements:
+              if new in text:
+                  continue
+              if old not in text:
+                  raise SystemExit(f'Missing expected integration marker: {old[:120]}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Commit verified integration
+        run: |
+          if git diff --quiet; then
+            echo "No integration changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/components/StaffTimetableClassWorkspace.tsx
+          git commit -m "Complete timetable phases 16 and 17"
+          git push
