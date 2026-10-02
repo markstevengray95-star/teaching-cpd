@@ -6,11 +6,12 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { CourseWorkspace } from "./components/CourseWorkspace";
 import CourseDiscovery from "./components/CourseDiscovery";
 import { isAssessmentBank } from "@/lib/assessmentQuestions";
+import { homeViewFromSearch, homeViewUrl, NAVIGATION_EVENT, type HomeView } from "@/lib/appNavigation";
 
 type Profile = { id: string; name: string; email: string; role: Role; department: string };
 type ProgressItem = { completedModules: string[]; reflections: Record<string, string>; completedAt?: string };
 type ProgressState = Record<string, ProgressItem>;
-type View = "dashboard" | "courses" | "mycpd" | "certificates" | "profile";
+type View = HomeView;
 
 function initials(name: string) { return name.split(" ").filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase(); }
 
@@ -20,12 +21,38 @@ export default function Home() {
   const [progress, setProgress] = useState<ProgressState>({});
   const progressRef = useRef<ProgressState>({});
   const writeQueue = useRef<Promise<void>>(Promise.resolve());
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setViewState] = useState<View>("courses");
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [toast, setToast] = useState("");
   const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (!ready || !profile) return;
+    function syncNavigation() {
+      setViewState(homeViewFromSearch(window.location.search));
+      const params = new URLSearchParams(window.location.search);
+      const requestedCourse = params.get("course");
+      setSelectedCourse(requestedCourse ? courses.find(course => course.id === requestedCourse) || null : null);
+      if (requestedCourse) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("course");
+        url.searchParams.set("view", "courses");
+        window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      }
+    }
+    syncNavigation();
+    window.addEventListener("popstate", syncNavigation);
+    window.addEventListener(NAVIGATION_EVENT, syncNavigation);
+    return () => { window.removeEventListener("popstate", syncNavigation); window.removeEventListener(NAVIGATION_EVENT, syncNavigation); };
+  }, [ready, profile?.id]);
+
+  function setView(next: View) {
+    window.history.pushState(null, "", homeViewUrl(window.location.href, next));
+    setViewState(next);
+    window.dispatchEvent(new Event(NAVIGATION_EVENT));
+  }
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -139,23 +166,10 @@ export default function Home() {
   const openCourse = (course: Course) => { setSelectedCourse(course); setToast(""); };
   const leader = ["Department Lead", "CPD Lead", "Admin"].includes(profile.role);
 
-  return <div className="appShell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brandMark">CPD</div><div><strong>Teaching CPD</strong><span>Professional Learning Hub</span></div></div>
-      <nav>
-        <NavButton icon="⌂" label="Dashboard" active={view === "dashboard"} onClick={() => setView("dashboard")} />
-        <NavButton icon="▦" label="Courses" active={view === "courses"} onClick={() => setView("courses")} />
-        <NavButton icon="✓" label="My CPD" active={view === "mycpd"} onClick={() => setView("mycpd")} />
-        <NavButton icon="◇" label="Certificates" active={view === "certificates"} onClick={() => setView("certificates")} />
-        <NavButton icon="○" label="Profile" active={view === "profile"} onClick={() => setView("profile")} />
-        {leader && <NavButton icon="◉" label="Live CPD" active={false} onClick={() => { window.location.href = "/live"; }} />}
-      </nav>
-      <div className="sidebarFoot"><span className="modeBadge">CLOUD SYNC</span><small>{syncing ? "Saving changes…" : "Progress, reflections and profile changes are saved to your staff account."}</small></div>
-    </aside>
-
+  return <div className="appShell simplifiedHome">
     <main className="main">
-      <header className="topbar"><button className="mobileBrand" onClick={() => setView("dashboard")}>CPD</button><div className="topbarSpacer" /><div className="profileMini"><div className="avatar">{initials(profile.name)}</div><div><strong>{profile.name}</strong><span>{profile.role} · {profile.department || "No department"}</span></div></div></header>
       <div className="content">
+        <div className="homeSyncStatus" role="status"><span aria-hidden="true">✓</span>{syncing ? "Saving changes…" : "Your learning is saved to your account."}</div>
         {view === "dashboard" && <Dashboard profile={profile} progress={progress} stats={stats} openCourse={openCourse} setView={setView} leader={leader} />}
         {view === "courses" && <CourseLibrary progress={progress} search={search} setSearch={setSearch} category={category} setCategory={setCategory} openCourse={openCourse} />}
         {view === "mycpd" && <MyCPD progress={progress} openCourse={openCourse} />}
@@ -165,12 +179,6 @@ export default function Home() {
     </main>
 
     {selectedCourse && <CourseWorkspace key={selectedCourse.id} course={selectedCourse} state={progress[selectedCourse.id]} onClose={() => setSelectedCourse(null)} onComplete={completeModule} onSaveMeta={(key, value) => saveCourseMeta(selectedCourse, key, value)} onOpenCourse={openCourse} />}
-    <nav className="mobileNav">
-      <NavButton icon="⌂" label="Home" active={view === "dashboard"} onClick={() => setView("dashboard")} />
-      <NavButton icon="▦" label="Courses" active={view === "courses"} onClick={() => setView("courses")} />
-      <NavButton icon="✓" label="My CPD" active={view === "mycpd"} onClick={() => setView("mycpd")} />
-      <NavButton icon="○" label="Profile" active={view === "profile"} onClick={() => setView("profile")} />
-    </nav>
     {toast && <div className="toast">{toast}</div>}
   </div>;
 }
