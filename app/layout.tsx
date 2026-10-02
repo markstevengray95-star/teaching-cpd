@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AppShellEnhancements from "./components/AppShellEnhancements";
-import GlobalMainTabs from "./components/GlobalMainTabs";
-import MobilePlatformDock from "./components/MobilePlatformDock";
+import AppNavigation from "./components/AppNavigation";
 import CoursePresentationController from "./components/CoursePresentationController";
 import AdminSlideUnlockController from "./components/AdminSlideUnlockController";
 import CoursePresenterPhase3Controller from "./components/CoursePresenterPhase3Controller";
@@ -35,7 +35,6 @@ import CoursePersonalisedEntryPhase28Controller from "./components/CoursePersona
 import CourseProfessionalToolkitPhase29Controller from "./components/CourseProfessionalToolkitPhase29Controller";
 import CourseImplementationChallengePhase30Controller from "./components/CourseImplementationChallengePhase30Controller";
 import CourseCertificationExamPhase31Controller from "./components/CourseCertificationExamPhase31Controller";
-import CourseDeepLinkController from "./components/CourseDeepLinkController";
 import CourseInteractivityController from "./components/CourseInteractivityController";
 import "./globals.css";
 import "./mobile.css";
@@ -115,6 +114,7 @@ import "./ai-platform.css";
 import "./course-learning-layout.css";
 import "./course-discovery.css";
 import "./school-operations.css";
+import "./app-navigation.css";
 
 export const metadata: Metadata = {
   title: "Teaching CPD | Whole-School Staff Platform",
@@ -127,7 +127,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <AppShellEnhancements />
-        <GlobalMainTabs />
+        <Suspense fallback={null}><AppNavigation /></Suspense>
         <CoursePresentationController />
         <AdminSlideUnlockController />
         <CoursePresenterPhase3Controller />
@@ -161,10 +161,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CourseProfessionalToolkitPhase29Controller />
         <CourseImplementationChallengePhase30Controller />
         <CourseCertificationExamPhase31Controller />
-        <CourseDeepLinkController />
         <CourseInteractivityController />
         <div id="main-content">{children}</div>
-        <MobilePlatformDock />
       </body>
     </html>
   );

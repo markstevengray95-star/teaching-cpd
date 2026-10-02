@@ -20,3 +20,5 @@ jobs:
         run: npm run build
       - name: Audit course timing, tasks and migration parity
         run: npm run audit:courses
+      - name: Audit navigation, role visibility and course links
+        run: npm run audit:navigation
