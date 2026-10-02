@@ -23,4 +23,5 @@
 @media print{.appNavigation,.navigationBreadcrumb,.toolDirectoryDialog,.homeSyncStatus{display:none!important}}
 @media(max-width:640px){.toolCategoryGrid{grid-template-columns:1fr}.toolDirectoryQuickLinks{display:grid}.wholeSchoolAdditionalTools{padding:0 18px 24px}.wholeSchoolAdditionalTools .wholeSchoolToolGrid{padding:8px 12px 12px}}
 .toolDirectoryCommon{margin:18px 0;padding:14px 8px}.toolDirectoryCommon .toolDirectoryLinks{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding-bottom:0}.toolDirectoryCommon .toolDirectoryLinks a{display:flex;align-items:center;min-height:48px;padding:10px 12px;background:#fff;border:1px solid #e3e8ef}.toolDirectoryCommon .toolDirectoryLinks small{display:none}.toolDirectoryCommon .toolDirectoryLinks a:hover{background:#edf3ff}.toolCategoryGrid button{padding:14px}
+.wholeSchoolHero{grid-template-columns:minmax(0,1fr)}.wholeSchoolHub>.wholeSchoolToolGrid{padding-bottom:12px}
 @media(max-width:640px){.toolDirectoryCommon .toolDirectoryLinks strong{font-size:12px}.toolDirectoryCommon .toolDirectoryLinks a{min-height:54px;padding:9px}.toolDirectoryQuickLinks{margin:16px 0}.toolDirectoryHeading p{font-size:13px}}
