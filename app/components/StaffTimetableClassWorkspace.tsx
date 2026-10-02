@@ -10,6 +10,8 @@ import StaffTimetableNextLesson, { type NextLessonSuggestion } from "./StaffTime
 import StaffTimetableInclusionProfile, { type ClassInclusionProfile } from "./StaffTimetableInclusionProfile";
 import StaffTimetableDepartmentSchemes, { type DepartmentSchemeCopy, type DepartmentSchemeLesson, type DepartmentSchemeUnit } from "./StaffTimetableDepartmentSchemes";
 import StaffTimetablePlanningCalendar from "./StaffTimetablePlanningCalendar";
+import StaffTimetablePlanningHealth from "./StaffTimetablePlanningHealth";
+import StaffTimetableCoverPack from "./StaffTimetableCoverPack";
 import "./StaffTimetableClassWorkspace.css";
 
 type ClassLesson = {
@@ -35,13 +37,24 @@ type ClassLesson = {
     objectives?: string;
     sequence?: string;
     assessment?: string;
+    resources?: string;
+    teacherNotes?: string;
+    retrieval?: string;
+    teacherExplanation?: string;
+    modelling?: string;
+    guidedPractice?: string;
+    independentPractice?: string;
+    sendEalAdaptations?: string;
+    stretchChallenge?: string;
+    homeworkTask?: string;
+    exitTicket?: string;
     reflectionOutcome?: "" | "went-well" | "needs-revisiting" | "not-completed";
     reflectionNote?: string;
     reflectionUpdatedAt?: string;
   };
 };
 
-type Section = "overview" | "lessons" | "calendar" | "support" | "schemes" | "homework" | "assessments" | "resources" | "notes";
+type Section = "overview" | "lessons" | "calendar" | "health" | "cover" | "support" | "schemes" | "homework" | "assessments" | "resources" | "notes";
 
 type TimelineItem = {
   kind: "session" | "lesson";
@@ -53,7 +66,7 @@ type TimelineItem = {
 };
 
 const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-const sectionLabels: Record<Section, string> = { overview: "Overview", lessons: "Lesson plans", calendar: "Planning calendar", support: "SEND / EAL support", schemes: "Department schemes", homework: "Homework", assessments: "Assessments", resources: "Resources", notes: "Notes" };
+const sectionLabels: Record<Section, string> = { overview: "Overview", lessons: "Lesson plans", calendar: "Planning calendar", health: "Planning health", cover: "Cover pack", support: "SEND / EAL support", schemes: "Department schemes", homework: "Homework", assessments: "Assessments", resources: "Resources", notes: "Notes" };
 
 function formatDate(value: string) {
   if (!value) return "No date";
@@ -154,7 +167,7 @@ export default function StaffTimetableClassWorkspace({
 
   return <div className="ttClassWorkspace">
     <div className="ttClassWorkspaceHero">
-      <div><span>PHASES 9–10, 12–15 · CLASS-SPECIFIC PLANNING</span><h2>{className || "Class workspace"}</h2><p>{profileLabel(inferred)}{course?.code ? ` · ${course.code}` : ""}</p></div>
+      <div><span>PHASES 9–10, 12–17 · CLASS-SPECIFIC PLANNING</span><h2>{className || "Class workspace"}</h2><p>{profileLabel(inferred)}{course?.code ? ` · ${course.code}` : ""}</p></div>
       <div className="ttClassWorkspaceHeroActions"><label><span>Class</span><select value={className} onChange={(event) => onSelectClass(event.target.value)}>{classes.map((item) => <option key={item}>{item}</option>)}</select></label><button className="ttButton" onClick={onOpenMediumTerm}>Medium-term plan</button></div>
     </div>
 
@@ -195,6 +208,10 @@ export default function StaffTimetableClassWorkspace({
     {section === "lessons" && <div className="ttClassLessonList">{classLessons.map((lesson) => <article key={lesson.id}><div><small>{lesson.week} · {lesson.day} · P{lesson.period}{lesson.plan.lessonDate ? ` · ${formatDate(lesson.plan.lessonDate)}` : ""}</small><strong>{lesson.plan.topic || "Lesson not planned yet"}</strong><span>{[lesson.plan.curriculumUnit, lesson.plan.curriculumSubtopic].filter(Boolean).join(" · ") || `${lesson.subject} · ${lesson.room || "Room not set"}`}</span></div><div><span>{lesson.plan.planningMode === "detailed" ? "Detailed plan" : lesson.plan.topic ? "Simple plan" : "Not planned"}</span><button className="ttButton" onClick={() => onOpenPlan(lesson.id)}>{lesson.plan.topic ? "Open plan" : "Plan lesson"}</button></div></article>)}</div>}
 
     {section === "calendar" && <div className="ttClassSection"><StaffTimetablePlanningCalendar plan={medium} readOnly={readOnly} onMove={(sourceId, targetId, shiftRemaining) => onMovePlannedLesson(className, sourceId, targetId, shiftRemaining)} onOpenLesson={onOpenPlan} /></div>}
+
+    {section === "health" && <div className="ttClassSection"><StaffTimetablePlanningHealth className={className} lessons={lessons} mediumTermPlan={medium} assessments={assessments} homework={homework} today={today} onOpenPlan={onOpenPlan} onOpenMediumTerm={onOpenMediumTerm} onOpenAssessments={onOpenAssessments} onOpenHomework={onOpenHomework} /></div>}
+
+    {section === "cover" && <div className="ttClassSection"><StaffTimetableCoverPack className={className} lessons={lessons} mediumTermPlan={medium} inclusionProfile={inclusionProfile} today={today} onOpenPlan={onOpenPlan} /></div>}
 
     {section === "support" && <div className="ttClassSection"><StaffTimetableInclusionProfile className={className} profile={inclusionProfile} readOnly={readOnly} onChange={onInclusionChange} /></div>}
 
