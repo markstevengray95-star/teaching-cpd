@@ -41,6 +41,7 @@ export default function StaffTimetableAssessments({
   profiles,
   assessments,
   today,
+  initialClass,
   readOnly,
   onChange,
   onFollowUp,
@@ -49,12 +50,13 @@ export default function StaffTimetableAssessments({
   profiles: Record<string, ClassCurriculumProfile>;
   assessments: CurriculumAssessment[];
   today: string;
+  initialClass?: string;
   readOnly: boolean;
   onChange: (assessments: CurriculumAssessment[]) => void;
   onFollowUp: (action: AssessmentFollowUpAction, assessment: CurriculumAssessment, topic: CurriculumAssessmentTopicResult) => void;
 }) {
   const classes = useMemo(() => [...new Set(lessons.map((lesson) => lesson.className).filter(Boolean))].sort(), [lessons]);
-  const [selectedClass, setSelectedClass] = useState(classes[0] || "");
+  const [selectedClass, setSelectedClass] = useState(classes.includes(initialClass || "") ? (initialClass || "") : classes[0] || "");
   const visibleClass = classes.includes(selectedClass) ? selectedClass : classes[0] || "";
   const classLessons = lessons.filter((lesson) => lesson.className === visibleClass);
   const profile = visibleClass ? profiles[visibleClass] || inferClassCurriculumProfile(visibleClass, classLessons[0]?.subject || "Science") : null;

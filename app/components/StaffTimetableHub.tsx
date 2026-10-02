@@ -31,6 +31,7 @@ import StaffTimetableLessonResources, { type TimetableAttachedResource } from ".
 import StaffTimetableProgress from "./StaffTimetableProgress";
 import StaffTimetableAssessments, { type AssessmentFollowUpAction, type CurriculumAssessment, type CurriculumAssessmentTopicResult } from "./StaffTimetableAssessments";
 import StaffTimetableLessonHomework, { type LessonLinkedHomework } from "./StaffTimetableLessonHomework";
+import StaffTimetableClassWorkspace from "./StaffTimetableClassWorkspace";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
@@ -739,7 +740,24 @@ export default function StaffTimetableHub() {
         </>}
       </section>}
 
-      {tab === "classes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CLASS DASHBOARD · PHASE 1</span><h2>Classes & curriculum profile</h2><p className="ttMuted">Set each class once. The timetable then filters out irrelevant courses and suggests the next lesson from that specification.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
+      {tab === "classes" && <section className="ttWorkspace"><StaffTimetableClassWorkspace
+        classes={classes}
+        className={visibleClass}
+        lessons={active.lessons}
+        profile={active.classCurriculumProfiles[visibleClass]}
+        homework={active.homework}
+        assessments={active.assessments}
+        mediumTermPlans={active.mediumTermPlans}
+        notes={active.classNotes[visibleClass] || ""}
+        today={today}
+        readOnly={demo}
+        onSelectClass={(nextClass) => { setClassSelection(nextClass); setCurriculumText(active.curriculumSequences[nextClass]?.join("\n") || ""); }}
+        onOpenPlan={(lessonId) => setPlanLessonId(lessonId)}
+        onOpenMediumTerm={() => setTab("mediumterm")}
+        onOpenAssessments={() => setTab("assessments")}
+        onOpenHomework={() => setTab("homework")}
+        onNotesChange={(value) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: value } }))}
+      /><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CURRICULUM SETUP · PHASE 1</span><h2>Curriculum profile & setup</h2><p className="ttMuted">The Phase 9 class workspace above brings day-to-day planning together. Use this area when you need to change the class curriculum profile or sequence.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
         {!visibleClass ? <div className="ttBlankState"><h3>No classes yet</h3><p>Add or upload timetable lessons first.</p></div> : <div className="ttClassGrid"><article className="ttPanel"><div className="ttKpiGrid compact"><div><small>Lessons / cycle</small><strong>{selectedClassLessons.length}</strong></div><div><small>Open homework</small><strong>{active.homework.filter((item) => item.className === visibleClass && isOpenHomework(item)).length}</strong></div><div><small>Open prep</small><strong>{active.prep.filter((item) => item.className === visibleClass && item.status !== "Done").length}</strong></div><div><small>Planned lessons</small><strong>{selectedClassLessons.filter((item) => item.plan.topic).length}</strong></div></div><label className="ttField"><span>Class progress / next steps</span><textarea value={active.classNotes[visibleClass] || ""} disabled={demo} onChange={(event) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: event.target.value } }))} placeholder="Misconceptions, progress, follow-up or planning notes…" /></label><div className="ttStackList">{selectedClassLessons.map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>{lesson.week} · {lesson.day} · P{lesson.period}</b><span>{lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned"}</small></button>)}</div></article>
           <article className="ttPanel ttCurriculumProfilePanel"><div className="ttPanelHeader"><div><h2>Curriculum profile</h2><p>Key Stage → exam board → subject → course. Once chosen, unrelated courses disappear from lesson planning.</p></div></div><div className="ttProfileSummary"><strong>{profileLabel(currentClassProfile)}</strong><span>{selectedProfileCourse ? `${selectedProfileCourse.units.length} units · ${getCourseLessonSequence(currentClassProfile).length} suggested lessons` : "Choose a course"}</span></div><div className="ttProfileGrid">
             <label><span>Key Stage</span><select disabled={demo} value={currentClassProfile.stage} onChange={(event) => saveClassProfile({ stage: event.target.value as ClassCurriculumProfile["stage"] })}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -762,6 +780,7 @@ export default function StaffTimetableHub() {
         profiles={active.classCurriculumProfiles}
         assessments={active.assessments}
         today={today}
+        initialClass={visibleClass}
         readOnly={demo}
         onChange={(assessments) => mutate((current) => ({ ...current, assessments }))}
         onFollowUp={assessmentFollowUp}
