@@ -63,6 +63,7 @@ export const navigationTools: NavigationTool[] = [
     ["/pastoral", "Pastoral support", "Tutor time, wellbeing and mentoring."],
     ["/regulation-behaviour", "Regulation & behaviour", "Support regulation and return to learning."],
     ["/send-eal", "SEND & EAL", "Inclusive adaptations and scaffolds."],
+    ["/sen", "SEN department", "Pupil support plans, provision, reviews, EAL and regulation tools."],
     ["/interventions", "Interventions", "Track goals, support and review dates."],
     ["/learning-walks", "Learning walks", "Record and review classroom practice."],
   ]),
@@ -160,7 +161,7 @@ export function searchNavigationTools(tools: NavigationTool[], query: string) {
 export const navigationCategories = [
   { id: "learn", title: "Learn & complete CPD", description: "Courses, pathways, required training and certificates.", groups: ["Learning"], featured: ["/micro-cpd", "/pathways", "/training", "/certificates", "/subject-cpd"] },
   { id: "practice", title: "Plan, practise & reflect", description: "Choose a focus, try it in class and record the impact.", groups: ["Practice & reflection"], featured: ["/needs-audit", "/actions", "/simulator", "/portfolio", "/coaching"] },
-  { id: "classroom", title: "Teaching & pupil support", description: "Lesson resources, classroom strategies and inclusive support.", groups: ["Teaching & student support"], featured: ["/resource-generator", "/teaching-learning", "/send-eal", "/pastoral", "/curriculum"] },
+  { id: "classroom", title: "Teaching & pupil support", description: "Lesson resources, classroom strategies and inclusive support.", groups: ["Teaching & student support"], featured: ["/resource-generator", "/teaching-learning", "/sen", "/pastoral", "/curriculum"] },
   { id: "school", title: "School day & resources", description: "Timetable, calendar, policies, people and school information.", groups: ["School essentials", "Resources & help"], featured: ["/staff-timetable", "/calendar", "/notices", "/policies", "/directory"] },
   { id: "manage", title: "Manage CPD & school setup", description: "Reporting, live sessions, course authoring and administration.", groups: ["Manage CPD", "Administration", "Platform administration"], featured: ["/school-reporting", "/live", "/school-onboarding", "/school-access", "/builder"] },
 ] as const;

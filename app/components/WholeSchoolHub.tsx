@@ -35,6 +35,7 @@ const areaConfig: Record<WholeSchoolArea, AreaConfig> = {
     eyebrow: "STUDENTS", title: "Pastoral, Regulation & Inclusion", description: "Tutor-time planning, pastoral support, regulation, behaviour, SEND, EAL and intervention tracking in one student-support area.", accent: "Student support",
     tools: [
       { title: "Pastoral Hub", description: "Plan tutor time and access assemblies, mentoring, attendance, behaviour, rewards, wellbeing and key pastoral dates.", href: "/pastoral", icon: "◎", badge: "Phase 35" },
+      { title: "SEN department", description: "Connected support plans, pupil passports, provision reviews, EAL assessment and regulation tools.", href: "/sen", icon: "◇", badge: "Inclusion workspace" },
       { title: "Regulation & Behaviour", description: "Use one consistent workflow for regulation support, behaviour, restorative response and return to learning.", href: "/regulation-behaviour", icon: "◉", badge: "Phase 36" },
       { title: "SEND & EAL Hub", description: "Find inclusive classroom adaptations, SEND strategies, EAL scaffolds and school-specific inclusion guidance.", href: "/send-eal", icon: "◇", badge: "Phase 37" },
       { title: "Intervention Tracking", description: "Set baselines and goals, record support, schedule reviews and track outcomes.", href: "/interventions", icon: "↻", badge: "Phase 38" },

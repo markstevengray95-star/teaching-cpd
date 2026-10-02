@@ -1,0 +1,47 @@
+export const needAreas = ['Communication and interaction', 'Cognition and learning', 'Social, emotional and mental health', 'Sensory and physical'] as const;
+export const senStatuses = ['Referral', 'Monitoring', 'SEN support', 'EHCP', 'No SEN identified'] as const;
+export type SupportPlan = { baseline: string; outcome: string; measure: string; adjustments: string; provision: string; owner: string; reviewDate: string; pupilVoice: string; familyVoice: string; transition: string; externalAdvice: string; ehcpReviewDate: string };
+export type Session = { id: string; date: string; minutes: number; outcome: number; fidelity: number; usefulness: number | null; evidence: string };
+export type Intervention = { id: string; title: string; owner: string; baseline: string; goal: string; measure: string; strategy: string; frequency: string; minutes: number; weeklySessions: number; hourlyCost: number; startDate: string; reviewDate: string; status: 'Active' | 'Adjust' | 'Fade' | 'Closed'; sessions: Session[] };
+export type Review = { id: string; date: string; attendees: string; evidence: string; pupilVoice: string; familyVoice: string; decision: string; actions: string; nextDate: string };
+export type EalAssessment = { id: string; date: string; assessor: string; task: string; band: string; confidence: string; scores: Record<string, (number | null)[]>; evidence: string; adjustments: string; nextSteps: string };
+export type ReadingAssessment = { id: string; date: string; tool: string; ageMonths: number; notes: string };
+export type CheckIn = { id: string; date: string; before: string; after: string; signals: string; strategy: string; usefulness: number; nextStep: string };
+export type Contact = { id: string; date: string; type: string; participants: string; summary: string; actions: string };
+export type SenCase = { schemaVersion: 1; reference: string; name: string; year: string; className: string; status: typeof senStatuses[number]; needs: string[]; strengths: string; languages: string; dob: string; arrival: string; plan: SupportPlan; interventions: Intervention[]; reviews: Review[]; assessments: EalAssessment[]; reading: ReadingAssessment[]; checkIns: CheckIn[]; contacts: Contact[] };
+export type CaseRow = { id: string; organization_id: string; body: SenCase; version: number; archived_at: string | null; updated_at: string };
+export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+export function newCase(): SenCase { return { schemaVersion: 1, reference: '', name: '', year: '', className: '', status: 'Referral', needs: [], strengths: '', languages: '', dob: '', arrival: '', plan: { baseline:'', outcome:'', measure:'', adjustments:'', provision:'', owner:'', reviewDate:'', pupilVoice:'', familyVoice:'', transition:'', externalAdvice:'', ehcpReviewDate:'' }, interventions:[], reviews:[], assessments:[], reading:[], checkIns:[], contacts:[] }; }
+export function validDate(date: string) { return /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date; }
+export function due(date: string, at = today()) { if (!validDate(date)) return 'No date'; const days = Math.round((Date.parse(date)-Date.parse(at))/86400000); return days<0?'Overdue':days<=14?'Due soon':'Scheduled'; }
+export function monthsOld(dob: string, on: string) { if (!validDate(dob)||!validDate(on)||dob>on) return null; const a = new Date(dob), b = new Date(on); return (b.getUTCFullYear()-a.getUTCFullYear())*12+b.getUTCMonth()-a.getUTCMonth()-(b.getUTCDate()<a.getUTCDate()?1:0); }
+export function readingChange(records: ReadingAssessment[]) { const sorted = [...records].sort((a,b)=>a.date.localeCompare(b.date)); if(sorted.length<2) return null; const first=sorted[0], last=sorted[sorted.length-1]; if(first.tool.trim().toLowerCase()!==last.tool.trim().toLowerCase()||first.date===last.date) return null; return { gain:last.ageMonths-first.ageMonths, elapsedMonths:(Date.parse(last.date)-Date.parse(first.date))/86400000/30.4375 }; }
+export function strandMean(scores: (number|null)[]) { const recorded = scores.filter((s): s is number => s!==null); return recorded.length ? recorded.reduce((a,b)=>a+b,0)/recorded.length : null; }
+export function interventionSummary(i: Intervention) { const rows=[...i.sessions].sort((a,b)=>a.date.localeCompare(b.date)); return { count:rows.length, change:rows.length>1?rows.at(-1)!.outcome-rows[0].outcome:null, fidelity:rows.length?Math.round(rows.reduce((n,s)=>n+s.fidelity,0)/rows.length):null, weeklyMinutes:i.minutes*i.weeklySessions, weeklyCost:i.minutes*i.weeklySessions/60*i.hourlyCost }; }
+export function planGaps(p: SupportPlan) { return (['baseline','outcome','measure','adjustments','provision','owner','reviewDate','pupilVoice'] as const).filter(k=>!p[k].trim()); }
+export function validateCase(p: SenCase): string[] {
+  const errors:string[]=[];
+  if(!p.reference.trim()||!p.name.trim()) errors.push('Pupil reference and display name are required.');
+  if(!senStatuses.includes(p.status)||p.needs.some(n=>!needAreas.includes(n as typeof needAreas[number]))) errors.push('Choose a recognised SEN status and area of need.');
+  const dates=[p.dob,p.arrival,p.plan.reviewDate,p.plan.ehcpReviewDate,...p.interventions.flatMap(i=>[i.startDate,i.reviewDate,...i.sessions.map(s=>s.date)]),...p.reviews.flatMap(r=>[r.date,r.nextDate]),...p.assessments.map(a=>a.date),...p.reading.map(r=>r.date),...p.checkIns.map(r=>r.date),...p.contacts.map(r=>r.date)];
+  if(dates.some(d=>d&&!validDate(d))) errors.push('Use valid calendar dates.');
+  if(p.dob&&p.dob>today()) errors.push('Date of birth cannot be in the future.');
+  for(const i of p.interventions){
+    if(!i.title.trim()||!i.goal.trim()||!i.owner.trim()) errors.push('Each intervention needs a title, measurable goal and lead.');
+    if(i.startDate&&i.reviewDate&&i.reviewDate<i.startDate) errors.push('Intervention review cannot be before its start.');
+    if([i.minutes,i.weeklySessions,i.hourlyCost].some(v=>!Number.isFinite(v)||v<0)||i.minutes>480||i.weeklySessions>35||i.hourlyCost>1000) errors.push('Check intervention time, frequency and cost.');
+    if(i.sessions.some(s=>!validDate(s.date)||!s.evidence.trim()||!Number.isFinite(s.minutes)||s.minutes<0||s.minutes>480||![0,1,2,3,4].includes(s.outcome)||!Number.isFinite(s.fidelity)||s.fidelity<0||s.fidelity>100||(s.usefulness!==null&&![0,1,2,3,4].includes(s.usefulness)))) errors.push('Session evidence and ratings must be complete and within range.');
+  }
+  if(p.reading.some(r=>!validDate(r.date)||!r.tool.trim()||!Number.isInteger(r.ageMonths)||r.ageMonths<12||r.ageMonths>300)) errors.push('Reading assessments need a tool, date and valid reading age in months (12–300).');
+  if(p.assessments.some(a=>!validDate(a.date)||!a.assessor.trim()||!a.evidence.trim()||!['A','B','C','D','E'].includes(a.band)||Object.keys(a.scores).sort().join()!=='listening,reading,speaking,writing'||Object.values(a.scores).some(s=>s.length!==5||s.some(v=>v!==null&&![1,2,3,4,5].includes(v)))||Object.values(a.scores).every(s=>s.every(v=>v===null)))) errors.push('EAL assessment needs evidence, assessor, at least one observed criterion and a teacher-confirmed band.');
+  if(p.reviews.some(r=>!validDate(r.date)||!r.evidence.trim()||!r.actions.trim())) errors.push('Reviews need a date, evidence and agreed actions.');
+  if(p.checkIns.some(c=>!validDate(c.date)||!c.strategy||!c.nextStep.trim()||![0,1,2,3,4].includes(c.usefulness))) errors.push('Check-ins need a strategy, next step and usefulness rating.');
+  if(p.contacts.some(c=>!validDate(c.date)||!c.summary.trim())) errors.push('Communication records need a date and summary.');
+  if(JSON.stringify(p).length>180000) errors.push('Record is too large. Ask your administrator about retention.');
+  return [...new Set(errors)];
+}
+export function demoCases(): CaseRow[] {
+  const pupil=newCase(); Object.assign(pupil,{ reference:'DEMO-001', name:'Example pupil — fictional', year:'Year 8', className:'8A', status:'SEN support', needs:['Communication and interaction'], strengths:'Enjoys diagrams, science and explaining ideas to a partner.', languages:'English; Spanish at home' });
+  Object.assign(pupil.plan,{baseline:'Starts independent work in 2 of 5 observed opportunities.',outcome:'Begin the first agreed task in 4 of 5 opportunities with at most one prompt.',measure:'Record task start and prompts in five lessons each week.',adjustments:'Visual first step; private help signal; paired rehearsal.',provision:'Two 15-minute sessions a week; review classroom transfer.',owner:'Example SENCO',reviewDate:today(),pupilVoice:'A diagram and time to rehearse help me.',familyVoice:'A predictable homework checklist helps.',transition:'Preview room changes and identify a trusted adult.'});
+  return [{id:'demo-001',organization_id:'demo',body:pupil,version:1,archived_at:null,updated_at:new Date().toISOString()}];
+}
