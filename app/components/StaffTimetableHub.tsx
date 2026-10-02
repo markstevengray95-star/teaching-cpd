@@ -17,11 +17,21 @@ import {
   phase1Stages,
   profileLabel,
 } from "./staffTimetableCurriculumPhase1";
+import {
+  MediumTermPlan,
+  MediumTermSession,
+  PlanningBlock,
+  generateMediumTermPlan,
+  mediumTermStats,
+  nextDate,
+  reflowMediumTermPlan,
+} from "./staffTimetableMediumTerm";
 import "./StaffTimetableHub.css";
+import "./StaffTimetableMediumTerm.css";
 
 type WeekKey = "W1" | "W2";
 type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
-type WorkspaceTab = "today" | "timetable" | "planning" | "classes" | "homework" | "workload" | "changes" | "tools";
+type WorkspaceTab = "today" | "timetable" | "planning" | "mediumterm" | "classes" | "homework" | "workload" | "changes" | "tools";
 
 type LessonPlan = {
   lessonDate: string;
@@ -128,6 +138,8 @@ type WorkspaceData = {
   classNotes: Record<string, string>;
   curriculumSequences: Record<string, string[]>;
   classCurriculumProfiles: Record<string, ClassCurriculumProfile>;
+  mediumTermPlans: MediumTermPlan[];
+  planningBlocks: PlanningBlock[];
 };
 
 type ImportResult = { lessons: Lesson[]; source: string };
@@ -153,7 +165,7 @@ function blankPlan(): LessonPlan {
   return { lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "", curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1 };
 }
 function blankWorkspace(): WorkspaceData {
-  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {} };
+  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [] };
 }
 function periodTimes(period: number) {
   const match = PERIODS.find((item) => item.period === period) || PERIODS[0];
@@ -197,6 +209,10 @@ function dedupe(lessons: Lesson[]) {
   });
 }
 function todayIso() { return new Date().toISOString().slice(0, 10); }
+function dateOffsetIso(days: number) {
+  const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 function formatDate(value: string) {
   if (!value) return "No date";
   const date = new Date(`${value}T12:00:00`);
@@ -330,6 +346,17 @@ const DEMO_WORKSPACE: WorkspaceData = (() => {
   base.activities = [{ id: "demo_act", week: "W1", day: "Monday", start: "16:30", end: "17:30", title: "STEM Robotics", group: "Activity group", room: "Science Lab" }];
   base.curriculumSequences["Y13 Physics"] = ["Nuclear instability", "Radioactive decay", "Half-life calculations", "Nuclear radius", "Binding energy", "Fission and chain reactions"];
   base.classCurriculumProfiles["Y13 Physics"] = { stage: "A level", examBoard: "AQA", subject: "Physics", courseId: "aqa-alevel-physics-7408" };
+  base.mediumTermPlans = [generateMediumTermPlan({
+    className: "Y13 Physics",
+    profile: base.classCurriculumProfiles["Y13 Physics"],
+    patternLessons: base.lessons,
+    startDate: todayIso(),
+    endDate: dateOffsetIso(42),
+    anchorWeek: "W1",
+    planningBlocks: [],
+    keyDates: [],
+    changes: [],
+  })];
   return base;
 })();
 
@@ -350,6 +377,10 @@ export default function StaffTimetableHub() {
   const [search, setSearch] = useState("");
   const [itemEditor, setItemEditor] = useState<null | { kind: "homework" | "prep" | "task" | "change" | "activity" | "keyDate"; id?: string }>(null);
   const [curriculumText, setCurriculumText] = useState("");
+  const [mediumStart, setMediumStart] = useState(todayIso());
+  const [mediumEnd, setMediumEnd] = useState(dateOffsetIso(84));
+  const [mediumAnchorWeek, setMediumAnchorWeek] = useState<WeekKey>("W1");
+  const [blockDraft, setBlockDraft] = useState<{ title: string; startDate: string; endDate: string; type: PlanningBlock["type"] }>({ title: "", startDate: "", endDate: "", type: "Holiday" });
   const fileRef = useRef<HTMLInputElement>(null);
   const backupRef = useRef<HTMLInputElement>(null);
 
@@ -487,8 +518,79 @@ export default function StaffTimetableHub() {
     }) }));
     setStatus(`Filled blank ${visibleClass} lesson plans from ${getPhase1Course(profile.courseId)?.title || profile.subject}.`);
   }
+  function generateMediumTermForClass() {
+    if (!visibleClass || demo || !mediumStart || !mediumEnd || mediumEnd < mediumStart) return;
+    const profile = workspace.classCurriculumProfiles[visibleClass] || inferClassCurriculumProfile(visibleClass, selectedClassLessons[0]?.subject || "Science");
+    const sequence = getCourseLessonSequence(profile);
+    const alreadyPlanned = new Set(workspace.lessons.filter((lesson) => lesson.className === visibleClass).map((lesson) => lesson.plan.topic).filter(Boolean));
+    const firstUnused = sequence.findIndex((item) => !alreadyPlanned.has(item.title));
+    const startSequencePosition = alreadyPlanned.size ? (firstUnused >= 0 ? firstUnused : sequence.length) : 0;
+    const plan = generateMediumTermPlan({ className: visibleClass, profile, patternLessons: workspace.lessons, startDate: mediumStart, endDate: mediumEnd, anchorWeek: mediumAnchorWeek, planningBlocks: workspace.planningBlocks, keyDates: workspace.keyDates, changes: workspace.changes, startSequencePosition });
+    mutate((current) => ({ ...current, mediumTermPlans: [...current.mediumTermPlans.filter((item) => item.className !== visibleClass), plan] }));
+    setStatus(`Built a dated medium-term plan for ${visibleClass} with ${plan.sessions.length} teaching sessions.`);
+  }
+  function reflowSelectedMediumTerm() {
+    if (!visibleClass || demo) return;
+    mutate((current) => {
+      const plan = current.mediumTermPlans.find((item) => item.className === visibleClass); if (!plan) return current;
+      const fromDate = today > plan.startDate ? today : plan.startDate;
+      const nextPlan = reflowMediumTermPlan(plan, { className: plan.className, profile: plan.profile, patternLessons: current.lessons, startDate: plan.startDate, endDate: plan.endDate, anchorWeek: plan.anchorWeek, planningBlocks: current.planningBlocks, keyDates: current.keyDates, changes: current.changes }, fromDate);
+      return { ...current, mediumTermPlans: current.mediumTermPlans.map((item) => item.id === plan.id ? nextPlan : item) };
+    });
+    setStatus(`Reflowed future ${visibleClass} lessons around current non-teaching dates and cancellations.`);
+  }
+  function markMediumTermSession(planId: string, sessionId: string, status: MediumTermSession["status"]) {
+    if (demo) return;
+    mutate((current) => {
+      const plan = current.mediumTermPlans.find((item) => item.id === planId); if (!plan) return current;
+      const target = plan.sessions.find((item) => item.id === sessionId); if (!target) return current;
+      let nextPlan: MediumTermPlan = { ...plan, sessions: plan.sessions.map((item) => item.id === sessionId ? { ...item, status } : item) };
+      if (status === "missed") {
+        nextPlan = reflowMediumTermPlan(nextPlan, { className: plan.className, profile: plan.profile, patternLessons: current.lessons, startDate: plan.startDate, endDate: plan.endDate, anchorWeek: plan.anchorWeek, planningBlocks: current.planningBlocks, keyDates: current.keyDates, changes: current.changes }, nextDate(target.date));
+      }
+      return { ...current, mediumTermPlans: current.mediumTermPlans.map((item) => item.id === planId ? nextPlan : item) };
+    });
+  }
+  function openMediumTermSession(session: MediumTermSession) {
+    if (demo) return;
+    const plan = workspace.mediumTermPlans.find((item) => item.className === visibleClass); if (!plan) return;
+    mutate((current) => ({ ...current, lessons: current.lessons.map((lesson) => lesson.id === session.sourceLessonId ? { ...lesson, plan: { ...lesson.plan, lessonDate: session.date, topic: session.topic, vocabulary: session.vocabulary, objectives: session.objectives, sequence: session.sequence, assessment: session.assessment, curriculumStage: plan.profile.stage, curriculumSubject: plan.profile.subject, curriculumUnit: session.unitTitle, curriculumSubtopic: session.subtopicTitle, examBoard: plan.profile.examBoard, courseId: plan.profile.courseId, sequencePosition: session.sequencePosition } } : lesson) }));
+    setPlanLessonId(session.sourceLessonId); setTab("planning");
+  }
+  function savePlanningBlock() {
+    if (demo) return;
+    const startDate = blockDraft.startDate || mediumStart; const endDate = blockDraft.endDate || startDate;
+    if (!startDate || !endDate || endDate < startDate) return;
+    const block: PlanningBlock = { id: makeId("block"), title: blockDraft.title.trim() || blockDraft.type, startDate, endDate, type: blockDraft.type };
+    mutate((current) => {
+      const planningBlocks = [...current.planningBlocks, block];
+      const mediumTermPlans = current.mediumTermPlans.map((plan) => {
+        const fromDate = block.startDate > plan.startDate ? block.startDate : plan.startDate;
+        return reflowMediumTermPlan(plan, { className: plan.className, profile: plan.profile, patternLessons: current.lessons, startDate: plan.startDate, endDate: plan.endDate, anchorWeek: plan.anchorWeek, planningBlocks, keyDates: current.keyDates, changes: current.changes }, fromDate);
+      });
+      return { ...current, planningBlocks, mediumTermPlans };
+    });
+    setBlockDraft({ title: "", startDate: "", endDate: "", type: "Holiday" });
+  }
+  function removePlanningBlock(blockId: string) {
+    if (demo) return;
+    mutate((current) => {
+      const removed = current.planningBlocks.find((item) => item.id === blockId); const planningBlocks = current.planningBlocks.filter((item) => item.id !== blockId);
+      if (!removed) return { ...current, planningBlocks };
+      const mediumTermPlans = current.mediumTermPlans.map((plan) => {
+        const candidate = removed.startDate > today ? removed.startDate : today;
+        const fromDate = candidate > plan.startDate ? candidate : plan.startDate;
+        return reflowMediumTermPlan(plan, { className: plan.className, profile: plan.profile, patternLessons: current.lessons, startDate: plan.startDate, endDate: plan.endDate, anchorWeek: plan.anchorWeek, planningBlocks, keyDates: current.keyDates, changes: current.changes }, fromDate);
+      });
+      return { ...current, planningBlocks, mediumTermPlans };
+    });
+  }
+  function clearMediumTermPlan() {
+    if (!visibleClass || demo) return;
+    mutate((current) => ({ ...current, mediumTermPlans: current.mediumTermPlans.filter((item) => item.className !== visibleClass) }));
+  }
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ version: 2, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ version: 3, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
@@ -506,6 +608,9 @@ export default function StaffTimetableHub() {
   const profileCourses = getPhase1Courses(currentClassProfile.stage, currentClassProfile.examBoard, currentClassProfile.subject);
   const selectedProfileCourse = getPhase1Course(currentClassProfile.courseId) || profileCourses[0];
   const nextProfileLesson = getNextSuggestedLesson(currentClassProfile, selectedClassLessons.map((lesson) => lesson.plan.topic));
+  const selectedMediumTermPlan = active.mediumTermPlans.find((item) => item.className === visibleClass);
+  const selectedMediumStats = mediumTermStats(selectedMediumTermPlan);
+  const selectedCourseLength = getCourseLessonSequence(currentClassProfile).length;
   const nextKeyDate = active.keyDates.filter((item) => item.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
   const nowCard = currentOrNext();
   const filteredPlanning = active.lessons.filter((lesson) => !search || [lesson.subject, lesson.className, lesson.plan.topic, lesson.plan.curriculumUnit].join(" ").toLowerCase().includes(search.toLowerCase()));
@@ -520,7 +625,7 @@ export default function StaffTimetableHub() {
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
 
       <nav className="ttWorkspaceNav noPrint" aria-label="Timetable workspace">
-        {(["today","timetable","planning","classes","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",classes:"Classes",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
+        {(["today","timetable","planning","mediumterm","classes","homework","workload","changes","tools"] as WorkspaceTab[]).map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{({today:"Today",timetable:"Timetable",planning:"Lesson planning",mediumterm:"Medium-term",classes:"Classes",homework:"Homework",workload:"Prep & tasks",changes:"Changes",tools:"Tools"} as Record<WorkspaceTab,string>)[item]}</button>)}
       </nav>
 
       {tab === "today" && <section className="ttDashboardShell">
@@ -558,6 +663,14 @@ export default function StaffTimetableHub() {
 
       {tab === "planning" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">LESSON CONTENT</span><h2>Lesson planning</h2><p className="ttMuted">Plan directly against timetable lessons, then see the topic on the timetable and class dashboard.</p></div><div className="ttWorkspaceActions"><input className="ttSearch" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search class, subject or topic" /><Link className="ttButton" href="/curriculum">Curriculum Hub</Link><Link className="ttButton" href="/resource-generator">Resource Generator</Link></div></div>
         <div className="ttPlanningGrid">{filteredPlanning.map((lesson) => <article className="ttPlanningCard" key={lesson.id}><div className={`ttSubjectBar ${subjectTone(lesson.subject)}`} /><div><small>{lesson.week} · {lesson.day} · P{lesson.period}</small><h3>{lesson.subject} · {lesson.className}</h3><p>{lesson.plan.topic || "No lesson topic planned yet."}</p><div className="ttChipRow">{lesson.plan.curriculumStage && <span>{lesson.plan.curriculumStage}</span>}{lesson.plan.curriculumUnit && <span>{lesson.plan.curriculumUnit}</span>}{lesson.plan.lessonDate && <span>{formatDate(lesson.plan.lessonDate)}</span>}</div></div><button className="ttButton" onClick={() => setPlanLessonId(lesson.id)}>{lesson.plan.topic ? "Edit plan" : "Plan lesson"}</button></article>)}</div>
+      </section>}
+
+      {tab === "mediumterm" && <section className="ttWorkspace ttMtpShell"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">PHASE 2 · MEDIUM-TERM PLANNING</span><h2>Automatic curriculum map</h2><p className="ttMuted">Turn the repeating W1/W2 timetable into dated lessons across a term. Holidays, INSET, assessment blocks, trips and cancellations are skipped, while missed lessons can roll forward automatically.</p></div><div className="ttMtpToolbar"><div className="ttMtpToolbarLeft"><select value={visibleClass} onChange={(event) => setClassSelection(event.target.value)}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div></div>
+        {!visibleClass ? <div className="ttMtpEmpty"><strong>No classes yet</strong><span>Upload or build the timetable first.</span></div> : <>
+          <div className="ttMtpSetup"><article className="ttPanel"><div className="ttPanelHeader"><div><h2>Build the teaching sequence</h2></div></div><div className="ttMtpCourseLine"><span>{profileLabel(currentClassProfile)}</span>{selectedProfileCourse?.code && <span>{selectedProfileCourse.code}</span>}<span>{selectedCourseLength} curriculum lessons</span></div><div className="ttMtpForm"><label><span>Start date</span><input type="date" disabled={demo} value={mediumStart} onChange={(event) => setMediumStart(event.target.value)} /></label><label><span>End date</span><input type="date" disabled={demo} value={mediumEnd} onChange={(event) => setMediumEnd(event.target.value)} /></label><label><span>Starting cycle</span><select disabled={demo} value={mediumAnchorWeek} onChange={(event) => setMediumAnchorWeek(event.target.value as WeekKey)}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Class</span><input value={visibleClass} disabled /></label></div><div className="ttButtonRow"><button className="ttButton primary" disabled={demo || !selectedProfileCourse} onClick={generateMediumTermForClass}>{selectedMediumTermPlan ? "Rebuild dated plan" : "Build dated plan"}</button>{selectedMediumTermPlan && <button className="ttButton" disabled={demo} onClick={reflowSelectedMediumTerm}>Reflow future lessons</button>}{selectedMediumTermPlan && <button className="ttButton danger" disabled={demo} onClick={clearMediumTermPlan}>Clear plan</button>}</div><div className="ttMtpHint">The first calendar week in this date range is treated as <strong>{mediumAnchorWeek === "W1" ? "Week 1" : "Week 2"}</strong>. The planner then alternates the cycle automatically and only schedules dates where this class actually appears on the timetable.</div>{selectedMediumTermPlan && <><div className="ttMtpStats"><div><small>Scheduled</small><strong>{selectedMediumStats.total}</strong></div><div><small>Complete</small><strong>{selectedMediumStats.complete}</strong></div><div><small>Missed</small><strong>{selectedMediumStats.missed}</strong></div><div><small>Still planned</small><strong>{selectedMediumStats.planned}</strong></div></div><div className="ttMtpProgress"><span style={{ width: `${selectedMediumStats.total ? Math.round(selectedMediumStats.complete / selectedMediumStats.total * 100) : 0}%` }} /></div></>}</article>
+            <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Non-teaching dates</h2><p>Adding or removing a block automatically reflows affected medium-term plans.</p></div></div><div className="ttMtpBlockForm"><label className="wide"><span>Reason</span><input disabled={demo} value={blockDraft.title} onChange={(event) => setBlockDraft((current) => ({ ...current, title: event.target.value }))} placeholder="e.g. October half term" /></label><label><span>Type</span><select disabled={demo} value={blockDraft.type} onChange={(event) => setBlockDraft((current) => ({ ...current, type: event.target.value as PlanningBlock["type"] }))}>{["Holiday","INSET","Assessment week","Trip","Other"].map((item) => <option key={item}>{item}</option>)}</select></label><label><span>From</span><input type="date" disabled={demo} value={blockDraft.startDate} onChange={(event) => setBlockDraft((current) => ({ ...current, startDate: event.target.value }))} /></label><label><span>To</span><input type="date" disabled={demo} value={blockDraft.endDate} onChange={(event) => setBlockDraft((current) => ({ ...current, endDate: event.target.value }))} /></label><div className="wide"><button className="ttButton" disabled={demo} onClick={savePlanningBlock}>+ Add non-teaching block</button></div></div><div className="ttMtpBlocks">{active.planningBlocks.map((block) => <div className="ttMtpBlock" key={block.id}><div><strong>{block.title}</strong><span>{block.type} · {formatDate(block.startDate)}{block.endDate !== block.startDate ? ` – ${formatDate(block.endDate)}` : ""}</span></div>{!demo && <button className="ttMiniLink" onClick={() => removePlanningBlock(block.id)}>Remove</button>}</div>)}{!active.planningBlocks.length && <div className="ttMtpNotice">Holiday and Training items already saved under Key dates are skipped automatically. Use these blocks for date ranges such as half term, assessment week or a class trip.</div>}</div></article></div>
+          {selectedMediumTermPlan ? <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Dated teaching sequence</h2><p>{formatDate(selectedMediumTermPlan.startDate)} to {formatDate(selectedMediumTermPlan.endDate)} · generated from the class timetable and {selectedProfileCourse?.title || currentClassProfile.subject}.</p></div></div><div className="ttMtpTimeline">{selectedMediumTermPlan.sessions.map((session) => <div className={`ttMtpSession ${session.status}`} key={session.id}><div className="ttMtpDate"><strong>{formatDate(session.date)}</strong><span>{session.week} · {session.day.slice(0,3)} · P{session.period}</span></div><div className="ttMtpLesson"><strong>{session.topic}</strong><span>{session.unitTitle} · {session.subtopicTitle}</span><small>{session.start}–{session.end}{session.room ? ` · ${session.room}` : ""}</small></div><div className="ttMtpActions"><span className="ttMtpStatus">{session.status}</span><button className="ttMiniLink" onClick={() => openMediumTermSession(session)}>Open plan</button>{session.status !== "complete" && <button className="ttMiniLink" disabled={demo} onClick={() => markMediumTermSession(selectedMediumTermPlan.id, session.id, "complete")}>Complete</button>}{session.status !== "missed" && <button className="ttMiniLink" disabled={demo} onClick={() => markMediumTermSession(selectedMediumTermPlan.id, session.id, "missed")}>Missed</button>}{session.status !== "planned" && <button className="ttMiniLink" disabled={demo} onClick={() => markMediumTermSession(selectedMediumTermPlan.id, session.id, "planned")}>Reset</button>}</div></div>)}</div>{!selectedMediumTermPlan.sessions.length && <div className="ttMtpEmpty"><strong>No schedulable lessons in this range</strong><span>Check the class timetable, date range, W1/W2 starting cycle and non-teaching blocks.</span></div>}</article> : <div className="ttMtpEmpty"><strong>No medium-term plan for {visibleClass}</strong><span>Choose the date range above and build the plan. It will distribute the next curriculum lessons across the class’s real timetable slots.</span></div>}
+        </>}
       </section>}
 
       {tab === "classes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CLASS DASHBOARD · PHASE 1</span><h2>Classes & curriculum profile</h2><p className="ttMuted">Set each class once. The timetable then filters out irrelevant courses and suggests the next lesson from that specification.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
