@@ -67,6 +67,7 @@ const ROUTE_PERMISSIONS: Array<[string, StaffPermission]> = [
   ["/quality", "cpd:manage"],
   ["/facilitator", "cpd:manage"],
   ["/live-presenter", "cpd:manage"],
+  ["/staff-timetable/leadership", "school:view"],
   ["/staff-timetable", "develop:view"],
   ["/improvement/programmes", "school:manage"],
   ["/leadership-dashboard", "school:view"],

@@ -36,6 +36,9 @@ import StaffTimetableLessonReflection, { type LessonReflectionOutcome } from "./
 import { type NextLessonSuggestion } from "./StaffTimetableNextLesson";
 import { buildClassSupportText, type ClassInclusionProfile } from "./StaffTimetableInclusionProfile";
 import { type DepartmentSchemeCopy, type DepartmentSchemeLesson, type DepartmentSchemeUnit } from "./StaffTimetableDepartmentSchemes";
+import StaffTimetableLeadershipSync from "./StaffTimetableLeadershipSync";
+import StaffTimetableLeadershipLink from "./StaffTimetableLeadershipLink";
+import { reorderMediumTermPlanSessions } from "./StaffTimetablePlanningCalendar";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
@@ -605,6 +608,14 @@ export default function StaffTimetableHub() {
     });
     setStatus(`Copied ${unit.title} into ${className}. The department master remains unchanged.`);
   }
+  function movePlannedLesson(className: string, sourceId: string, targetId: string, shiftRemaining: boolean) {
+    if (demo || !className || !sourceId || !targetId) return;
+    mutate((current) => ({
+      ...current,
+      mediumTermPlans: current.mediumTermPlans.map((plan) => plan.className === className ? reorderMediumTermPlanSessions(plan, sourceId, targetId, shiftRemaining) : plan),
+    }));
+    setStatus(`${shiftRemaining ? "Shifted" : "Swapped"} the planned curriculum lesson for ${className}. Completed lessons were left unchanged.`);
+  }
   function saveCurriculumSequence() {
     if (!visibleClass || demo) return;
     const sequence = curriculumText.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
@@ -721,7 +732,7 @@ export default function StaffTimetableHub() {
     mutate((current) => ({ ...current, mediumTermPlans: current.mediumTermPlans.filter((item) => item.className !== visibleClass) }));
   }
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ version: 13, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ version: 15, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
@@ -748,9 +759,10 @@ export default function StaffTimetableHub() {
 
   return (
     <main className="staffTimetablePage">
+      <StaffTimetableLeadershipSync lessons={workspace.lessons} classCurriculumProfiles={workspace.classCurriculumProfiles} mediumTermPlans={workspace.mediumTermPlans} assessments={workspace.assessments} disabled={demo} />
       <section className="staffTimetableHero">
         <div><div className="staffTimetableEyebrow">STAFF · PERSONAL WORKSPACE</div><h1>My timetable & planner</h1><p>Your timetable, lesson planning, class notes, homework, marking, practical prep and weekly workload in one place. The normal workspace starts blank and contains no preloaded staff names.</p></div>
-        <div className="staffTimetableHeroActions noPrint"><button className={demo ? "ttButton demo active" : "ttButton demo"} onClick={() => { setDemo((value) => !value); setPendingImport(null); }}>{demo ? "Exit demo" : "View demo"}</button><button className="ttButton" onClick={printTimetable}>Print timetable</button><Link className="ttButton" href="/school">School tools</Link></div>
+        <div className="staffTimetableHeroActions noPrint"><StaffTimetableLeadershipLink /><button className={demo ? "ttButton demo active" : "ttButton demo"} onClick={() => { setDemo((value) => !value); setPendingImport(null); }}>{demo ? "Exit demo" : "View demo"}</button><button className="ttButton" onClick={printTimetable}>Print timetable</button><Link className="ttButton" href="/school">School tools</Link></div>
       </section>
 
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
@@ -825,6 +837,7 @@ export default function StaffTimetableHub() {
         departmentSchemeCopy={active.departmentSchemeCopies[visibleClass]}
         onInclusionChange={(profile) => mutate((current) => ({ ...current, classInclusionProfiles: { ...current.classInclusionProfiles, [visibleClass]: profile } }))}
         onImportScheme={(unit, schemeLessons) => importDepartmentScheme(visibleClass, unit, schemeLessons)}
+        onMovePlannedLesson={movePlannedLesson}
         onNotesChange={(value) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: value } }))}
       /><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CURRICULUM SETUP · PHASE 1</span><h2>Curriculum profile & setup</h2><p className="ttMuted">The Phase 9 class workspace above brings day-to-day planning together. Use this area when you need to change the class curriculum profile or sequence.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
         {!visibleClass ? <div className="ttBlankState"><h3>No classes yet</h3><p>Add or upload timetable lessons first.</p></div> : <div className="ttClassGrid"><article className="ttPanel"><div className="ttKpiGrid compact"><div><small>Lessons / cycle</small><strong>{selectedClassLessons.length}</strong></div><div><small>Open homework</small><strong>{active.homework.filter((item) => item.className === visibleClass && isOpenHomework(item)).length}</strong></div><div><small>Open prep</small><strong>{active.prep.filter((item) => item.className === visibleClass && item.status !== "Done").length}</strong></div><div><small>Planned lessons</small><strong>{selectedClassLessons.filter((item) => item.plan.topic).length}</strong></div></div><label className="ttField"><span>Class progress / next steps</span><textarea value={active.classNotes[visibleClass] || ""} disabled={demo} onChange={(event) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: event.target.value } }))} placeholder="Misconceptions, progress, follow-up or planning notes…" /></label><div className="ttStackList">{selectedClassLessons.map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>{lesson.week} · {lesson.day} · P{lesson.period}</b><span>{lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned"}</small></button>)}</div></article>
