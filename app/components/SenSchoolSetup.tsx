@@ -6,7 +6,7 @@ export default function SenSchoolSetup(){
  const [schools,setSchools]=useState<School[]>([]),[schoolId,setSchoolId]=useState(""),[staff,setStaff]=useState<string[]>([]),[checks,setChecks]=useState([false,false,false]),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState("");
  const generation=useRef(0),mounted=useRef(false);
  const school=schools.find(s=>s.id===schoolId);
- function choose(s:School){setSchoolId(s.id);setStaff(s.approved_staff.filter(id=>s.staff.some(p=>p.id===id)));setChecks([false,false,false]);setMessage("");}
+ function choose(s:School){setSchoolId(s.id);setStaff(s.approved_staff.filter(id=>s.staff.some(p=>p.id===id)));setChecks([false,false,false]);setMessage("");setError("");}
  useEffect(()=>{
   mounted.current=true;const client=getSupabaseBrowserClient();
   async function load(){const g=++generation.current;setLoading(true);setBusy(false);setMessage("");setSchools([]);setSchoolId("");setStaff([]);setChecks([false,false,false]);setError("");
@@ -16,7 +16,7 @@ export default function SenSchoolSetup(){
    }catch(e){if(mounted.current&&g===generation.current)setError(e instanceof Error?e.message:"Unable to load SEN setup.");}
    finally{if(mounted.current&&g===generation.current)setLoading(false);}
   }
-  void load();const {data:{subscription}}=client.auth.onAuthStateChange(()=>{void load();});
+  void load();const {data:{subscription}}=client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'||event==='SIGNED_IN')void load();});
   return()=>{mounted.current=false;generation.current++;subscription.unsubscribe();};
  },[]);
  async function save(enable:boolean){

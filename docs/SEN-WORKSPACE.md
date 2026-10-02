@@ -92,8 +92,9 @@ Changing the approved staff list requires fresh privacy attestations. Removing a
 role or membership removes access even when an old approval still lists the user.
 Pause storage to block access while retaining records; reactivation requires fresh
 approval. It does not delete records or revoke copies already printed/downloaded.
-`supabase/sen-onboarding-setup.sql` is the separately reviewed onboarding rollout;
-the base storage setup must be installed first. School onboarding uses its own
+`supabase/sen-onboarding-setup.sql` was installed as migration
+`20261002165601_sen_self_service_onboarding`; do not reapply it.
+The base storage setup must be installed first. School onboarding uses its own
 canonical organisation lookup, not a legacy CPD pilot organisation ID. If the older
 pilot checklist cannot load, pupil-storage setup remains available independently.
 

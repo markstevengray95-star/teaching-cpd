@@ -1,4 +1,5 @@
--- Reviewed onboarding rollout. Apply once through the migration API; no school is auto-enabled.
+-- Installed on Teaching CPD: 20261002165601_sen_self_service_onboarding.
+-- Source/receipt only; do not reapply. No school is auto-enabled by installation.
 begin;
 alter table private.sen_workspace_schools add column approved_staff uuid[];
 alter table private.sen_workspace_schools add column approved_by uuid references auth.users(id) on delete restrict;
