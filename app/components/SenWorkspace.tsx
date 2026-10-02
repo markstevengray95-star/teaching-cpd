@@ -1,10 +1,9 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { resolveStaffAccess } from '@/lib/rolePermissions';
-import resources from '@/lib/senResources.json';
 import { demoCases, due, interventionSummary, needAreas, newCase, planGaps, senStatuses, today, validateCase, type CaseRow, type SenCase } from '@/lib/senWorkspace';
 import SenCasePanels from './SenCasePanels';
 import SenToolkit from './SenToolkit';
@@ -13,6 +12,7 @@ import './SenWorkspace.css';
 const sections = [{id:'overview',label:'Department overview',hint:'Priorities and provision'}, {id:'register',label:'Pupils & support plans',hint:'Register, referrals and passports'}, {id:'interventions',label:'Provision & reviews',hint:'Delivery, evidence and impact'}, {id:'eal',label:'EAL & reading',hint:'Language assessment and progress'}, {id:'regulation',label:'Regulation support',hint:'Check-in, strategy, check-out'}, {id:'toolkit',label:'Staff toolkit',hint:'Transitions, environments and resources'}];
 type Mode = 'loading'|'unavailable'|'live'|'demo';
 export default function SenWorkspace() {
+  const sessionGeneration=useRef(0);
   const [mode,setMode]=useState<Mode>('loading'), [org,setOrg]=useState<string|null>(null), [rows,setRows]=useState<CaseRow[]>([]), [section,setSection]=useState('overview');
   const [selected,setSelected]=useState<CaseRow|null>(null), [draft,setDraft]=useState<SenCase|null>(null), [dirty,setDirty]=useState(false), [busy,setBusy]=useState(false), [message,setMessage]=useState(''), [query,setQuery]=useState(''), [filter,setFilter]=useState('All'), [archived,setArchived]=useState(false);
   useEffect(()=>{ let active=true; const client=getSupabaseBrowserClient();
@@ -27,9 +27,14 @@ export default function SenWorkspace() {
       const result=await client.from('sen_department_cases').select('id,organization_id,body,version,archived_at,updated_at').eq('organization_id',access.organizationId).order('id').limit(1000);
       if(!active)return; if(result.error){setMode('unavailable');return;} setRows((result.data||[]) as CaseRow[]);setMode('live');
     }catch{if(active)setMode('unavailable');}};void load();
-    const {data:{subscription}}=client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){setRows([]);setDraft(null);setSelected(null);setMode('unavailable');setDirty(false);}});
+    const {data:{subscription}}=client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){active=false;sessionGeneration.current+=1;setRows([]);setDraft(null);setSelected(null);setMode('unavailable');setDirty(false);}});
     return()=>{active=false;subscription.unsubscribe();}; },[]);
-  useEffect(()=>{const listener=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',listener);return()=>window.removeEventListener('beforeunload',listener);},[dirty]);
+  useEffect(()=>{
+    const listener=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue='';}};
+    const linkGuard=(e:MouseEvent)=>{const link=(e.target as Element)?.closest('a[href]') as HTMLAnchorElement|null;if(dirty&&link&&new URL(link.href).pathname!==window.location.pathname&&!window.confirm('Leave this pupil and discard unsaved changes?')){e.preventDefault();e.stopImmediatePropagation();}};
+    window.addEventListener('beforeunload',listener);document.addEventListener('click',linkGuard,true);
+    return()=>{window.removeEventListener('beforeunload',listener);document.removeEventListener('click',linkGuard,true);};
+  },[dirty]);
   const canEdit=(mode==='live'||mode==='demo')&&!selected?.archived_at;
   function discard() { return !dirty||window.confirm('Discard the unsaved changes to this pupil?'); }
   function choose(row:CaseRow) {if(busy||!discard())return;setSelected(row);setDraft(structuredClone(row.body));setDirty(false);setMessage('');}
@@ -37,15 +42,19 @@ export default function SenWorkspace() {
   function startDemo(){if(busy||!discard())return;setRows(demoCases());setSelected(null);setDraft(null);setMode('demo');setDirty(false);setMessage('Fictional demonstration only. Changes stay in memory and disappear on reload. Do not enter real pupil information.');}
   function create(){if(!canEdit||busy||!discard())return;setSelected(null);setDraft(newCase());setDirty(false);setSection('register');setMessage('');}
   async function save(){if(!draft||!canEdit||busy)return;const errors=validateCase(draft);if(errors.length){setMessage(errors.join(' '));return;}setBusy(true);setMessage('');
+    const generation=sessionGeneration.current;
     try{let row:CaseRow;
       if(mode==='demo'){row={id:selected?.id||crypto.randomUUID(),organization_id:'demo',body:structuredClone(draft),version:(selected?.version||0)+1,archived_at:null,updated_at:new Date().toISOString()};}
       else {if(!org)throw new Error('No authorised school selected.');const client=getSupabaseBrowserClient();const result=selected?await client.from('sen_department_cases').update({body:draft}).eq('id',selected.id).eq('organization_id',org).eq('version',selected.version).select('id,organization_id,body,version,archived_at,updated_at').single():await client.from('sen_department_cases').insert({organization_id:org,body:draft}).select('id,organization_id,body,version,archived_at,updated_at').single();
         if(result.error||!result.data)throw new Error('Not saved. Access may have changed, or someone else edited this record. Reload before trying again; keep a copy of your unsaved notes in your approved school system.');row=result.data as CaseRow;}
+      if(generation!==sessionGeneration.current)return;
       setRows(old=>selected?old.map(r=>r.id===row.id?row:r):[row,...old]);setSelected(row);setDraft(structuredClone(row.body));setDirty(false);setMessage(mode==='demo'?'Updated the fictional demonstration; nothing was stored.':'Saved to your school’s restricted SEN workspace.');
     }catch(e){setMessage(e instanceof Error?e.message:'Unable to save.');}finally{setBusy(false);}}
   async function toggleArchive(){if(!selected||busy||!discard()||!window.confirm(selected.archived_at?'Restore this pupil record?':'Archive this pupil record? It will remain recoverable for authorised SEN staff.'))return;setBusy(true);
+    const generation=sessionGeneration.current;
     try{let row:CaseRow={...selected,archived_at:selected.archived_at?null:new Date().toISOString(),version:selected.version+1};
       if(mode==='live'){const result=await getSupabaseBrowserClient().from('sen_department_cases').update({archived_at:row.archived_at}).eq('id',selected.id).eq('organization_id',org!).eq('version',selected.version).select('id,organization_id,body,version,archived_at,updated_at').single();if(result.error||!result.data)throw new Error('Archive change not saved. Reload and check your access.');row=result.data as CaseRow;}
+      if(generation!==sessionGeneration.current)return;
       setRows(old=>old.map(r=>r.id===row.id?row:r));setSelected(row);setDraft(structuredClone(row.body));setDirty(false);setMessage(row.archived_at?'Record archived; it can be restored.':'Record restored.');
     }catch(e){setMessage(e instanceof Error?e.message:'Unable to archive.');}finally{setBusy(false);}}
   const active=rows.filter(r=>!r.archived_at), listed=rows.filter(r=>Boolean(r.archived_at)===archived&&(filter==='All'||r.body.status===filter)&&`${r.body.name} ${r.body.reference} ${r.body.year} ${r.body.className} ${r.body.languages} ${r.body.needs.join(' ')}`.toLowerCase().includes(query.toLowerCase()));
@@ -67,7 +76,7 @@ export default function SenWorkspace() {
             {section==='register'&&<fieldset disabled={!canEdit||busy}><legend>Pupil profile & graduated support</legend><div className="senFormGrid">{(['reference','name','year','className','languages','dob','arrival'] as const).map(k=><label key={k}>{({reference:'School-approved pupil reference',name:'Display name',year:'Year group',className:'Class / tutor group',languages:'Home languages & language background',dob:'Date of birth (optional)',arrival:'School arrival date (optional)'})[k]}<input type={['dob','arrival'].includes(k)?'date':'text'} maxLength={250} value={draft[k]} onChange={e=>change({...draft,[k]:e.target.value})}/></label>)}<label>SEN status<select value={draft.status} onChange={e=>change({...draft,status:e.target.value as SenCase['status']})}>{senStatuses.map(s=><option key={s}>{s}</option>)}</select></label></div><label>Strengths, interests & what works<textarea value={draft.strengths} maxLength={3000} onChange={e=>change({...draft,strengths:e.target.value})}/></label><div className="senChecks"><p>Areas of need (only where identified)</p>{needAreas.map(n=><label className="senCheck" key={n}><input type="checkbox" checked={draft.needs.includes(n)} onChange={e=>change({...draft,needs:e.target.checked?[...draft.needs,n]:draft.needs.filter(v=>v!==n)})}/>{n}</label>)}</div>
               <h3>Assess → Plan → Do → Review</h3><p>{planGaps(draft.plan).length?'Still to record: '+planGaps(draft.plan).join(', '):'Core support-plan fields completed. Review the quality of the evidence with the pupil and family.'}</p>{Object.entries({baseline:'Assess: observable baseline and barriers',outcome:'Plan: measurable pupil outcome',measure:'How success will be measured',adjustments:'Classroom adjustments and accessible instruction',provision:'Do: provision, frequency and staff allocation',owner:'Named lead / SENCO',reviewDate:'Next support-plan review',pupilVoice:'Pupil voice and preferred support',familyVoice:'Family voice and agreed communication',transition:'Transition and handover arrangements',externalAdvice:'Relevant professional advice — school-approved summary only',ehcpReviewDate:'EHCP review coordination date (where applicable)'}).map(([key,label])=><label key={key}>{label}{key.endsWith('Date')?<input type="date" value={draft.plan[key as keyof typeof draft.plan]} onChange={e=>change({...draft,plan:{...draft.plan,[key]:e.target.value}})}/>:<textarea maxLength={5000} value={draft.plan[key as keyof typeof draft.plan]} onChange={e=>change({...draft,plan:{...draft.plan,[key]:e.target.value}})}/>}</label>)}
             </fieldset>}
-            <SenCasePanels section={section} pupil={draft} update={change} disabled={!canEdit||busy}/>
+            <SenCasePanels key={`${selected?.id||'new'}-${section}`} section={section} pupil={draft} update={change} disabled={!canEdit||busy}/>
           </>:<article className="senCard"><h3>Choose a pupil to start</h3><p>Support plans, EAL assessments, regulation evidence and reviews connect to one pupil record. Restricted records are never copied into browser storage or external AI tools.</p></article>}</div>
         </div></>}
     </section></div>

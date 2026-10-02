@@ -29,6 +29,7 @@ async function run(){
   const row=(await db.query('insert into sen_department_cases(organization_id,body) values($1,$2) returning *',[orgA,pupil])).rows[0];assert.equal(row.version,1);assert.equal(row.created_by,sen);
   await denied('insert into sen_department_cases(organization_id,body) values($1,$2)',[orgB,pupil]);
   const broken=structuredClone(pupil);broken.reading=[{id:'r',date:'2026-02-30',tool:'Example',ageMonths:100,notes:''}];await denied('update sen_department_cases set body=$2 where id=$1',[row.id,broken]);
+  for(const body of [{...pupil,needs:[null]},{...pupil,schemaVersion:'1'}]) await denied('update sen_department_cases set body=$2 where id=$1',[row.id,body]);
   await denied('update sen_department_cases set organization_id=$2 where id=$1',[row.id,orgB]);
   await denied('delete from sen_department_cases where id=$1',[row.id]);
   await denied("insert into sen_department_audit(organization_id,case_id,actor_id,event,record_version) values($1,$2,$3,'created',1)",[orgA,row.id,sen]);

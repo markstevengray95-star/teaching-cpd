@@ -27,7 +27,7 @@ export function validateCase(p: SenCase): string[] {
   if(dates.some(d=>d&&!validDate(d))) errors.push('Use valid calendar dates.');
   if(p.dob&&p.dob>today()) errors.push('Date of birth cannot be in the future.');
   for(const i of p.interventions){
-    if(!i.title.trim()||!i.goal.trim()||!i.owner.trim()) errors.push('Each intervention needs a title, measurable goal and lead.');
+    if([i.title,i.goal,i.owner,i.baseline,i.measure,i.strategy].some(v=>!v.trim())||!validDate(i.startDate)||!validDate(i.reviewDate)) errors.push('Each intervention needs a title, lead, baseline, measurable goal, success measure, strategy and valid dates.');
     if(i.startDate&&i.reviewDate&&i.reviewDate<i.startDate) errors.push('Intervention review cannot be before its start.');
     if([i.minutes,i.weeklySessions,i.hourlyCost].some(v=>!Number.isFinite(v)||v<0)||i.minutes>480||i.weeklySessions>35||i.hourlyCost>1000) errors.push('Check intervention time, frequency and cost.');
     if(i.sessions.some(s=>!validDate(s.date)||!s.evidence.trim()||!Number.isFinite(s.minutes)||s.minutes<0||s.minutes>480||![0,1,2,3,4].includes(s.outcome)||!Number.isFinite(s.fidelity)||s.fidelity<0||s.fidelity>100||(s.usefulness!==null&&![0,1,2,3,4].includes(s.usefulness)))) errors.push('Session evidence and ratings must be complete and within range.');
@@ -41,7 +41,12 @@ export function validateCase(p: SenCase): string[] {
   return [...new Set(errors)];
 }
 export function demoCases(): CaseRow[] {
+  const previous = new Date(Date.parse(today())-7*86400000).toISOString().slice(0,10);
   const pupil=newCase(); Object.assign(pupil,{ reference:'DEMO-001', name:'Example pupil — fictional', year:'Year 8', className:'8A', status:'SEN support', needs:['Communication and interaction'], strengths:'Enjoys diagrams, science and explaining ideas to a partner.', languages:'English; Spanish at home' });
   Object.assign(pupil.plan,{baseline:'Starts independent work in 2 of 5 observed opportunities.',outcome:'Begin the first agreed task in 4 of 5 opportunities with at most one prompt.',measure:'Record task start and prompts in five lessons each week.',adjustments:'Visual first step; private help signal; paired rehearsal.',provision:'Two 15-minute sessions a week; review classroom transfer.',owner:'Example SENCO',reviewDate:today(),pupilVoice:'A diagram and time to rehearse help me.',familyVoice:'A predictable homework checklist helps.',transition:'Preview room changes and identify a trusted adult.'});
-  return [{id:'demo-001',organization_id:'demo',body:pupil,version:1,archived_at:null,updated_at:new Date().toISOString()}];
+  pupil.interventions.push({id:'demo-provision',title:'Fictional task-start routine',owner:'Example SENCO / TA',baseline:'Starts the first step in 2 of 5 lessons.',goal:pupil.plan.outcome,measure:'0 = no start; 1 = starts with repeated prompts; 2 = two prompts; 3 = one prompt; 4 = independent start.',strategy:'Break the task down',frequency:'Monday and Thursday, then apply in lessons.',minutes:15,weeklySessions:2,hourlyCost:24,startDate:previous,reviewDate:today(),status:'Active',sessions:[{id:'demo-session-1',date:previous,minutes:15,outcome:1,fidelity:75,usefulness:2,evidence:'Fictional baseline session: repeated prompts needed.'},{id:'demo-session-2',date:today(),minutes:15,outcome:3,fidelity:100,usefulness:3,evidence:'Fictional follow-up: started after one prompt using a visible first step.'}]});
+  const eal=newCase();Object.assign(eal,{reference:'DEMO-002',name:'Example EAL pupil — fictional',year:'Year 9',className:'9B',status:'No SEN identified',languages:'Arabic; developing English',strengths:'Confident mathematical reasoning; enjoys working with a trusted partner.'});
+  eal.plan.owner='Example EAL lead';eal.plan.reviewDate=today();eal.plan.pupilVoice='I like seeing an example before I write.';
+  eal.assessments.push({id:'demo-eal',date:today(),assessor:'Example EAL lead',task:'community',band:'B',confidence:'Provisional — one context',scores:{listening:[2,2,null,null,null],speaking:[2,null,null,null,null],reading:[null,null,null,null,null],writing:[null,null,null,null,null]},evidence:'Fictional example: understands the main message with visual support; further evidence is needed in other contexts.',adjustments:'Visual prompts and partner rehearsal.',nextSteps:'Rehearse a short explanation using subject vocabulary.'});
+  return [pupil,eal].map((body,index)=>({id:`demo-00${index+1}`,organization_id:'demo',body,version:1,archived_at:null,updated_at:new Date().toISOString()}));
 }

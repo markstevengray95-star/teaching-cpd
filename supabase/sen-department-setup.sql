@@ -44,7 +44,7 @@ create or replace function private.sen_valid_body(b jsonb) returns boolean
 language plpgsql immutable set search_path = '' as $$
 declare k text; item jsonb; i jsonb; s jsonb; v jsonb; scores jsonb; field text;
 begin
- if jsonb_typeof(b) is distinct from 'object' or b->>'schemaVersion' is distinct from '1' or octet_length(b::text)>200000 then return false; end if;
+ if jsonb_typeof(b) is distinct from 'object' or jsonb_typeof(b->'schemaVersion') is distinct from 'number' or b->>'schemaVersion' is distinct from '1' or octet_length(b::text)>200000 then return false; end if;
  foreach k in array array['reference','name','year','className','status','strengths','languages','dob','arrival'] loop
   if jsonb_typeof(b->k) is distinct from 'string' or length(b->>k)>5000 then return false; end if;
  end loop;
@@ -53,7 +53,7 @@ begin
  if not private.sen_valid_date(b->>'dob') or not private.sen_valid_date(b->>'arrival') then return false; end if;
  if jsonb_typeof(b->'needs') is distinct from 'array' then return false; end if;
  for item in select value from jsonb_array_elements(b->'needs') loop
-  if item #>> '{}' not in ('Communication and interaction','Cognition and learning','Social, emotional and mental health','Sensory and physical') then return false; end if;
+  if jsonb_typeof(item) is distinct from 'string' or item #>> '{}' not in ('Communication and interaction','Cognition and learning','Social, emotional and mental health','Sensory and physical') then return false; end if;
  end loop;
  if jsonb_typeof(b->'plan') is distinct from 'object' then return false; end if;
  foreach k in array array['baseline','outcome','measure','adjustments','provision','owner','reviewDate','pupilVoice','familyVoice','transition','externalAdvice','ehcpReviewDate'] loop
@@ -92,7 +92,7 @@ begin
    end if;
    if k='interventions' then
     i=item;
-    if length(trim(i->>'title'))=0 or length(trim(i->>'owner'))=0 or length(trim(i->>'goal'))=0 or i->>'status' not in ('Active','Adjust','Fade','Closed') or not private.sen_valid_date(i->>'startDate') or not private.sen_valid_date(i->>'reviewDate') then return false; end if;
+    if length(trim(i->>'title'))=0 or length(trim(i->>'owner'))=0 or length(trim(i->>'goal'))=0 or length(trim(i->>'baseline'))=0 or length(trim(i->>'measure'))=0 or length(trim(i->>'strategy'))=0 or i->>'status' not in ('Active','Adjust','Fade','Closed') or i->>'startDate'='' or i->>'reviewDate'='' or not private.sen_valid_date(i->>'startDate') or not private.sen_valid_date(i->>'reviewDate') then return false; end if;
     foreach field in array array['minutes','weeklySessions','hourlyCost'] loop if jsonb_typeof(i->field) is distinct from 'number' then return false; end if; end loop;
     if (i->>'minutes')::numeric not between 0 and 480 or (i->>'weeklySessions')::numeric not between 0 and 35 or (i->>'hourlyCost')::numeric not between 0 and 1000 or (i->>'startDate'<>'' and i->>'reviewDate'<>'' and i->>'reviewDate'<i->>'startDate') then return false; end if;
     if jsonb_typeof(i->'sessions') is distinct from 'array' or jsonb_array_length(i->'sessions')>500 then return false; end if;

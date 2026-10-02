@@ -31,6 +31,11 @@ import StaffTimetableLessonResources, { type TimetableAttachedResource } from ".
 import StaffTimetableProgress from "./StaffTimetableProgress";
 import StaffTimetableAssessments, { type AssessmentFollowUpAction, type CurriculumAssessment, type CurriculumAssessmentTopicResult } from "./StaffTimetableAssessments";
 import StaffTimetableLessonHomework, { type LessonLinkedHomework } from "./StaffTimetableLessonHomework";
+import StaffTimetableClassWorkspace from "./StaffTimetableClassWorkspace";
+import StaffTimetableLessonReflection, { type LessonReflectionOutcome } from "./StaffTimetableLessonReflection";
+import { type NextLessonSuggestion } from "./StaffTimetableNextLesson";
+import { buildClassSupportText, type ClassInclusionProfile } from "./StaffTimetableInclusionProfile";
+import { type DepartmentSchemeCopy, type DepartmentSchemeLesson, type DepartmentSchemeUnit } from "./StaffTimetableDepartmentSchemes";
 import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
@@ -68,6 +73,10 @@ type LessonPlan = {
   homeworkTask: string;
   exitTicket: string;
   reflection: string;
+  reflectionOutcome: LessonReflectionOutcome;
+  reflectionNote: string;
+  reflectionUpdatedAt: string;
+  reflectionCarryAppliedAt: string;
   generatedResources: TimetableAttachedResource[];
 };
 
@@ -157,6 +166,8 @@ type WorkspaceData = {
   mediumTermPlans: MediumTermPlan[];
   planningBlocks: PlanningBlock[];
   assessments: CurriculumAssessment[];
+  classInclusionProfiles: Record<string, ClassInclusionProfile>;
+  departmentSchemeCopies: Record<string, DepartmentSchemeCopy>;
 };
 
 type ImportResult = { lessons: Lesson[]; source: string };
@@ -183,11 +194,11 @@ function blankPlan(): LessonPlan {
     lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", examPractice: "", teacherNotes: "",
     curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1,
     planningMode: "simple", priorKnowledge: "", retrieval: "", misconceptions: "", teacherExplanation: "", modelling: "", guidedPractice: "", independentPractice: "",
-    sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "", generatedResources: [],
+    sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "", reflectionOutcome: "", reflectionNote: "", reflectionUpdatedAt: "", reflectionCarryAppliedAt: "", generatedResources: [],
   };
 }
 function blankWorkspace(): WorkspaceData {
-  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [], assessments: [] };
+  return { lessons: [], homework: [], prep: [], tasks: [], changes: [], activities: [], keyDates: [], classNotes: {}, curriculumSequences: {}, classCurriculumProfiles: {}, mediumTermPlans: [], planningBlocks: [], assessments: [], classInclusionProfiles: {}, departmentSchemeCopies: {} };
 }
 function periodTimes(period: number) {
   const match = PERIODS.find((item) => item.period === period) || PERIODS[0];
@@ -509,9 +520,36 @@ export default function StaffTimetableHub() {
     if (!planLessonId) return;
     mutate((current) => {
       const previous = current.lessons.find((lesson) => lesson.id === planLessonId);
-      const dayShift = dateDeltaDays(previous?.plan.lessonDate || "", nextPlan.lessonDate || "");
+      if (!previous) return current;
+      const dayShift = dateDeltaDays(previous.plan.lessonDate || "", nextPlan.lessonDate || "");
       const homework = dayShift ? current.homework.map((item) => item.sourceLessonId === planLessonId && item.autoMoveWithLesson ? { ...item, setDate: shiftIsoDate(item.setDate, dayShift), dueDate: shiftIsoDate(item.dueDate, dayShift), sourceLessonDate: nextPlan.lessonDate } : item) : current.homework;
-      return { ...current, homework, lessons: current.lessons.map((lesson) => lesson.id === planLessonId ? { ...lesson, plan: nextPlan } : lesson) };
+      const shouldCarry = Boolean(nextPlan.reflectionUpdatedAt) && nextPlan.reflectionUpdatedAt !== previous.plan.reflectionCarryAppliedAt && (nextPlan.reflectionOutcome === "needs-revisiting" || nextPlan.reflectionOutcome === "not-completed");
+      const sourcePlan = shouldCarry ? { ...nextPlan, reflectionCarryAppliedAt: nextPlan.reflectionUpdatedAt } : nextPlan;
+      let lessons = current.lessons.map((lesson) => lesson.id === planLessonId ? { ...lesson, plan: sourcePlan } : lesson);
+
+      if (shouldCarry) {
+        const order = (lesson: Lesson) => {
+          if (lesson.plan.lessonDate) return `0-${lesson.plan.lessonDate}-${String(lesson.period).padStart(2, "0")}`;
+          const sequence = Number.isInteger(lesson.plan.sequencePosition) && lesson.plan.sequencePosition >= 0 ? String(lesson.plan.sequencePosition).padStart(4, "0") : "9999";
+          return `1-${sequence}-${lesson.week}-${String(DAYS.indexOf(lesson.day)).padStart(2, "0")}-${String(lesson.period).padStart(2, "0")}`;
+        };
+        const classmates = lessons.filter((lesson) => lesson.className === previous.className).slice().sort((a, b) => order(a).localeCompare(order(b)));
+        const currentIndex = classmates.findIndex((lesson) => lesson.id === planLessonId);
+        const target = classmates.slice(Math.max(0, currentIndex + 1)).find((lesson) => lesson.id !== planLessonId) || classmates.find((lesson) => lesson.id !== planLessonId && !lesson.plan.topic);
+        if (target) {
+          const marker = `[Reflection follow-up ${nextPlan.reflectionUpdatedAt}]`;
+          lessons = lessons.map((lesson) => {
+            if (lesson.id !== target.id || lesson.plan.teacherNotes.includes(marker)) return lesson;
+            if (nextPlan.reflectionOutcome === "needs-revisiting") {
+              const previousTopic = nextPlan.topic || previous.plan.topic || "the previous lesson";
+              return { ...lesson, plan: { ...lesson.plan, planningMode: "detailed", retrieval: `${lesson.plan.retrieval ? `${lesson.plan.retrieval}\n\n` : ""}Reflection follow-up: revisit ${previousTopic} with 4–6 retrieval questions, one misconception check and one short application before moving on.`, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}${marker} Previous lesson marked Needs revisiting.${nextPlan.reflectionNote ? ` Note: ${nextPlan.reflectionNote}` : ""}` } };
+            }
+            const previousTopic = nextPlan.topic || previous.plan.topic || "previous learning";
+            return { ...lesson, plan: { ...lesson.plan, planningMode: "detailed", topic: lesson.plan.topic || `Continue: ${previousTopic}`, vocabulary: lesson.plan.vocabulary || nextPlan.vocabulary, objectives: lesson.plan.objectives || nextPlan.objectives, sequence: lesson.plan.sequence || `Check what was completed previously, finish the unfinished teaching/practice from ${previousTopic}, then check readiness before moving on.`, assessment: lesson.plan.assessment || nextPlan.assessment, curriculumStage: lesson.plan.curriculumStage || nextPlan.curriculumStage, curriculumSubject: lesson.plan.curriculumSubject || nextPlan.curriculumSubject, curriculumUnit: lesson.plan.curriculumUnit || nextPlan.curriculumUnit, curriculumSubtopic: lesson.plan.curriculumSubtopic || nextPlan.curriculumSubtopic, examBoard: lesson.plan.examBoard || nextPlan.examBoard, courseId: lesson.plan.courseId || nextPlan.courseId, sequencePosition: lesson.plan.sequencePosition >= 0 ? lesson.plan.sequencePosition : nextPlan.sequencePosition, retrieval: `${lesson.plan.retrieval ? `${lesson.plan.retrieval}\n\n` : ""}Quickly retrieve what pupils completed in ${previousTopic}, then continue from the unfinished point.`, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}${marker} Previous lesson marked Not completed.${nextPlan.reflectionNote ? ` Note: ${nextPlan.reflectionNote}` : ""}` } };
+          });
+        }
+      }
+      return { ...current, homework, lessons };
     });
     setPlanLessonId(null);
   }
@@ -539,6 +577,33 @@ export default function StaffTimetableHub() {
       return { ...lesson, plan: { ...lesson.plan, planningMode: "detailed", topic: `${prefix}: ${topic.title}`, courseId: assessment.courseId, sequencePosition: topic.sequencePosition, curriculumUnit: topic.unitTitle, curriculumSubtopic: topic.subtopicTitle, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}Assessment response from ${assessment.title}: ${topic.scorePercent ?? "—"}% against ${assessment.thresholdPercent}% threshold.`, retrieval: lesson.plan.retrieval || `Retrieve prerequisite knowledge for ${topic.title} before ${prefix.toLowerCase()}ing.`, homeworkTask: lesson.plan.homeworkTask || `Consolidate ${topic.title} after the responsive lesson.` } };
     }) }));
     setPlanLessonId(target.id); setTab("planning"); setStatus(`Prepared a ${action} response for ${assessment.className}: ${topic.title}.`);
+  }
+  function applyNextLessonSuggestion(suggestion: NextLessonSuggestion) {
+    if (demo) return;
+    mutate((current) => {
+      const classSupport = buildClassSupportText(current.classInclusionProfiles[suggestion.className]);
+      return { ...current, lessons: current.lessons.map((lesson) => lesson.id === suggestion.targetLessonId ? { ...lesson, plan: { ...lesson.plan, planningMode: "detailed", topic: suggestion.title, courseId: suggestion.courseId, sequencePosition: suggestion.sequencePosition, curriculumUnit: suggestion.unitTitle, curriculumSubtopic: suggestion.subtopicTitle, vocabulary: suggestion.vocabulary, objectives: suggestion.objectives, sequence: suggestion.sequence, assessment: suggestion.assessment, retrieval: suggestion.retrieval, sendEalAdaptations: lesson.plan.sendEalAdaptations || classSupport, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}${suggestion.teacherNotes}` } } : lesson) };
+    });
+    setPlanLessonId(suggestion.targetLessonId);
+    setTab("planning");
+    setStatus(`Prepared the Phase 10 next-lesson suggestion for ${suggestion.className}.`);
+  }
+  function importDepartmentScheme(className: string, unit: DepartmentSchemeUnit, schemeLessons: DepartmentSchemeLesson[]) {
+    if (demo || !className || !schemeLessons.length) return;
+    const copy: DepartmentSchemeCopy = { unitId: unit.id, department: unit.department, subject: unit.subject, yearGroup: unit.year_group, title: unit.title, copiedAt: new Date().toISOString(), lessons: schemeLessons.map((item) => ({ ...item })) };
+    mutate((current) => {
+      const targets = current.lessons.filter((lesson) => lesson.className === className).slice().sort((a, b) => a.week.localeCompare(b.week) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.period - b.period);
+      const targetIndex = new Map(targets.map((lesson, index) => [lesson.id, index]));
+      const nextLessons = current.lessons.map((lesson) => {
+        const index = targetIndex.get(lesson.id);
+        if (index === undefined || index >= schemeLessons.length || lesson.plan.topic) return lesson;
+        const scheme = schemeLessons[index];
+        const note = `Department scheme snapshot: ${unit.title}. This is a local copy; edits here do not change the department master.`;
+        return { ...lesson, plan: { ...lesson.plan, planningMode: "detailed" as const, topic: scheme.title, vocabulary: lesson.plan.vocabulary || unit.vocabulary.join(", "), objectives: lesson.plan.objectives || (scheme.objectives.length ? scheme.objectives.join("\n") : unit.objectives.join("\n")), sequence: lesson.plan.sequence || scheme.lesson_outline || scheme.key_knowledge, assessment: lesson.plan.assessment || scheme.assessment || unit.assessment_notes, curriculumSubject: lesson.plan.curriculumSubject || unit.subject, curriculumUnit: unit.title, curriculumSubtopic: scheme.title, sequencePosition: lesson.plan.sequencePosition >= 0 ? lesson.plan.sequencePosition : index, teacherNotes: `${lesson.plan.teacherNotes ? `${lesson.plan.teacherNotes}\n\n` : ""}${note}` } };
+      });
+      return { ...current, lessons: nextLessons, curriculumSequences: { ...current.curriculumSequences, [className]: schemeLessons.map((item) => item.title) }, departmentSchemeCopies: { ...current.departmentSchemeCopies, [className]: copy } };
+    });
+    setStatus(`Copied ${unit.title} into ${className}. The department master remains unchanged.`);
   }
   function saveCurriculumSequence() {
     if (!visibleClass || demo) return;
@@ -656,7 +721,7 @@ export default function StaffTimetableHub() {
     mutate((current) => ({ ...current, mediumTermPlans: current.mediumTermPlans.filter((item) => item.className !== visibleClass) }));
   }
   function exportBackup() {
-    const blob = new Blob([JSON.stringify({ version: 8, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ version: 13, week, workspace }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `staff-timetable-backup-${today}.json`; a.click(); URL.revokeObjectURL(url);
   }
   async function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; if (!file) return;
@@ -739,7 +804,29 @@ export default function StaffTimetableHub() {
         </>}
       </section>}
 
-      {tab === "classes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CLASS DASHBOARD · PHASE 1</span><h2>Classes & curriculum profile</h2><p className="ttMuted">Set each class once. The timetable then filters out irrelevant courses and suggests the next lesson from that specification.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
+      {tab === "classes" && <section className="ttWorkspace"><StaffTimetableClassWorkspace
+        classes={classes}
+        className={visibleClass}
+        lessons={active.lessons}
+        profile={active.classCurriculumProfiles[visibleClass]}
+        homework={active.homework}
+        assessments={active.assessments}
+        mediumTermPlans={active.mediumTermPlans}
+        notes={active.classNotes[visibleClass] || ""}
+        today={today}
+        readOnly={demo}
+        onSelectClass={(nextClass) => { setClassSelection(nextClass); setCurriculumText(active.curriculumSequences[nextClass]?.join("\n") || ""); }}
+        onOpenPlan={(lessonId) => setPlanLessonId(lessonId)}
+        onOpenMediumTerm={() => setTab("mediumterm")}
+        onOpenAssessments={() => setTab("assessments")}
+        onOpenHomework={() => setTab("homework")}
+        onApplyNextSuggestion={applyNextLessonSuggestion}
+        inclusionProfile={active.classInclusionProfiles[visibleClass]}
+        departmentSchemeCopy={active.departmentSchemeCopies[visibleClass]}
+        onInclusionChange={(profile) => mutate((current) => ({ ...current, classInclusionProfiles: { ...current.classInclusionProfiles, [visibleClass]: profile } }))}
+        onImportScheme={(unit, schemeLessons) => importDepartmentScheme(visibleClass, unit, schemeLessons)}
+        onNotesChange={(value) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: value } }))}
+      /><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CURRICULUM SETUP · PHASE 1</span><h2>Curriculum profile & setup</h2><p className="ttMuted">The Phase 9 class workspace above brings day-to-day planning together. Use this area when you need to change the class curriculum profile or sequence.</p></div><div className="ttWorkspaceActions"><select className="ttSelect" value={visibleClass} onChange={(event) => { setClassSelection(event.target.value); setCurriculumText(active.curriculumSequences[event.target.value]?.join("\n") || ""); }}>{classes.map((item) => <option key={item}>{item}</option>)}</select></div></div>
         {!visibleClass ? <div className="ttBlankState"><h3>No classes yet</h3><p>Add or upload timetable lessons first.</p></div> : <div className="ttClassGrid"><article className="ttPanel"><div className="ttKpiGrid compact"><div><small>Lessons / cycle</small><strong>{selectedClassLessons.length}</strong></div><div><small>Open homework</small><strong>{active.homework.filter((item) => item.className === visibleClass && isOpenHomework(item)).length}</strong></div><div><small>Open prep</small><strong>{active.prep.filter((item) => item.className === visibleClass && item.status !== "Done").length}</strong></div><div><small>Planned lessons</small><strong>{selectedClassLessons.filter((item) => item.plan.topic).length}</strong></div></div><label className="ttField"><span>Class progress / next steps</span><textarea value={active.classNotes[visibleClass] || ""} disabled={demo} onChange={(event) => mutate((current) => ({ ...current, classNotes: { ...current.classNotes, [visibleClass]: event.target.value } }))} placeholder="Misconceptions, progress, follow-up or planning notes…" /></label><div className="ttStackList">{selectedClassLessons.map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>{lesson.week} · {lesson.day} · P{lesson.period}</b><span>{lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned"}</small></button>)}</div></article>
           <article className="ttPanel ttCurriculumProfilePanel"><div className="ttPanelHeader"><div><h2>Curriculum profile</h2><p>Key Stage → exam board → subject → course. Once chosen, unrelated courses disappear from lesson planning.</p></div></div><div className="ttProfileSummary"><strong>{profileLabel(currentClassProfile)}</strong><span>{selectedProfileCourse ? `${selectedProfileCourse.units.length} units · ${getCourseLessonSequence(currentClassProfile).length} suggested lessons` : "Choose a course"}</span></div><div className="ttProfileGrid">
             <label><span>Key Stage</span><select disabled={demo} value={currentClassProfile.stage} onChange={(event) => saveClassProfile({ stage: event.target.value as ClassCurriculumProfile["stage"] })}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -762,6 +849,7 @@ export default function StaffTimetableHub() {
         profiles={active.classCurriculumProfiles}
         assessments={active.assessments}
         today={today}
+        initialClass={visibleClass}
         readOnly={demo}
         onChange={(assessments) => mutate((current) => ({ ...current, assessments }))}
         onFollowUp={assessmentFollowUp}
@@ -776,7 +864,7 @@ export default function StaffTimetableHub() {
       {tab === "tools" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TOOLS & BACKUP</span><h2>Workspace tools</h2></div></div><div className="ttToolsGrid"><article className="ttPanel"><h2>Backup</h2><p>Export your full timetable workspace, including lesson plans, homework, prep, tasks and changes.</p><div className="ttButtonRow"><button className="ttButton primary" onClick={exportBackup}>Export backup</button><input ref={backupRef} className="ttFileInput" type="file" accept="application/json,.json" onChange={importBackup} /><button className="ttButton" disabled={demo} onClick={() => backupRef.current?.click()}>Restore backup</button></div></article><article className="ttPanel"><h2>Key dates</h2><p>{nextKeyDate ? `Next: ${nextKeyDate.title} · ${formatDate(nextKeyDate.date)}` : "Add half terms, training days, deadlines or events."}</p>{!demo && <button className="ttButton" onClick={() => setItemEditor({ kind: "keyDate" })}>+ Add key date</button>}<div className="ttStackList">{active.keyDates.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((item) => <button className="ttAgendaRow" key={item.id} onClick={() => !demo && setItemEditor({ kind: "keyDate", id: item.id })}><b>{item.title}</b><span>{formatDate(item.date)} · {item.type}</span></button>)}</div></article><article className="ttPanel"><h2>Connected CPD tools</h2><div className="ttIntegrationLinks"><Link href="/curriculum">Curriculum planning</Link><Link href="/resource-generator">Teaching resource generator</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/calendar">School calendar</Link><Link href="/integrations">Google integrations</Link></div></article><article className="ttPanel"><h2>Workspace status</h2><p>{status}</p><div className="ttButtonRow"><button className="ttButton" onClick={printTimetable}>Print timetable</button><button className="ttButton danger" onClick={clearTimetable}>{demo ? "Exit demo" : "Clear workspace"}</button></div></article></div></section>}
 
       {editorOpen && <LessonEditor form={form} setForm={setForm} editing={Boolean(editingId)} onClose={() => setEditorOpen(false)} onDelete={deleteLesson} onSave={saveLesson} />}
-      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} homework={active.homework} readOnly={demo} onHomeworkChange={(homework) => mutate((current) => ({ ...current, homework }))} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
+      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} inclusionProfile={active.classInclusionProfiles[activePlanLesson.className]} homework={active.homework} readOnly={demo} onHomeworkChange={(homework) => mutate((current) => ({ ...current, homework }))} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
       {itemEditor && <ItemEditor kind={itemEditor.kind} itemId={itemEditor.id} workspace={workspace} activeWorkspace={active} week={week} classes={classes} subjects={subjects} onClose={() => setItemEditor(null)} onChange={setWorkspace} />}
     </main>
   );
@@ -786,7 +874,7 @@ function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { f
   return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{DAYS.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{PERIODS.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
 }
 
-function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onSave, classProfile }: { lesson: Lesson; homework: Homework[]; readOnly: boolean; onHomeworkChange: (homework: Homework[]) => void; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile }) {
+function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onSave, classProfile, inclusionProfile }: { lesson: Lesson; homework: Homework[]; readOnly: boolean; onHomeworkChange: (homework: Homework[]) => void; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile; inclusionProfile?: ClassInclusionProfile }) {
   const [plan, setPlan] = useState<LessonPlan>({ ...blankPlan(), ...lesson.plan, planningMode: lesson.plan?.planningMode || "simple" });
   const inferred = classProfile || inferClassCurriculumProfile(lesson.className, lesson.subject);
   const [stage, setStage] = useState<ClassCurriculumProfile["stage"]>((phase1Stages.includes(plan.curriculumStage as ClassCurriculumProfile["stage"]) ? plan.curriculumStage : inferred.stage) as ClassCurriculumProfile["stage"]);
@@ -930,7 +1018,7 @@ function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onS
     setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASES 4–5 & 8</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASES 4–5, 8, 11–13</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
     <div className="ttPlanModeBar"><div className="ttPlanModeSwitch"><button type="button" className={plan.planningMode === "simple" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "simple" }))}>Simple</button><button type="button" className={plan.planningMode === "detailed" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "detailed" }))}>Detailed</button></div><div className="ttPlanCompletion"><span>Detailed plan</span><b>{detailedComplete}/{detailedKeys.length}</b><i><em style={{ width: `${Math.round(detailedComplete / detailedKeys.length * 100)}%` }} /></i></div>{!readOnly && <button type="button" className="ttButton" onClick={buildDetailedStructure}>Build detailed structure</button>}</div>
     <section className="ttLessonGenerator"><div className="ttLessonGeneratorHead"><div><span className="staffTimetableEyebrow">ONE-CLICK LESSON GENERATION</span><h3>Generate the full lesson</h3><p>Build an editable 55-minute lesson from the selected curriculum topic, including retrieval, explanation, modelling, practice, checks, exam-style application, homework, adaptations and exit ticket.</p></div><span className={`ttGeneratorBadge ${generationSource || "ready"}`}>{generatingLesson ? "Generating…" : generationSource === "ai" ? "AI generated" : generationSource === "template" ? "Built-in fallback" : "Ready"}</span></div><label className="ttGeneratorRequirements"><span>Optional teacher requirements</span><textarea disabled={readOnly || generatingLesson} value={teacherRequirements} onChange={(event) => setTeacherRequirements(event.target.value)} placeholder="e.g. practical lesson, stronger exam technique focus, include paired discussion, keep independent task to 15 minutes…" /></label><div className="ttGeneratorActions">{!readOnly && <><button type="button" className="ttButton primary" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(false)}>{generatingLesson ? "Generating lesson…" : "Generate full lesson"}</button><button type="button" className="ttButton" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(true)}>Regenerate planning sections</button></>}<span>{generationMessage || "Generation fills blank sections by default, so existing teacher edits are preserved."}</span></div><div className="ttGeneratorNote"><b>Teacher review required.</b><span>Generated content is a planning draft, not an official exam-board resource or mark scheme. Check subject accuracy, suitability and timings before teaching.</span></div></section>
     <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
@@ -978,6 +1066,14 @@ function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onS
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>5</span><div><h3>Access and challenge</h3><p>Support access to the same core learning and plan purposeful stretch.</p></div></div><div className="ttFormGrid">{field("sendEalAdaptations","SEND / EAL adaptations",true,"Chunking, visuals, vocabulary, modelling, processing time, accessible task design…")}{field("stretchChallenge","Stretch / challenge",true,"Deeper explanation, evaluation, transfer or unfamiliar application")}</div><div className="ttInclusionNote"><b>Keep this lesson-focused.</b><span>Use approved school systems for individual pupil plans, medical information or sensitive records.</span></div></section>
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>6</span><div><h3>Consolidate and reflect</h3><p>Close the learning loop without creating unnecessary planning workload.</p></div></div><div className="ttFormGrid">{field("homeworkTask","Homework / consolidation",true,"A short consolidation or retrieval task linked to this lesson")}{field("reflection","Teacher reflection",true,"What worked? What needs revisiting? What should change next time?")}</div></section>
     </div>}
+    {buildClassSupportText(inclusionProfile) && <section className="ttLessonClassSupport"><div><span>PHASE 12 · CLASS ACCESS</span><strong>Generic class support is available</strong><small>Apply the class profile to SEND / EAL adaptations without storing individual pupil information here.</small></div><button type="button" className="ttButton" disabled={readOnly} onClick={() => { const support = buildClassSupportText(inclusionProfile); setPlan((current) => ({ ...current, planningMode: "detailed", sendEalAdaptations: current.sendEalAdaptations.includes(support) ? current.sendEalAdaptations : [current.sendEalAdaptations, support].filter(Boolean).join("\n\n") })); }}>Apply class support</button></section>}
+    <StaffTimetableLessonReflection
+      outcome={plan.reflectionOutcome}
+      note={plan.reflectionNote}
+      updatedAt={plan.reflectionUpdatedAt}
+      readOnly={readOnly}
+      onChange={({ outcome, note, updatedAt }) => setPlan((current) => ({ ...current, reflectionOutcome: outcome, reflectionNote: note, reflectionUpdatedAt: updatedAt, reflection: note || current.reflection }))}
+    />
     <div className="ttModalActions ttStickyPlanActions"><button className="ttButton" onClick={onClose}>Close</button>{!readOnly && <button className="ttButton primary" onClick={() => onSave(plan)}>Save lesson plan</button>}</div></section></div>;
 }
 
