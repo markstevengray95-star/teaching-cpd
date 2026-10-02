@@ -1,0 +1,52 @@
+// Real in-memory PostgreSQL engine; never connects to a remote database.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {PGlite}=require('@electric-sql/pglite');
+const {pupil}=require('./audit-sen-workspace.cjs');
+async function run(){
+ const db=new PGlite();
+ const orgA='10000000-0000-0000-0000-000000000001',orgB='10000000-0000-0000-0000-000000000002';
+ const sen='20000000-0000-0000-0000-000000000001',teacher='20000000-0000-0000-0000-000000000002',other='20000000-0000-0000-0000-000000000003',orphan='20000000-0000-0000-0000-000000000004';
+ try{
+  await db.exec(`create role authenticated;create role anon;create schema auth;
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;
+    create table auth.users(id uuid primary key);
+    create table public.school_organizations(id uuid primary key,owner_user_id uuid);
+    create table public.school_organization_members(organization_id uuid,user_id uuid,role text);
+    create table public.staff_development_role_assignments(organization_id uuid,user_id uuid,role text);`);
+  await db.exec(fs.readFileSync('supabase/sen-department-setup.sql','utf8'));
+  await db.query('insert into auth.users(id) select unnest($1::uuid[])',[[sen,teacher,other,orphan]]);
+  await db.query('insert into public.school_organizations values($1,$2),($3,$4)',[orgA,teacher,orgB,other]);
+  await db.query("insert into public.school_organization_members values($1,$2,'teacher'),($1,$3,'send-eal'),($4,$5,'slt')",[orgA,teacher,sen,orgB,other]);
+  await db.query("insert into public.staff_development_role_assignments values($1,$2,'send-eal'),($1,$3,'teacher'),($4,$5,'slt'),($1,$6,'send-eal')",[orgA,sen,teacher,orgB,other,orphan]);
+  const as=async(user,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);await db.exec('set role '+role);};
+  const denied=async(sql,params)=>{await assert.rejects(()=>db.query(sql,params));};
+  await as(sen);assert.equal((await db.query('select public.sen_workspace_access($1) ok',[orgA])).rows[0].ok,false);
+  await denied('insert into sen_department_cases(organization_id,body) values($1,$2)',[orgA,pupil]);
+  await db.exec('reset role');await db.query('insert into private.sen_workspace_schools values($1,true,now()),($2,true,now())',[orgA,orgB]);
+  await as(sen);assert.equal((await db.query('select public.sen_workspace_access($1) ok',[orgA])).rows[0].ok,true);
+  const row=(await db.query('insert into sen_department_cases(organization_id,body) values($1,$2) returning *',[orgA,pupil])).rows[0];assert.equal(row.version,1);assert.equal(row.created_by,sen);
+  await denied('insert into sen_department_cases(organization_id,body) values($1,$2)',[orgB,pupil]);
+  const broken=structuredClone(pupil);broken.reading=[{id:'r',date:'2026-02-30',tool:'Example',ageMonths:100,notes:''}];await denied('update sen_department_cases set body=$2 where id=$1',[row.id,broken]);
+  for(const body of [{...pupil,needs:[null]},{...pupil,schemaVersion:'1'}]) await denied('update sen_department_cases set body=$2 where id=$1',[row.id,body]);
+  await denied('update sen_department_cases set organization_id=$2 where id=$1',[row.id,orgB]);
+  await denied('delete from sen_department_cases where id=$1',[row.id]);
+  await denied("insert into sen_department_audit(organization_id,case_id,actor_id,event,record_version) values($1,$2,$3,'created',1)",[orgA,row.id,sen]);
+  await as(teacher);assert.equal((await db.query('select count(*)::int n from sen_department_cases')).rows[0].n,0);assert.equal((await db.query('select count(*)::int n from sen_department_audit')).rows[0].n,0);
+  await denied('insert into sen_department_cases(organization_id,body) values($1,$2)',[orgA,pupil]);
+  await as(orphan);assert.equal((await db.query('select public.sen_workspace_access($1) ok',[orgA])).rows[0].ok,false);
+  await as(other);assert.equal((await db.query('select count(*)::int n from sen_department_cases')).rows[0].n,0);
+  await as(sen);const edited=structuredClone(pupil);edited.strengths='Updated fictional evidence';
+  const updated=(await db.query('update sen_department_cases set body=$3 where id=$1 and version=$2 returning version',[row.id,1,edited])).rows;assert.equal(updated[0].version,2);
+  assert.equal((await db.query('update sen_department_cases set body=$3 where id=$1 and version=$2 returning version',[row.id,1,pupil])).rows.length,0);
+  await db.query('update sen_department_cases set archived_at=now() where id=$1',[row.id]);await denied('update sen_department_cases set body=$2 where id=$1',[row.id,pupil]);
+  await db.query('update sen_department_cases set archived_at=null where id=$1',[row.id]);
+  const events=(await db.query('select event from sen_department_audit order by id')).rows.map(r=>r.event);assert.deepEqual(events,['created','updated','archived','restored']);
+  await as('', 'anon');await denied('select * from sen_department_cases');await denied('select public.sen_workspace_access($1)',[orgA]);
+  await db.exec('reset role');await db.query("delete from staff_development_role_assignments where organization_id=$1 and user_id=$2",[orgA,sen]);
+  await as(sen);assert.equal((await db.query('select count(*)::int n from sen_department_cases')).rows[0].n,0);
+  console.log('SEN SQL security passed: activation gate, roles, real membership, school isolation, anon denial, validation, immutable school, no deletes, optimistic versioning, archive/restore, audit and revoked access.');
+ }finally{await db.close();}
+}
+run().catch(e=>{console.error(e.message);process.exitCode=1;});

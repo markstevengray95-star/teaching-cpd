@@ -1,0 +1,794 @@
+{
+  "eal": {
+    "strands": {
+      "listening": {
+        "label": "Listening and understanding",
+        "criteria": [
+          {
+            "name": "Main idea",
+            "detail": "Identifies the overall topic, purpose or message.",
+            "next": "Practise identifying the topic and main message before focusing on detail."
+          },
+          {
+            "name": "Key detail",
+            "detail": "Selects relevant names, facts, sequence or examples.",
+            "next": "Use short listening texts to locate and record two key details."
+          },
+          {
+            "name": "Instructions",
+            "detail": "Follows linked classroom directions and command words.",
+            "next": "Rehearse multi-step instructions and curriculum command words with visuals."
+          },
+          {
+            "name": "Inference and viewpoint",
+            "detail": "Recognises implied meaning, attitude or reason.",
+            "next": "Model how tone, context and evidence reveal an unstated viewpoint."
+          },
+          {
+            "name": "Academic language",
+            "detail": "Understands subject vocabulary, complex phrases and connective language.",
+            "next": "Pre-teach high-utility academic words and connectives before listening tasks."
+          }
+        ]
+      },
+      "speaking": {
+        "label": "Speaking and interaction",
+        "criteria": [
+          {
+            "name": "Participation and response",
+            "detail": "Initiates, responds, clarifies and sustains interaction.",
+            "next": "Build in rehearsed partner talk with prompts for asking and clarifying."
+          },
+          {
+            "name": "Fluency and intelligibility",
+            "detail": "Communicates a connected message that listeners can follow.",
+            "next": "Use short rehearsed explanations, then gradually reduce planning support."
+          },
+          {
+            "name": "Sentence control",
+            "detail": "Uses an increasing range of accurate sentence patterns.",
+            "next": "Model and practise one useful complex sentence pattern in curriculum talk."
+          },
+          {
+            "name": "Organisation",
+            "detail": "Sequences ideas and uses cohesive language.",
+            "next": "Provide oral frames for sequencing, comparing and explaining reasons."
+          },
+          {
+            "name": "Vocabulary and register",
+            "detail": "Chooses precise social and academic language for audience and purpose.",
+            "next": "Rehearse precise subject vocabulary and differences between informal and formal talk."
+          }
+        ]
+      },
+      "reading": {
+        "label": "Reading and viewing",
+        "criteria": [
+          {
+            "name": "Gist and purpose",
+            "detail": "Identifies topic, audience and purpose across text types.",
+            "next": "Preview headings and visuals, then state the likely purpose before reading."
+          },
+          {
+            "name": "Retrieval and sequence",
+            "detail": "Locates explicit information and follows relationships or sequence.",
+            "next": "Practise scanning for evidence and ordering information from a short text."
+          },
+          {
+            "name": "Vocabulary in context",
+            "detail": "Uses context, morphology and reference tools to work out meaning.",
+            "next": "Teach how word parts and nearby sentences help infer an unfamiliar word."
+          },
+          {
+            "name": "Inference and evidence",
+            "detail": "Combines clues and justifies an interpretation with text evidence.",
+            "next": "Use evidence stems such as ‘This suggests… because the text says…’."
+          },
+          {
+            "name": "Text organisation",
+            "detail": "Recognises cohesion, paragraph function and how information is organised.",
+            "next": "Annotate paragraph purpose and the links created by pronouns and connectives."
+          }
+        ]
+      },
+      "writing": {
+        "label": "Writing",
+        "criteria": [
+          {
+            "name": "Task and content",
+            "detail": "Addresses the purpose with relevant, sufficiently developed ideas.",
+            "next": "Plan content with audience, purpose and three relevant points before writing."
+          },
+          {
+            "name": "Organisation and cohesion",
+            "detail": "Structures paragraphs and links ideas clearly.",
+            "next": "Use a paragraph plan and practise a small range of accurate cohesive devices."
+          },
+          {
+            "name": "Vocabulary and register",
+            "detail": "Selects precise language suited to the subject, audience and genre.",
+            "next": "Build a reusable bank of subject vocabulary and formal alternatives."
+          },
+          {
+            "name": "Sentence range and control",
+            "detail": "Uses varied sentence forms with control of grammar.",
+            "next": "Combine short ideas using taught clauses and check verb agreement and tense."
+          },
+          {
+            "name": "Transcription",
+            "detail": "Spelling and punctuation support clear meaning.",
+            "next": "Edit one short section for high-frequency spelling and sentence punctuation."
+          }
+        ]
+      }
+    },
+    "tasks": {
+      "community": {
+        "name": "Task set A — School community",
+        "theme": "Improving a school study space",
+        "listening": "Read aloud at a natural pace: ‘The school council reviewed how pupils use the library after lessons. Most pupils valued the quiet tables, but several said that group discussion disturbed independent readers. The council proposed a bookable collaboration area near the entrance, with the silent zone kept at the back. Before any change, staff will trial the layout for four weeks and collect comments from pupils.’ Ask for the main proposal, two supporting details, the order of actions and one reason for the trial.",
+        "speaking": "The pupil explains how a shared school space could meet different pupils’ needs. Ask one clarification question, one comparison question and one question requiring a justified recommendation.",
+        "reading": "Use this original text: ‘A useful study space does more than provide desks. Pupils need to know what kind of work is expected in each area. Clear zones can reduce conflict: one area may support quiet concentration while another allows planned discussion. Yet a new layout alone will not solve every problem. Staff should observe how the space is used, invite feedback and adjust the plan. A successful change is therefore a process rather than a single decision.’ Ask about purpose, two explicit details, the meaning of “adjust”, an inference about observation, and the function of the final sentence.",
+        "writing": "Write a recommendation to the school council about improving a study space. Explain the problem, propose a practical change, consider another viewpoint and justify a final recommendation. Suggested length: 120–180 words for KS3; 180–250 for KS4/Post-16."
+      },
+      "technology": {
+        "name": "Task set B — Learning and technology",
+        "theme": "Introducing a device-lending scheme",
+        "listening": "Read aloud at a natural pace: ‘Teachers noticed that some pupils could not complete online homework because they shared one device at home. The school plans to lend tablets for three nights at a time. Pupils will collect them from the learning centre and return them before registration on the fourth day. The first trial will involve two year groups so staff can check demand, damage and technical support.’ Ask for the problem, process, time detail, reason for a limited trial and likely staff concern.",
+        "speaking": "The pupil explains whether a device-lending scheme would improve learning. Prompt them to describe the process, weigh benefits and difficulties, respond to a counterargument and justify a conclusion.",
+        "reading": "Use this original text: ‘Access to a device can remove one barrier to homework, but access is not the same as effective learning. Pupils may also need a reliable connection, clear instructions and help when software fails. A lending scheme should therefore be evaluated using more than the number of devices borrowed. Schools could compare task completion, pupil feedback and requests for technical support. This evidence would show whether the scheme is convenient and whether it actually improves participation.’ Ask for the main argument, two barriers, the meaning of “evaluated”, an inference about borrowing figures and how the last sentence develops the argument.",
+        "writing": "Write an evaluation for a senior teacher deciding whether to introduce device lending. Present benefits, limitations, evidence the school should collect and a justified recommendation. Suggested length: 120–180 words for KS3; 180–250 for KS4/Post-16."
+      },
+      "environment": {
+        "name": "Task set C — Local environment",
+        "theme": "Reducing waste at school",
+        "listening": "Read aloud at a natural pace: ‘A student group measured lunchtime waste for five days. Disposable packaging filled most bins, while unopened food was the heaviest type of waste. The group recommended clearer recycling signs, a place for sharing sealed food and a meeting with catering staff about portion sizes. They will repeat the measurement next month to see which change has made a difference.’ Ask for the finding, two proposals, why measurement will be repeated and which proposal addresses food waste most directly.",
+        "speaking": "The pupil presents one realistic way to reduce school waste. Ask them to explain cause and effect, compare two possible actions, answer a challenge and justify how success should be measured.",
+        "reading": "Use this original text: ‘Waste data can make a problem visible, but figures need careful interpretation. A full bin may show that pupils are wasting more, or simply that collection happened later than usual. Repeated measurements taken in similar conditions are more reliable. Schools should also separate different kinds of waste because each may require a different response. Packaging can be reduced through purchasing decisions, whereas uneaten food may be linked to portion size, choice or lunchtime routines.’ Ask about the purpose, explicit comparison, “interpretation”, why conditions matter and how the final examples support the argument.",
+        "writing": "Write a proposal for reducing one kind of school waste. Use evidence, explain cause and effect, consider a limitation and describe how impact should be reviewed. Suggested length: 120–180 words for KS3; 180–250 for KS4/Post-16."
+      }
+    }
+  },
+  "strategies": [
+    {
+      "id": "breathe",
+      "name": "Slow breathing",
+      "icon": "◌",
+      "need": "Settle high energy",
+      "time": "1–2 min",
+      "place": "Any",
+      "instruction": "Breathe in comfortably, pause briefly, then breathe out a little more slowly. Repeat without forcing the breath."
+    },
+    {
+      "id": "ground",
+      "name": "5-4-3-2-1 grounding",
+      "icon": "◎",
+      "need": "Reconnect with the present",
+      "time": "2 min",
+      "place": "Seated",
+      "instruction": "Notice five things you can see, four you can feel, three you can hear, two you can smell and one you can taste or imagine tasting."
+    },
+    {
+      "id": "move",
+      "name": "Movement reset",
+      "icon": "↗",
+      "need": "Increase or release energy",
+      "time": "2–5 min",
+      "place": "Space needed",
+      "instruction": "Use a short walk, stretch, wall push or other agreed movement, then return to one clear next task."
+    },
+    {
+      "id": "quiet",
+      "name": "Lower sensory load",
+      "icon": "◇",
+      "need": "Reduce overload",
+      "time": "2–10 min",
+      "place": "Quiet option",
+      "instruction": "Reduce noise, visual distraction or social demand where possible while keeping a clear route back to learning."
+    },
+    {
+      "id": "water",
+      "name": "Water and reset",
+      "icon": "◒",
+      "need": "Low energy / pause",
+      "time": "1–3 min",
+      "place": "Any",
+      "instruction": "Use a brief drink or pause, then identify the smallest useful next step."
+    },
+    {
+      "id": "plan",
+      "name": "Break the task down",
+      "icon": "▤",
+      "need": "Cognitive overload",
+      "time": "1–3 min",
+      "place": "Any",
+      "instruction": "Write the next one to three steps only. Hide or ignore later steps until the first is complete."
+    },
+    {
+      "id": "help",
+      "name": "Ask for help",
+      "icon": "?",
+      "need": "Stuck / uncertain",
+      "time": "1 min",
+      "place": "Any",
+      "instruction": "Use the agreed help signal or sentence starter: “I understand ____. I am stuck on ____.”"
+    },
+    {
+      "id": "rehearse",
+      "name": "Private rehearsal",
+      "icon": "Aa",
+      "need": "Performance anxiety",
+      "time": "2–5 min",
+      "place": "Partner / quiet",
+      "instruction": "Practise once privately or with a trusted partner before deciding whether to share more publicly."
+    },
+    {
+      "id": "organise",
+      "name": "Organise the workspace",
+      "icon": "▦",
+      "need": "Distraction / uncertainty",
+      "time": "2 min",
+      "place": "Desk",
+      "instruction": "Put away anything not needed, place the first resource ready and identify a clear start point."
+    },
+    {
+      "id": "selftalk",
+      "name": "Helpful self-talk",
+      "icon": "“ ”",
+      "need": "Confidence",
+      "time": "30 sec",
+      "place": "Any",
+      "instruction": "Use a realistic phrase such as “I can do the first step” or “Nerves can be here while I start.”"
+    },
+    {
+      "id": "co",
+      "name": "Co-regulate with an adult",
+      "icon": "♡",
+      "need": "High distress",
+      "time": "As needed",
+      "place": "Supported",
+      "instruction": "Use a trusted adult, fewer words and a calmer space. Safety and safeguarding procedures take priority when required."
+    },
+    {
+      "id": "timer",
+      "name": "Short focus block",
+      "icon": "⌛",
+      "need": "Starting / stamina",
+      "time": "5–25 min",
+      "place": "Any",
+      "instruction": "Choose one defined outcome, work until the timer ends, then review rather than committing to the whole task at once."
+    }
+  ],
+  "activities": [
+    {
+      "name": "30-second state scan",
+      "time": "30 sec",
+      "phase": "All",
+      "energy": "Any",
+      "setting": "Seated",
+      "purpose": "Notice",
+      "steps": "Feet supported if possible. Notice energy, body tension and attention. Name what would help next."
+    },
+    {
+      "name": "Box breathing visual",
+      "time": "1–2 min",
+      "phase": "KS2+",
+      "energy": "High",
+      "setting": "Seated",
+      "purpose": "Settle",
+      "steps": "Trace a square slowly: breathe in, pause, breathe out, pause. Keep it comfortable rather than forcing a count."
+    },
+    {
+      "name": "Desk stretch sequence",
+      "time": "2 min",
+      "phase": "All",
+      "energy": "Low",
+      "setting": "Standing",
+      "purpose": "Energise",
+      "steps": "Stand, reach, shoulder roll, gentle twist, then sit and begin one clear starter item."
+    },
+    {
+      "name": "One-step launch",
+      "time": "1 min",
+      "phase": "All",
+      "energy": "Overwhelmed",
+      "setting": "Any",
+      "purpose": "Start",
+      "steps": "Teacher or student identifies only the first action. Complete it before revealing or thinking about the next stage."
+    },
+    {
+      "name": "Quiet reset",
+      "time": "3–5 min",
+      "phase": "All",
+      "energy": "High",
+      "setting": "Quiet",
+      "purpose": "Reduce load",
+      "steps": "Move to the agreed lower-stimulation option, use minimal language and choose a clear return point."
+    },
+    {
+      "name": "Worked-example restart",
+      "time": "3 min",
+      "phase": "KS3+",
+      "energy": "Frustrated",
+      "setting": "Seated",
+      "purpose": "Confidence",
+      "steps": "Compare current work with one modelled example, identify the next matching step, then retry independently."
+    },
+    {
+      "name": "Partner rehearsal",
+      "time": "2–4 min",
+      "phase": "All",
+      "energy": "Nervous",
+      "setting": "Partner",
+      "purpose": "Confidence",
+      "steps": "Say or perform the response once privately. Partner gives one specific supportive improvement, then rehearse again."
+    },
+    {
+      "name": "Transition countdown",
+      "time": "1 min",
+      "phase": "All",
+      "energy": "Any",
+      "setting": "Transition",
+      "purpose": "Predictability",
+      "steps": "Give a visible countdown, state exactly what ends and what begins, then acknowledge readiness rather than speed."
+    },
+    {
+      "name": "Five-object grounding",
+      "time": "2 min",
+      "phase": "All",
+      "energy": "High",
+      "setting": "Any",
+      "purpose": "Ground",
+      "steps": "Find five objects or visual details in the room and describe one neutral feature of each."
+    },
+    {
+      "name": "Mini plan card",
+      "time": "2 min",
+      "phase": "KS2+",
+      "energy": "Overwhelmed",
+      "setting": "Any",
+      "purpose": "Organise",
+      "steps": "Write: 1) first task, 2) help route, 3) finish point. Cross off each as completed."
+    },
+    {
+      "name": "Movement delivery job",
+      "time": "2–4 min",
+      "phase": "Primary/KS3",
+      "energy": "Restless",
+      "setting": "Moving",
+      "purpose": "Move",
+      "steps": "Use a purposeful classroom movement task such as distributing resources, then return to a defined seat/task."
+    },
+    {
+      "name": "End-of-lesson strategy review",
+      "time": "2 min",
+      "phase": "All",
+      "energy": "Any",
+      "setting": "Seated",
+      "purpose": "Reflect",
+      "steps": "What state did I notice? What did I try? Did it help a lot, a little or not yet? What will I repeat or change?"
+    }
+  ],
+  "languageCoach": [
+    {
+      "situation": "Student is visibly overwhelmed",
+      "avoid": "Calm down. You are overreacting.",
+      "use": "I can see this is a lot right now. Would fewer words, a quieter space, or help with the first step be useful?",
+      "why": "Names the need without judging the feeling and offers manageable choices."
+    },
+    {
+      "situation": "Student is restless during independent work",
+      "avoid": "Stop fidgeting and sit still.",
+      "use": "It looks hard to keep your attention on this. Would a short movement reset or a five-minute focus block help?",
+      "why": "Keeps the learning goal while offering a route to regulate."
+    },
+    {
+      "situation": "Student refuses after getting stuck",
+      "avoid": "You are choosing not to work.",
+      "use": "Show me the last bit that made sense. We can choose the next one step from there.",
+      "why": "Reduces task size and tests whether cognitive overload is part of the problem."
+    },
+    {
+      "situation": "Student is very excited in a practical",
+      "avoid": "You need to be in Green.",
+      "use": "The excitement is fine; we need enough control to hear the safety instruction. Equipment down, listen, then we restart.",
+      "why": "Separates the emotional state from the safety requirement."
+    },
+    {
+      "situation": "Student is anxious about presenting",
+      "avoid": "There is nothing to worry about.",
+      "use": "Nerves can be here while you practise. Rehearse with one person first, then we will decide the next step.",
+      "why": "Validates the state and preserves progression toward the learning goal."
+    },
+    {
+      "situation": "Student is low energy",
+      "avoid": "Wake up and try harder.",
+      "use": "Your energy looks low. Do you need water, a short movement reset, or help choosing the first small task?",
+      "why": "Offers activation and structure without moralising low energy."
+    }
+  ],
+  "languages": {
+    "en": {
+      "name": "English",
+      "zone": "How are you feeling right now?",
+      "help": "What would help you next?",
+      "blue": "Blue — lower energy",
+      "green": "Green — calm / ready",
+      "yellow": "Yellow — higher energy",
+      "red": "Red — very intense energy",
+      "ask": "I need some help.",
+      "break": "I need a short reset.",
+      "ready": "I am ready to continue."
+    },
+    "zh": {
+      "name": "中文",
+      "zone": "你现在感觉怎么样？",
+      "help": "接下来什么会对你有帮助？",
+      "blue": "蓝色区——能量较低",
+      "green": "绿色区——平静 / 准备好",
+      "yellow": "黄色区——能量较高",
+      "red": "红色区——情绪或能量非常强烈",
+      "ask": "我需要一些帮助。",
+      "break": "我需要短暂休息一下。",
+      "ready": "我准备好继续了。"
+    },
+    "ar": {
+      "name": "العربية",
+      "zone": "كيف تشعر الآن؟",
+      "help": "ما الذي سيساعدك بعد ذلك؟",
+      "blue": "المنطقة الزرقاء — طاقة منخفضة",
+      "green": "المنطقة الخضراء — هادئ / مستعد",
+      "yellow": "المنطقة الصفراء — طاقة أعلى",
+      "red": "المنطقة الحمراء — طاقة أو مشاعر شديدة جداً",
+      "ask": "أحتاج إلى بعض المساعدة.",
+      "break": "أحتاج إلى استراحة قصيرة.",
+      "ready": "أنا مستعد للمتابعة."
+    },
+    "es": {
+      "name": "Español",
+      "zone": "¿Cómo te sientes ahora?",
+      "help": "¿Qué te ayudaría ahora?",
+      "blue": "Zona azul — poca energía",
+      "green": "Zona verde — tranquilo/a / preparado/a",
+      "yellow": "Zona amarilla — más energía",
+      "red": "Zona roja — energía o emoción muy intensa",
+      "ask": "Necesito ayuda.",
+      "break": "Necesito una pausa corta.",
+      "ready": "Estoy listo/a para continuar."
+    },
+    "fr": {
+      "name": "Français",
+      "zone": "Comment te sens-tu maintenant ?",
+      "help": "Qu’est-ce qui pourrait t’aider maintenant ?",
+      "blue": "Zone bleue — énergie plus basse",
+      "green": "Zone verte — calme / prêt(e)",
+      "yellow": "Zone jaune — énergie plus élevée",
+      "red": "Zone rouge — énergie ou émotion très intense",
+      "ask": "J’ai besoin d’aide.",
+      "break": "J’ai besoin d’une courte pause.",
+      "ready": "Je suis prêt(e) à continuer."
+    }
+  },
+  "operations": {
+    "tutorActivities": [
+      {
+        "id": "arrival",
+        "name": "Arrival reset",
+        "minutes": 3,
+        "steps": [
+          "Private zone/energy check-in",
+          "Choose one intention for the morning",
+          "Identify one strategy available if needed"
+        ]
+      },
+      {
+        "id": "plan",
+        "name": "Plan the day",
+        "minutes": 5,
+        "steps": [
+          "Scan today’s timetable",
+          "Mark one likely pressure point",
+          "Choose a preparation strategy",
+          "Identify who to ask for help"
+        ]
+      },
+      {
+        "id": "reflect",
+        "name": "Friday reflection",
+        "minutes": 5,
+        "steps": [
+          "What helped learning this week?",
+          "Which strategy was most useful?",
+          "What will I repeat next week?"
+        ]
+      },
+      {
+        "id": "transition",
+        "name": "Transition rehearsal",
+        "minutes": 4,
+        "steps": [
+          "Name the next transition",
+          "Predict what could make it difficult",
+          "Choose one practical support",
+          "Rehearse the first step"
+        ]
+      }
+    ],
+    "transitions": {
+      "lesson": {
+        "name": "Lesson change",
+        "supports": [
+          "Show the next destination and equipment needed",
+          "Use a consistent pack-away cue",
+          "Allow a brief movement/reset route",
+          "Start the next lesson with a predictable entry task"
+        ]
+      },
+      "lunch": {
+        "name": "Lunch / break",
+        "supports": [
+          "Preview where to go and how to re-enter learning",
+          "Offer quieter alternatives where available",
+          "Use a clear return-time cue",
+          "Plan sensory recovery after a busy space"
+        ]
+      },
+      "assembly": {
+        "name": "Assembly",
+        "supports": [
+          "Preview seating and duration",
+          "Clarify expectations before entering",
+          "Offer a discreet support route",
+          "Use a calm exit and re-entry plan"
+        ]
+      },
+      "pe": {
+        "name": "PE / changing",
+        "supports": [
+          "Make changing expectations predictable",
+          "Allow extra transition time where agreed",
+          "Use clear equipment roles",
+          "Plan the move back to classroom learning"
+        ]
+      },
+      "exam": {
+        "name": "Assessment / exam",
+        "supports": [
+          "Clarify timing and first-step routine",
+          "Use a brief grounding sequence",
+          "Keep reasonable adjustments visible",
+          "Plan a calm post-assessment transition"
+        ]
+      },
+      "trip": {
+        "name": "Trip / off-site",
+        "supports": [
+          "Use a visual itinerary",
+          "Identify meeting points and trusted adults",
+          "Preview unfamiliar transitions",
+          "Plan food, sensory and travel needs"
+        ]
+      },
+      "phase": {
+        "name": "School phase change",
+        "supports": [
+          "Use repeated orientation visits",
+          "Build a visual map/routine guide",
+          "Share agreed regulation strategies with receiving staff",
+          "Review the plan after the first weeks"
+        ]
+      }
+    },
+    "voiceQuestions": [
+      "I know how to ask for a short regulation break without feeling embarrassed.",
+      "Adults usually use calm and respectful language when I am finding things difficult.",
+      "The strategies available in school actually help me return to learning.",
+      "Different teachers use similar language about regulation.",
+      "I know what to do if a strategy is not helping.",
+      "I can use regulation support without being treated as if I have done something wrong."
+    ],
+    "observationItems": [
+      "Lesson structure and transitions are visible or clearly explained.",
+      "Staff language is descriptive and non-judgemental.",
+      "Students have a discreet route to ask for help or a reset.",
+      "Regulation support preserves access to the learning goal where possible.",
+      "Practical/group tasks use clear roles and checkpoints.",
+      "Reasonable sensory or communication supports are respected.",
+      "The close of the lesson supports a calm transition onward.",
+      "No zone is treated as a reward, sanction or behaviour label."
+    ],
+    "environmentCriteria": [
+      [
+        "noise",
+        "Noise load is understood and manageable"
+      ],
+      [
+        "visual",
+        "Visual clutter and competing displays are controlled"
+      ],
+      [
+        "predictability",
+        "Entry, movement and exit routines are predictable"
+      ],
+      [
+        "help",
+        "Students can ask for help discreetly"
+      ],
+      [
+        "movement",
+        "Movement/reset options are available where appropriate"
+      ],
+      [
+        "sensory",
+        "Sensory needs can be supported without unnecessary attention"
+      ],
+      [
+        "seating",
+        "Seating/layout offers appropriate choice and clear sightlines"
+      ],
+      [
+        "signage",
+        "Key routines and expectations are easy to find"
+      ]
+    ],
+    "roomTypes": {
+      "classroom": [
+        "Keep the first task visible before students enter",
+        "Create one discreet help signal",
+        "Identify a low-distraction seat option",
+        "Keep regulation tools easy to access without public attention"
+      ],
+      "science": [
+        "Use fixed equipment zones",
+        "Display practical checkpoints",
+        "Separate safety instructions from background talk",
+        "Plan a calm equipment-return routine"
+      ],
+      "ict": [
+        "Provide a non-device fallback for login/device failure",
+        "Use a visible debugging routine",
+        "Reduce unnecessary screen clutter",
+        "Build save/checkpoint reminders into tasks"
+      ],
+      "art": [
+        "Provide material-choice options where possible",
+        "Define clear process stages",
+        "Create a safe drying/storage routine",
+        "Use process goals rather than comparison displays"
+      ],
+      "music": [
+        "Use explicit noise-level signals",
+        "Create quiet preparation space where possible",
+        "Separate rehearsal from performance moments",
+        "Use predictable pack-away cues"
+      ],
+      "pe": [
+        "Mark equipment and waiting zones clearly",
+        "Use visible team/role allocations",
+        "Plan a cool-down transition",
+        "Keep changing-room routines predictable"
+      ],
+      "dining": [
+        "Identify quieter seating options",
+        "Make queue expectations predictable",
+        "Use clear entry/exit routes",
+        "Allow agreed sensory accommodations"
+      ],
+      "corridor": [
+        "Reduce conflicting signage",
+        "Keep movement routes clear",
+        "Use consistent transition expectations",
+        "Identify supervised reset points where appropriate"
+      ]
+    },
+    "assessmentRoutines": [
+      {
+        "id": "ground",
+        "name": "60-second grounding",
+        "steps": [
+          "Feet supported",
+          "Slow exhale",
+          "Look at the first instruction only",
+          "Begin with one clear action"
+        ]
+      },
+      {
+        "id": "scan",
+        "name": "First-page scan",
+        "steps": [
+          "Read timings",
+          "Circle command words",
+          "Start with an accessible item",
+          "Return to harder items later"
+        ]
+      },
+      {
+        "id": "reset",
+        "name": "Mid-assessment reset",
+        "steps": [
+          "Stop writing briefly",
+          "Release shoulder tension",
+          "Check time once",
+          "Choose the next single step"
+        ]
+      }
+    ],
+    "tripChecks": [
+      "Visual itinerary shared",
+      "Meeting points agreed",
+      "Trusted adults identified",
+      "Travel transitions reviewed",
+      "Food/medical arrangements checked through normal school procedures",
+      "Sensory pressure points considered",
+      "Quiet/reset option identified",
+      "Return-to-school transition planned"
+    ],
+    "fidelityAreas": [
+      "Shared language",
+      "Student access to strategies",
+      "Subject routines",
+      "Staff development",
+      "Family communication",
+      "Targeted support",
+      "Student voice",
+      "Monitoring and review"
+    ],
+    "impactMeasures": [
+      "Student-reported access to support",
+      "Staff confidence using shared language",
+      "Consistency across departments",
+      "Successful return-to-learning after strategy use",
+      "Transition difficulty reports",
+      "Intervention goal progress",
+      "Family understanding of agreed strategies"
+    ],
+    "safeguardingCategories": [
+      {
+        "id": "routine",
+        "name": "Everyday regulation / learning support",
+        "message": "Continue with the regulation workflow and normal classroom/pastoral support."
+      },
+      {
+        "id": "welfare",
+        "name": "Welfare concern needing adult follow-up",
+        "message": "Record and follow up using the school’s normal pastoral procedure. Do not rely on this app as the case-management record."
+      },
+      {
+        "id": "safeguarding",
+        "name": "Possible safeguarding concern",
+        "message": "Stop the regulation workflow and use the school’s safeguarding procedure immediately, including the DSL/appropriate safeguarding lead."
+      },
+      {
+        "id": "emergency",
+        "name": "Immediate safety or medical concern",
+        "message": "Use the school’s emergency/medical procedure now. This app is not an emergency-response system."
+      }
+    ],
+    "templates": [
+      {
+        "id": "exam-week",
+        "name": "Exam-week support plan",
+        "type": "assessment",
+        "body": "Pre-check-in → first-step routine → agreed support route → post-assessment reflection"
+      },
+      {
+        "id": "practical",
+        "name": "Practical lesson regulation plan",
+        "type": "lesson",
+        "body": "Preview equipment → allocate roles → pause at checkpoints → calm clean-down"
+      },
+      {
+        "id": "transition",
+        "name": "Difficult transition plan",
+        "type": "transition",
+        "body": "Preview → first step → support person → reset option → review"
+      },
+      {
+        "id": "family",
+        "name": "Family review structure",
+        "type": "meeting",
+        "body": "What is working → useful strategies → contexts needing support → agreed next step → review date"
+      }
+    ]
+  }
+}

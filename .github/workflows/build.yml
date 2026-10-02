@@ -22,3 +22,5 @@ jobs:
         run: npm run audit:courses
       - name: Audit navigation, role visibility and course links
         run: npm run audit:navigation
+      - name: Audit SEN workflows and database access isolation
+        run: npm run audit:sen
