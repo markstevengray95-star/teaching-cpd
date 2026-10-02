@@ -1,0 +1,46 @@
+name: Finalise staff timetable integration
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: contains(github.event.head_commit.message, 'Run timetable integration patch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Add timetable to staff school area
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/components/WholeSchoolHub.tsx')
+          s = p.read_text()
+          anchor = '      { title: "Staff Directory", description: "Find colleagues by department, role and expertise.", href: "/directory", icon: "◎", badge: "Phase 45" },\n'
+          card = '      { title: "Staff Timetable", description: "Upload your timetable to auto-fill a personal two-week schedule, edit lessons and free periods, or open the separate demo timetable.", href: "/staff-timetable", icon: "◷", badge: "Staff tool" },\n'
+          if card not in s:
+              if anchor not in s:
+                  raise SystemExit('Could not locate Staff Directory card')
+              s = s.replace(anchor, anchor + card, 1)
+          s = s.replace('description: "Shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area."', 'description: "Personal staff tools, timetable, shared communication, calendar, improvement, approvals, leadership intelligence, staff voice and administration in one area."')
+          p.write_text(s)
+
+          p = Path('lib/rolePermissions.ts')
+          s = p.read_text().replace('["/school", "school:view"]', '["/school", "develop:view"]')
+          p.write_text(s)
+          PY
+      - name: Commit integration
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/components/WholeSchoolHub.tsx lib/rolePermissions.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Integrate personal timetable into staff school area"
+          git push origin HEAD:main
