@@ -16,7 +16,7 @@ const items = [
 
 const routeGroups: Record<string, string[]> = {
   "/teach": ["/teaching-learning", "/resource-generator", "/department-hub", "/curriculum", "/subject-cpd", "/standards", "/learning-walks", "/department-cpd"],
-  "/students": ["/pastoral", "/regulation-behaviour", "/send-eal", "/interventions", "/regulation-room", "/zones", "/zone-quest", "/zones-school", "/zones-cpd"],
+  "/students": ["/pastoral", "/sen", "/regulation-behaviour", "/send-eal", "/interventions", "/regulation-room", "/zones", "/zone-quest", "/zones-school", "/zones-cpd"],
   "/develop": ["/professional-learning", "/portfolio", "/coaching", "/appraisal", "/cpd", "/micro-cpd", "/pathways", "/training", "/development", "/actions", "/impact", "/recommendations", "/needs-audit", "/external-cpd", "/certificates", "/reading", "/adaptive", "/ai-coach", "/coach"],
   "/school": ["/calendar", "/notices", "/directory", "/school-improvement", "/department-plans", "/forms", "/trips", "/compliance", "/induction", "/leadership-dashboard", "/department-analytics", "/recognition", "/staff-voice", "/notifications", "/integrations", "/admin-centre", "/organisation", "/school-hub", "/departments", "/improvement", "/leadership", "/school-access", "/staff-access", "/staff-sync", "/launch-readiness", "/platform", "/owner-portal", "/admin"],
   "/resources": ["/resource-library", "/policies", "/search", "/school-assistant", "/files", "/knowledge-base", "/safeguarding", "/policy-training", "/course-packs", "/help", "/accessibility"],
