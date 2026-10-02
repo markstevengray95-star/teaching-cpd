@@ -1,1 +1,1 @@
-Run the Phase 1 smart curriculum-profile migration for the staff timetable and lesson planner.
+Retry Phase 1 after correcting the KS3 course definitions. Apply smart class curriculum profiles and the full lesson-planning hierarchy.
