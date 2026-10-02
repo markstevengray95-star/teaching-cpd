@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import {
   ClassCurriculumProfile,
   getCourseLessonSequence,
@@ -41,6 +42,7 @@ type LessonPlan = {
   sequence: string;
   resources: string;
   assessment: string;
+  examPractice: string;
   teacherNotes: string;
   curriculumStage: string;
   curriculumSubject: string;
@@ -63,6 +65,12 @@ type LessonPlan = {
   exitTicket: string;
   reflection: string;
 };
+
+type GeneratedLessonPlan = Pick<LessonPlan,
+  "objectives" | "vocabulary" | "priorKnowledge" | "retrieval" | "misconceptions" | "teacherExplanation" | "modelling" |
+  "guidedPractice" | "independentPractice" | "assessment" | "examPractice" | "sendEalAdaptations" | "stretchChallenge" |
+  "homeworkTask" | "exitTicket" | "sequence"
+>;
 
 type Lesson = {
   id: string;
@@ -176,7 +184,7 @@ const OLD_STORAGE_KEY = "teaching-cpd-personal-staff-timetable-v1";
 
 function blankPlan(): LessonPlan {
   return {
-    lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", teacherNotes: "",
+    lessonDate: "", topic: "", vocabulary: "", objectives: "", sequence: "", resources: "", assessment: "", examPractice: "", teacherNotes: "",
     curriculumStage: "", curriculumSubject: "", curriculumUnit: "", curriculumSubtopic: "", examBoard: "", courseId: "", sequencePosition: -1,
     planningMode: "simple", priorKnowledge: "", retrieval: "", misconceptions: "", teacherExplanation: "", modelling: "", guidedPractice: "", independentPractice: "",
     sendEalAdaptations: "", stretchChallenge: "", homeworkTask: "", exitTicket: "", reflection: "",
@@ -737,6 +745,10 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
   const initialSubtopic = initialSubtopics.find((item) => item.title === plan.curriculumSubtopic) || initialSubtopics[0];
   const [subtopicId, setSubtopicId] = useState(initialSubtopic?.id || "");
   const [lessonIndex, setLessonIndex] = useState(Math.max(0, plan.sequencePosition || 0));
+  const [generatingLesson, setGeneratingLesson] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState("");
+  const [generationSource, setGenerationSource] = useState<"ai" | "template" | "">("");
+  const [teacherRequirements, setTeacherRequirements] = useState("");
 
   const boards = getPhase1ExamBoards(stage);
   const subjects = getPhase1Subjects(stage, examBoard);
@@ -748,7 +760,7 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
   const selectedUnit = units.find((item) => item.id === unitId);
   const selectedSubtopic = subtopics.find((item) => item.id === subtopicId);
   const selectedTemplate = lessons[Math.min(lessonIndex, Math.max(lessons.length - 1, 0))];
-  const detailedKeys: (keyof LessonPlan)[] = ["priorKnowledge","retrieval","misconceptions","teacherExplanation","modelling","guidedPractice","independentPractice","sendEalAdaptations","stretchChallenge","homeworkTask","exitTicket","reflection"];
+  const detailedKeys: (keyof LessonPlan)[] = ["priorKnowledge","retrieval","misconceptions","teacherExplanation","modelling","guidedPractice","independentPractice","assessment","examPractice","sendEalAdaptations","stretchChallenge","homeworkTask","exitTicket","reflection"];
   const detailedComplete = detailedKeys.filter((key) => String(plan[key] || "").trim()).length;
 
   const field = (key: keyof LessonPlan, label: string, multiline = false, placeholder = "", className = "") => <label className={`${multiline ? "wide" : ""} ${className}`.trim()}><span>{label}</span>{multiline ? <textarea disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} /> : <input disabled={readOnly} value={String(plan[key] ?? "")} onChange={(event) => setPlan((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} />}</label>;
@@ -799,6 +811,60 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
     }));
   }
 
+  async function generateFullLesson(overwrite = false) {
+    if (readOnly || generatingLesson) return;
+    const topic = (plan.topic || selectedTemplate?.title || "").trim();
+    if (!topic) { setGenerationMessage("Choose a curriculum lesson or enter a lesson topic first."); return; }
+    if (overwrite && !window.confirm("Regenerate the structured lesson sections? This will replace existing objectives, vocabulary, sequence and detailed planning fields. Your curriculum selection, resources, notes and reflection will be kept.")) return;
+
+    setGeneratingLesson(true);
+    setGenerationMessage("Building a complete 55-minute lesson…");
+    setGenerationSource("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sign in again before generating a lesson.");
+
+      const response = await fetch("/api/lesson-generator", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          subject: lesson.subject || subject,
+          className: lesson.className,
+          stage,
+          examBoard,
+          course: selectedCourse?.title || courseId,
+          unit: selectedUnit?.title || plan.curriculumUnit,
+          subtopic: selectedSubtopic?.title || plan.curriculumSubtopic,
+          topic,
+          objectives: plan.objectives || selectedTemplate?.objectives || "",
+          vocabulary: plan.vocabulary || selectedTemplate?.vocabulary || "",
+          teacherRequirements,
+        }),
+      });
+      const payload = await response.json().catch(() => ({})) as { lesson?: GeneratedLessonPlan; source?: "ai" | "template"; error?: string };
+      if (!response.ok || !payload.lesson) throw new Error(payload.error || "The lesson could not be generated.");
+      const generated = payload.lesson;
+      const generatedKeys: (keyof GeneratedLessonPlan)[] = ["objectives","vocabulary","priorKnowledge","retrieval","misconceptions","teacherExplanation","modelling","guidedPractice","independentPractice","assessment","examPractice","sendEalAdaptations","stretchChallenge","homeworkTask","exitTicket","sequence"];
+
+      setPlan((current) => {
+        const next = { ...current, planningMode: "detailed" as const, topic: current.topic || topic };
+        generatedKeys.forEach((key) => {
+          if (overwrite || !String(current[key] || "").trim()) next[key] = generated[key];
+        });
+        return next;
+      });
+      const source = payload.source === "ai" ? "ai" : "template";
+      setGenerationSource(source);
+      setGenerationMessage(source === "ai" ? "Lesson generated. Review and edit each section before saving." : "AI was unavailable, so a classroom-ready built-in lesson structure was used. Review and edit before saving.");
+    } catch (error) {
+      setGenerationMessage(error instanceof Error ? error.message : "The lesson could not be generated.");
+    } finally {
+      setGeneratingLesson(false);
+    }
+  }
+
   function applySuggestedLesson() {
     if (!selectedTemplate || !selectedCourse || !selectedUnit || !selectedSubtopic) return;
     const courseSequence = getCourseLessonSequence({ stage, examBoard, subject, courseId });
@@ -806,8 +872,9 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
     setPlan((current) => ({ ...current, curriculumStage: stage, curriculumSubject: subject, curriculumUnit: selectedUnit.title, curriculumSubtopic: selectedSubtopic.title, examBoard, courseId, sequencePosition, topic: selectedTemplate.title, vocabulary: selectedTemplate.vocabulary, objectives: selectedTemplate.objectives, sequence: selectedTemplate.sequence, assessment: selectedTemplate.assessment }));
   }
 
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 3</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal ttPlanModal ttPhase3PlanModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">LESSON PLANNING · PHASE 4</span><h2>{lesson.subject} · {lesson.className}</h2><p>{lesson.week} · {lesson.day} · P{lesson.period} · {lesson.room}</p></div><button className="ttIconButton" onClick={onClose}>×</button></div>
     <div className="ttPlanModeBar"><div className="ttPlanModeSwitch"><button type="button" className={plan.planningMode === "simple" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "simple" }))}>Simple</button><button type="button" className={plan.planningMode === "detailed" ? "active" : ""} onClick={() => setPlan((current) => ({ ...current, planningMode: "detailed" }))}>Detailed</button></div><div className="ttPlanCompletion"><span>Detailed plan</span><b>{detailedComplete}/{detailedKeys.length}</b><i><em style={{ width: `${Math.round(detailedComplete / detailedKeys.length * 100)}%` }} /></i></div>{!readOnly && <button type="button" className="ttButton" onClick={buildDetailedStructure}>Build detailed structure</button>}</div>
+    <section className="ttLessonGenerator"><div className="ttLessonGeneratorHead"><div><span className="staffTimetableEyebrow">ONE-CLICK LESSON GENERATION</span><h3>Generate the full lesson</h3><p>Build an editable 55-minute lesson from the selected curriculum topic, including retrieval, explanation, modelling, practice, checks, exam-style application, homework, adaptations and exit ticket.</p></div><span className={`ttGeneratorBadge ${generationSource || "ready"}`}>{generatingLesson ? "Generating…" : generationSource === "ai" ? "AI generated" : generationSource === "template" ? "Built-in fallback" : "Ready"}</span></div><label className="ttGeneratorRequirements"><span>Optional teacher requirements</span><textarea disabled={readOnly || generatingLesson} value={teacherRequirements} onChange={(event) => setTeacherRequirements(event.target.value)} placeholder="e.g. practical lesson, stronger exam technique focus, include paired discussion, keep independent task to 15 minutes…" /></label><div className="ttGeneratorActions">{!readOnly && <><button type="button" className="ttButton primary" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(false)}>{generatingLesson ? "Generating lesson…" : "Generate full lesson"}</button><button type="button" className="ttButton" disabled={generatingLesson || !(plan.topic || selectedTemplate?.title)} onClick={() => generateFullLesson(true)}>Regenerate planning sections</button></>}<span>{generationMessage || "Generation fills blank sections by default, so existing teacher edits are preserved."}</span></div><div className="ttGeneratorNote"><b>Teacher review required.</b><span>Generated content is a planning draft, not an official exam-board resource or mark scheme. Check subject accuracy, suitability and timings before teaching.</span></div></section>
     <section className="ttCurriculumPicker"><div className="ttCurriculumPickerHead"><div><strong>Curriculum lesson bank</strong><span>{classProfile ? `Class profile: ${profileLabel(classProfile)}. ` : ""}Choose the unit, sub-topic and lesson to pre-fill this plan.</span></div>{selectedTemplate && !readOnly && <button className="ttButton primary" onClick={applySuggestedLesson}>Use suggested lesson</button>}</div><div className="ttPhase1PickerGrid">
       <label><span>Key Stage</span><select disabled={readOnly} value={stage} onChange={(event) => changeStage(event.target.value as ClassCurriculumProfile["stage"])}>{phase1Stages.map((item) => <option key={item}>{item}</option>)}</select></label>
       <label><span>Exam board</span><select disabled={readOnly} value={examBoard} onChange={(event) => changeBoard(event.target.value as ClassCurriculumProfile["examBoard"])}>{boards.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -821,7 +888,7 @@ function PlanEditor({ lesson, readOnly, onClose, onSave, classProfile }: { lesso
     {plan.planningMode === "detailed" && <div className="ttDetailedPlan">
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>2</span><div><h3>Connect to prior learning</h3><p>Make prerequisites and retrieval explicit before new learning.</p></div></div><div className="ttFormGrid">{field("priorKnowledge","Prior knowledge",true,"What must pupils already know or be able to do?")}{field("retrieval","Retrieval starter",true,"3–5 short questions or prompts")}{field("misconceptions","Likely misconceptions",true,"What wrong ideas or errors are most likely, and how will you expose them?")}</div></section>
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>3</span><div><h3>Teach and model</h3><p>Plan the explanation and make expert thinking visible.</p></div></div><div className="ttFormGrid">{field("teacherExplanation","Teacher explanation",true,"Chunk the new knowledge and identify the key explanation points")}{field("modelling","Worked example / modelling",true,"What will you model and what thinking will you narrate?")}</div></section>
-      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>4</span><div><h3>Practise and check</h3><p>Move from supported practice toward independent application.</p></div></div><div className="ttFormGrid">{field("guidedPractice","Guided practice",true,"Scaffolded examples, questioning and supported rehearsal")}{field("independentPractice","Independent practice",true,"What will pupils do independently to secure the learning?")}{field("exitTicket","Exit ticket",true,"2–3 final questions directly aligned to the objectives")}</div></section>
+      <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>4</span><div><h3>Practise and check</h3><p>Move from supported practice toward independent application.</p></div></div><div className="ttFormGrid">{field("guidedPractice","Guided practice",true,"Scaffolded examples, questioning and supported rehearsal")}{field("independentPractice","Independent practice",true,"What will pupils do independently to secure the learning?")}{field("assessment","Checks / hinge questions",true,"Diagnostic questions that determine whether to move on or reteach")}{field("examPractice","Exam-style application",true,"An age-appropriate application or exam-style question with teacher success criteria")}{field("exitTicket","Exit ticket",true,"2–3 final questions directly aligned to the objectives")}</div></section>
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>5</span><div><h3>Access and challenge</h3><p>Support access to the same core learning and plan purposeful stretch.</p></div></div><div className="ttFormGrid">{field("sendEalAdaptations","SEND / EAL adaptations",true,"Chunking, visuals, vocabulary, modelling, processing time, accessible task design…")}{field("stretchChallenge","Stretch / challenge",true,"Deeper explanation, evaluation, transfer or unfamiliar application")}</div><div className="ttInclusionNote"><b>Keep this lesson-focused.</b><span>Use approved school systems for individual pupil plans, medical information or sensitive records.</span></div></section>
       <section className="ttPlanSection"><div className="ttPlanSectionHead"><span>6</span><div><h3>Consolidate and reflect</h3><p>Close the learning loop without creating unnecessary planning workload.</p></div></div><div className="ttFormGrid">{field("homeworkTask","Homework / consolidation",true,"A short consolidation or retrieval task linked to this lesson")}{field("reflection","Teacher reflection",true,"What worked? What needs revisiting? What should change next time?")}</div></section>
     </div>}
