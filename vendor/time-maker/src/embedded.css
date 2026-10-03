@@ -1,0 +1,7 @@
+/* Put builder controls in normal flow so they cannot cover the CPD iframe navigation. */
+.phase10-wrapper,.phase9-wrapper,.phase8-wrapper,.phase7-wrapper{display:contents}
+.phase10-launcher,.phase9-launcher,.phase7-launcher{position:static;display:inline-block;vertical-align:top;width:auto;min-width:180px;max-width:calc(100% - 20px);margin:10px;box-shadow:none}
+.phase8-commandbar{position:static;display:inline-flex;vertical-align:top;flex-wrap:wrap;margin:10px;max-width:calc(100% - 20px)}
+.phase8-launcher,.demo-data-button{box-shadow:none}
+@media(max-width:600px){.phase10-launcher,.phase9-launcher,.phase7-launcher{margin:6px;min-width:150px}.phase8-commandbar{margin:6px}.phase8-launcher,.demo-data-button{min-width:150px}}
+

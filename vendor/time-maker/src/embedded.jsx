@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {KEY,setStorageScope} from './timetableCore.js';
 import {publishTimetable} from './portal.js';
 import './styles.css';import './phase5.css';import './phase6.css';import './phase7.css';import './phase8.css';import './phase9.css';import './phase10.css';import './operations.css';
+import './embedded.css';
 const channel='teaching-cpd:time-maker';let mounted=false,counter=0;
 const pending=new Map();
 function send(message){window.parent.postMessage({channel,...message},location.origin);}
@@ -15,3 +16,4 @@ window.addEventListener('message',async event=>{
  if(message.type==='prepare-publication'){try{const data=JSON.parse(localStorage.getItem(KEY)||'{}');send({type:'publication',id:message.id,data:publishTimetable(data)});}catch(error){send({type:'publication',id:message.id,error:error.message});}}
 });
 if(window.parent!==window)send({type:'ready'});else document.getElementById('root').textContent='Open the Timetable section in Teaching CPD to use the school builder.';
+
