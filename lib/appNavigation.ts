@@ -129,6 +129,7 @@ export const navigationTools: NavigationTool[] = [
   ], "cpd"),
   ...entries("Administration", [
     ["/admin-centre", "School admin centre", "Organisation-level administration."],
+    ["/demo-school", "Demo School workspace", "Create or open a clearly labelled fictional school workspace for testing resources and school workflows."],
     ["/organisation", "Organisation settings", "School organisation and membership."],
     ["/school-access", "School access", "Manage school access and invitations."],
     ["/staff-access", "Staff access", "Manage staff login access."],
@@ -144,15 +145,15 @@ export const navigationTools: NavigationTool[] = [
 ];
 
 export function visibleNavigationTools(access: NavigationAccess) {
+  const schoolAdmin = access.role === "administrator" || access.role === "super-admin" || access.platformAdmin;
   return navigationTools.filter(tool => {
     const permission = permissionForPath(tool.href.split("?")[0]);
     if (permission && (!access.role || !hasStaffPermission(access.role, permission))) return false;
     if (!tool.gate) return true;
     if (tool.gate === "platform") return access.platformAdmin;
-    if (tool.gate === "admin") return Boolean(access.role && hasStaffPermission(access.role, "admin:manage"));
-    // Existing CPD pages still use the legacy staff profile role.
-    if (tool.gate === "cpd") return ["CPD Lead", "Admin"].includes(access.legacyRole);
-    return ["Department Lead", "CPD Lead", "Admin"].includes(access.legacyRole);
+    if (tool.gate === "admin") return schoolAdmin || Boolean(access.role && hasStaffPermission(access.role, "admin:manage"));
+    if (tool.gate === "cpd") return schoolAdmin || ["CPD Lead", "Admin"].includes(access.legacyRole);
+    return schoolAdmin || ["Department Lead", "CPD Lead", "Admin"].includes(access.legacyRole);
   });
 }
 export function searchNavigationTools(tools: NavigationTool[], query: string) {
