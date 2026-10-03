@@ -1,0 +1,15 @@
+revoke all on table public.compliance_records from anon;
+revoke all on table public.compliance_requirements from anon;
+revoke all on table public.cpd_coach_conversations from anon;
+revoke all on table public.improvement_cpd_programmes from anon;
+revoke all on table public.learning_walks from anon;
+revoke all on table public.live_presenter_state from anon;
+revoke all on table public.personal_pathway_plans from anon;
+revoke all on table public.school_content_items from anon;
+revoke all on table public.school_improvement_items from anon;
+revoke all on table public.school_knowledge_documents from anon;
+revoke all on table public.school_notification_reads from anon;
+revoke all on table public.school_notifications from anon;
+revoke all on table public.school_requests from anon;
+revoke all on table public.staff_directory_entries from anon;
+revoke all on table public.staff_voice_entries from anon;
