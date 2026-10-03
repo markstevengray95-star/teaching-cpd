@@ -2,29 +2,29 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { CURRENT_LEGAL_TITLE, CURRENT_LEGAL_VERSION, hasCurrentLegalAcceptance, recordCurrentLegalAcceptance } from "@/lib/legal";
 import { safeNextPath } from "@/lib/schoolAccess";
 
 export default function LegalAcceptPage() {
-  const params = useSearchParams();
   const [signedName, setSignedName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const next = safeNextPath(params.get("next"));
+  const [next, setNext] = useState("/");
 
   useEffect(() => {
     let active = true;
+    const resolvedNext = safeNextPath(new URLSearchParams(window.location.search).get("next"));
+    setNext(resolvedNext);
     (async () => {
       const client = getSupabaseBrowserClient();
       const { data, error } = await client.auth.getUser();
       if (error) throw error;
       if (!data.user) {
-        window.location.replace(`/auth?next=${encodeURIComponent(`/legal/accept?next=${encodeURIComponent(next)}`)}`);
+        window.location.replace(`/auth?next=${encodeURIComponent(`/legal/accept?next=${encodeURIComponent(resolvedNext)}`)}`);
         return;
       }
       if (!active) return;
@@ -33,7 +33,7 @@ export default function LegalAcceptPage() {
       if (active) setAccepted(current);
     })().catch(error => { if (active) setMessage(error instanceof Error ? error.message : "Could not check the agreement status."); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [next]);
+  }, []);
 
   async function sign(event: FormEvent) {
     event.preventDefault();
