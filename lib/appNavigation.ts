@@ -53,6 +53,7 @@ export const navigationTools: NavigationTool[] = [
     ["/appraisal", "Appraisal & review", "Review objectives and development."],
   ]),
   ...entries("Teaching & student support", [
+    ["/revision", "Student revision library", "Full public-domain literature texts, open science books and connected study tools."],
     ["/teach", "Teaching hub", "Classroom practice and planning tools."],
     ["/teaching-learning", "Teaching strategies", "Retrieval, questioning, feedback and literacy."],
     ["/resource-generator", "Teaching resource generator", "Create quizzes, worksheets and exit tickets."],
@@ -198,5 +199,5 @@ export function isNavigationActive(pathname: string, search: string, href: strin
   return pathname === target.pathname || pathname.startsWith(target.pathname + "/");
 }
 export function hideAppNavigation(pathname: string) {
-  return ["/auth", "/admin-login", "/owner-login", "/test-login", "/access", "/access-denied", "/join", "/verify", "/reset-password", "/procurement", "/offline", "/school-trial"].some(path => pathname === path || pathname.startsWith(path + "/"));
+  return ["/auth", "/admin-login", "/owner-login", "/test-login", "/access", "/access-denied", "/join", "/verify", "/reset-password", "/procurement", "/offline", "/school-trial", "/revision"].some(path => pathname === path || pathname.startsWith(path + "/"));
 }
