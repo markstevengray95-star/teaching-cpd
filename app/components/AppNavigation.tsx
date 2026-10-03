@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { resolveStaffAccess } from "@/lib/rolePermissions";
 import { hideAppNavigation, NAVIGATION_EVENT, type NavigationAccess } from "@/lib/appNavigation";
 import NavigationMenu from "./NavigationMenu";
+import PlatformQuickAccess from "./PlatformQuickAccess";
 
 const noAccess: NavigationAccess = { role: null, legacyRole: "", platformAdmin: false };
 export default function AppNavigation() {
@@ -54,5 +55,8 @@ export default function AppNavigation() {
     return () => { active = false; revision++; clearTimeout(timer); listener.subscription.unsubscribe(); };
   }, [hidden]);
   if (hidden) return null;
-  return <NavigationMenu access={access} pathname={pathname} search={search}/>;
+  return <>
+    <NavigationMenu access={access} pathname={pathname} search={search}/>
+    <PlatformQuickAccess />
+  </>;
 }
