@@ -14,7 +14,7 @@ export default function AppNavigation() {
   const params = useSearchParams();
   const [access, setAccess] = useState(noAccess);
   const [search, setSearch] = useState("");
-  const hidden = hideAppNavigation(pathname);
+  const hidden = hideAppNavigation(pathname) || pathname === "/demo" || pathname.startsWith("/demo/");
   useEffect(() => {
     const update = () => setSearch(window.location.search);
     update();
@@ -48,7 +48,6 @@ export default function AppNavigation() {
         revision++;
         setAccess(noAccess);
         clearTimeout(timer);
-        // Auth callbacks must not await another Supabase operation.
         timer = setTimeout(() => { void loadAccess(); }, 0);
       }
     });
