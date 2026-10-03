@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import AppV10 from './AppV10.jsx';
 import IssuesScreen from './IssuesScreen.jsx';
 import WorkloadScreen from './WorkloadScreen.jsx';
@@ -12,24 +12,93 @@ import DepartmentScreen from './DepartmentScreen.jsx';
 import ExchangeScreen from './ExchangeScreen.jsx';
 import { KEY, activeTimetable } from './timetableCore.js';
 
-const allScreens = [['issues','Timetable Issues',11,IssuesScreen],['workload','Staff Workload',12,WorkloadScreen],['planning','Curriculum Planning',13,PlanningScreen],['options','Option Blocks',14,OptionsScreen],['cover','Cover',15,CoverScreen],['today','Today',16,TodayScreen],['staff-portal','Staff Portal',17,StaffPortalScreen],['student-portal','Student Timetable',18,StudentPortalScreen],['departments','Department Dashboard',19,DepartmentScreen],['exchange','MIS Import / Export',20,ExchangeScreen]];
-function load() {try {return JSON.parse(localStorage.getItem(KEY) || '{}');} catch {return {};}}
-export default function OperationsApp({serverSession,onSync,embedded=false}) {
-  const screens=embedded?allScreens.filter(s=>![17,18].includes(s[2])):allScreens;
-  const [page,setPage] = useState('builder'), [data,setState] = useState(load), [revision,setRevision] = useState(0), [saveError,setSaveError] = useState('');
+const screens = {
+  issues: ['Timetable issues', IssuesScreen],
+  workload: ['Staff workload', WorkloadScreen],
+  planning: ['Curriculum planning', PlanningScreen],
+  options: ['Option blocks', OptionsScreen],
+  cover: ['Cover', CoverScreen],
+  today: ['Today', TodayScreen],
+  'staff-portal': ['Staff portal', StaffPortalScreen],
+  'student-portal': ['Student timetable', StudentPortalScreen],
+  departments: ['Departments', DepartmentScreen],
+  exchange: ['Import & export', ExchangeScreen],
+};
+
+const baseGroups = [
+  { id: 'build', label: 'Build', hint: 'Set up and create', pages: [['builder', 'Timetable builder'], ['planning', 'Curriculum planning'], ['options', 'Option blocks']] },
+  { id: 'review', label: 'Review', hint: 'Check and balance', pages: [['issues', 'Issues'], ['workload', 'Workload']] },
+  { id: 'daily', label: 'Daily', hint: 'Run the day', pages: [['today', 'Today'], ['cover', 'Cover']] },
+  { id: 'people', label: 'People', hint: 'Staff and departments', pages: [['staff-portal', 'Staff portal'], ['student-portal', 'Student timetable'], ['departments', 'Departments']] },
+  { id: 'data', label: 'Data', hint: 'Move information', pages: [['exchange', 'Import & export']] },
+];
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; }
+}
+
+export default function OperationsApp({ serverSession, onSync, embedded = false }) {
+  const groups = useMemo(() => embedded
+    ? baseGroups.map((group) => group.id === 'people' ? { ...group, pages: group.pages.filter(([key]) => !['staff-portal', 'student-portal'].includes(key)) } : group).filter((group) => group.pages.length)
+    : baseGroups, [embedded]);
+  const [page, setPage] = useState('builder');
+  const [data, setState] = useState(load);
+  const [revision, setRevision] = useState(0);
+  const [saveError, setSaveError] = useState('');
+
   function setData(update) {
-    const next = typeof update==='function' ? update(data) : update;
-    try {localStorage.setItem(KEY,JSON.stringify(next)); setSaveError('');} catch {setSaveError('Browser storage is full. Export a backup before closing.');}
+    const next = typeof update === 'function' ? update(data) : update;
+    try {
+      localStorage.setItem(KEY, JSON.stringify(next));
+      setSaveError('');
+    } catch {
+      setSaveError('Browser storage is full. Export a backup before closing.');
+    }
     setState(next);
-    if(onSync)onSync(next).catch(e=>setSaveError(e.message));
+    if (onSync) onSync(next).catch((error) => setSaveError(error.message));
   }
+
   function navigate(next) {
-    if (next !== 'builder') {const saved=load();setState(saved);if(onSync)onSync(saved).catch(e=>setSaveError(e.message));}
-    if (next === 'builder') setRevision(r=>r+1);
+    if (next !== 'builder') {
+      const saved = load();
+      setState(saved);
+      if (onSync) onSync(saved).catch((error) => setSaveError(error.message));
+    }
+    if (next === 'builder') setRevision((value) => value + 1);
     setPage(next);
   }
-  const current = screens.find(s=>s[0]===page), Screen = current?.[3];
-  return <><nav className="ops-nav" aria-label="Planning and daily operations"><strong>Time Maker</strong><button className={page==='builder'?'active':''} onClick={()=>navigate('builder')}>Timetable builder</button>{screens.map(([key,title])=><button key={key} className={page===key?'active':''} onClick={()=>navigate(key)}>{title}</button>)}</nav>
-    {page === 'builder' ? <AppV10 key={revision}/> : <main className="ops-main"><div className="page-title"><div><span className="eyebrow">PHASE {current[2]}</span><h1>{current[1]}</h1><p>{data.school?.name || 'Set up your school in the timetable builder'} · {activeTimetable(data)?.name || 'No active timetable'}</p></div></div>{saveError && <p role="alert">{saveError}</p>}<Screen data={data} setData={setData} serverSession={serverSession} onSync={onSync}/><footer className="app-footer">{embedded?'School draft saves to Teaching CPD. Publish and sync from the school controls above.':serverSession?'Connected school server':'School data saves in this browser.'}</footer></main>}
-  </>;
+
+  const activeGroup = useMemo(() => groups.find((group) => group.pages.some(([key]) => key === page)) || groups[0], [groups, page]);
+  const current = screens[page];
+  const Screen = current?.[1];
+  const schoolName = data.school?.name || 'Set up your school';
+  const timetableName = activeTimetable(data)?.name || 'No active timetable';
+
+  return <div className="ops-shell">
+    <header className="ops-header">
+      <div className="ops-brand-block">
+        <div className="ops-brand-mark">TM</div>
+        <div><strong>School Timetable</strong><small>Teaching CPD</small></div>
+      </div>
+      <nav className="ops-primary-nav" aria-label="Main timetable areas">
+        {groups.map((group) => <button key={group.id} className={activeGroup.id === group.id ? 'active' : ''} onClick={() => navigate(group.pages[0][0])}>
+          <span>{group.label}</span><small>{group.hint}</small>
+        </button>)}
+      </nav>
+      <div className="ops-school-state"><strong>{schoolName}</strong><small>{timetableName}</small></div>
+    </header>
+
+    {activeGroup.pages.length > 1 && <nav className="ops-subnav" aria-label={`${activeGroup.label} tools`}>
+      {activeGroup.pages.map(([key, label]) => <button key={key} className={page === key ? 'active' : ''} onClick={() => navigate(key)}>{label}</button>)}
+    </nav>}
+
+    {page === 'builder'
+      ? <AppV10 key={revision} />
+      : <main className="ops-main">
+          <div className="page-title"><div><h1>{current[0]}</h1><p>{schoolName} · {timetableName}</p></div></div>
+          {saveError && <p role="alert" className="ops-error">{saveError}</p>}
+          <Screen data={data} setData={setData} serverSession={serverSession} onSync={onSync} />
+          <footer className="app-footer">{embedded ? 'School draft saves to Teaching CPD. Publish and sync from the school controls above.' : serverSession ? 'Connected school server' : 'School data saves in this browser.'}</footer>
+        </main>}
+  </div>;
 }
