@@ -69,6 +69,7 @@ export const navigationTools: NavigationTool[] = [
   ]),
   ...entries("School essentials", [
     ["/school", "School overview", "School operations and shared workflows."],
+    ["/timetable", "Timetable", "Build the school timetable and sync staff allocations to personal planners."],
     ["/staff-timetable", "My timetable & lesson planner", "Your timetable, medium-term plans and lesson resources."],
     ["/school-hub", "School development hub", "Policies, INSET, induction and governance."],
     ["/calendar", "School calendar", "Events, deadlines and personal reminders."],
@@ -162,7 +163,7 @@ export const navigationCategories = [
   { id: "learn", title: "Learn & complete CPD", description: "Courses, pathways, required training and certificates.", groups: ["Learning"], featured: ["/micro-cpd", "/pathways", "/training", "/certificates", "/subject-cpd"] },
   { id: "practice", title: "Plan, practise & reflect", description: "Choose a focus, try it in class and record the impact.", groups: ["Practice & reflection"], featured: ["/needs-audit", "/actions", "/simulator", "/portfolio", "/coaching"] },
   { id: "classroom", title: "Teaching & pupil support", description: "Lesson resources, classroom strategies and inclusive support.", groups: ["Teaching & student support"], featured: ["/resource-generator", "/teaching-learning", "/sen", "/pastoral", "/curriculum"] },
-  { id: "school", title: "School day & resources", description: "Timetable, calendar, policies, people and school information.", groups: ["School essentials", "Resources & help"], featured: ["/staff-timetable", "/calendar", "/notices", "/policies", "/directory"] },
+  { id: "school", title: "School day & resources", description: "Timetable, calendar, policies, people and school information.", groups: ["School essentials", "Resources & help"], featured: ["/timetable", "/staff-timetable", "/calendar", "/notices", "/policies"] },
   { id: "manage", title: "Manage CPD & school setup", description: "Reporting, live sessions, course authoring and administration.", groups: ["Manage CPD", "Administration", "Platform administration"], featured: ["/school-reporting", "/live", "/school-onboarding", "/school-access", "/builder"] },
 ] as const;
 export type NavigationCategoryId = typeof navigationCategories[number]["id"];

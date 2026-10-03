@@ -1,7 +1,7 @@
 import { ClassCurriculumProfile, getCourseLessonSequence, SuggestedCurriculumLesson } from "./staffTimetableCurriculumPhase1";
 
 export type MediumTermWeek = "W1" | "W2";
-export type MediumTermDay = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type MediumTermDay = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 export type MediumTermSessionStatus = "planned" | "complete" | "missed";
 export type PlanningBlockType = "Holiday" | "INSET" | "Assessment week" | "Trip" | "Other";
 
@@ -86,7 +86,7 @@ type GenerateInput = {
   startSequencePosition?: number;
 };
 
-const DAY_NAMES: MediumTermDay[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const DAY_NAMES: MediumTermDay[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 function dateAtNoon(value: string) {
   return new Date(`${value}T12:00:00`);
@@ -130,8 +130,7 @@ function isNonTeachingDate(dateValue: string, blocks: PlanningBlock[], keyDates:
 
 function dayName(value: string): MediumTermDay | null {
   const day = dateAtNoon(value).getDay();
-  if (day < 1 || day > 5) return null;
-  return DAY_NAMES[day - 1];
+  return DAY_NAMES[(day+6)%7];
 }
 
 function slotsForInput(input: GenerateInput, fromDate = input.startDate): Slot[] {

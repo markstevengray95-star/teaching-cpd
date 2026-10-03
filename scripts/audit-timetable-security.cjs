@@ -1,0 +1,54 @@
+// Exercises the actual SQL against in-memory PostgreSQL with fictional schools and accounts.
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const {PGlite}=require('@electric-sql/pglite');
+async function run(){const db=new PGlite();
+ const org='10000000-0000-0000-0000-000000000001',otherOrg='10000000-0000-0000-0000-000000000002';
+ const admin='20000000-0000-0000-0000-000000000001',teacher='20000000-0000-0000-0000-000000000002',cover='20000000-0000-0000-0000-000000000003',outside='20000000-0000-0000-0000-000000000004';
+ try{
+ await db.exec(`create role authenticated;create role anon;create schema auth;
+ create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+ grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;
+ create table auth.users(id uuid primary key);
+ create table public.school_organizations(id uuid primary key,owner_user_id uuid,name text);
+ create table public.school_organization_members(organization_id uuid,user_id uuid,role text);
+ create table public.staff_development_role_assignments(organization_id uuid,user_id uuid,role text);
+ create table public.staff_development_profiles(user_id uuid,display_name text);`);
+ await db.exec(fs.readFileSync('supabase/school-timetable-setup.sql','utf8'));
+ await db.query('insert into auth.users select unnest($1::uuid[])',[[admin,teacher,cover,outside]]);
+ await db.query("insert into school_organizations values($1,$2,'Test school'),($3,$4,'Other school')",[org,admin,otherOrg,outside]);
+ await db.query("insert into school_organization_members values($1,$2,'teacher'),($1,$3,'teacher'),($1,$4,'admin'),($5,$6,'admin')",[org,teacher,cover,admin,otherOrg,outside]);
+ await db.query("insert into staff_development_profiles values($1,'Teacher'),($2,'Cover teacher')",[teacher,cover]);
+ const as=async(user,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user]);await db.exec('set role '+role);};
+ const denied=async(sql,args)=>assert.rejects(()=>db.query(sql,args));
+ const rpc=async(op,revision=0,payload={})=>(await db.query('select public.school_timetable_admin($1,$2,$3,$4) r',[org,op,revision,payload])).rows[0].r;
+ const personal=async(date='2026-09-07')=>(await db.query('select public.school_timetable_personal($1,$2) r',[org,date])).rows[0].r;
+ const assignment={id:'lesson',requirementId:'req',subject:'Science',groupName:'8A',groupId:'g',week:'A',dayKey:'mon',periodIndex:0,teacherId:'t',teacherName:'Teacher',roomId:'r',roomCode:'Lab',slotIds:['A:mon:p1'],notes:'PRIVATE NOTE',pupils:['PRIVATE PUPIL']};
+ const school={school:{name:'Test school',cycle:'two-week',timezone:'Europe/London'},operationsSettings:{cycleAnchor:'2026-09-07'},staff:[{id:'t',name:'Teacher'},{id:'c',name:'Cover teacher'}],days:[{key:'mon',label:'Monday',enabled:true}],blocks:[{id:'p1',type:'lesson',start:'09:00',end:'10:00'}],rooms:[{id:'r',code:'Lab'},{id:'r2',code:'New room'}]};
+ const data={...school,activeTimetableId:'approved',publishedSchool:school,publishedTimetable:{id:'approved',assignments:[assignment,{...assignment,id:'other-lesson',groupId:'g2',groupName:'9A',periodIndex:1,teacherId:'c'}],requiredPeriods:2,scheduledPeriods:2,unscheduled:[]},dailyChanges:[],coverPlans:[]};
+ const links={t:teacher,c:cover};
+ await as(teacher);assert.equal((await personal()).linked,false);
+ assert.deepEqual((await db.query('select public.school_timetable_context() r')).rows[0].r[0].staff,[]);
+ await denied('select * from private.school_timetable_workspaces');await denied('select public.school_timetable_admin($1,$2)',[org,'load']);
+ await as(outside);await denied('select public.school_timetable_personal($1)',[org]);await denied('select public.school_timetable_admin($1,$2)',[org,'load']);
+ await as(admin);assert.equal((await db.query('select public.school_timetable_context() r')).rows[0].r[0].staff.length,3);
+ await assert.rejects(()=>rpc('save',0,{data,links:{t:outside}}),/belong/);
+ await assert.rejects(()=>rpc('save',0,{data,links:{t:teacher,c:teacher}}),/only one/);
+ assert.equal((await rpc('save',0,{data,links})).revision,1);
+ await assert.rejects(()=>rpc('save',0,{data,links}),/Another/);
+ await as(teacher);assert.equal((await personal()).linked,false);
+ await as(admin);const incomplete=structuredClone(data);incomplete.publishedTimetable.unscheduled=[{id:'missing'}];await assert.rejects(()=>rpc('publish',1,{data:incomplete,links}),/complete/);
+ const publication=await rpc('publish',1,{data,links});assert.equal(publication.revision,2);
+ await as(teacher);let feed=await personal();assert.equal(feed.assignments.length,1);assert.equal(feed.assignments[0].groupName,'8A');assert.equal(feed.assignments[0].notes,undefined);assert.equal(feed.assignments[0].pupils,undefined);assert.equal(feed.week,'A');assert.equal((await personal('2026-09-14')).week,'B');assert.equal((await personal('2026-08-31')).week,'B');
+ const changed=structuredClone(data);changed.publishedTimetable.assignments[0].subject='Unpublished draft';changed.dailyChanges=[{date:'2026-09-07',type:'room',lessonId:'lesson',roomId:'r2',notes:'PRIVATE REASON'}];changed.coverPlans=[{date:'2026-09-07',timetableId:'approved',assignments:[{lessonId:'lesson',teacherId:'c'}]}];
+ await as(admin);await rpc('save',2,{data:changed,links});
+ await as(teacher);feed=await personal();assert.equal(feed.today[0].roomCode,'Lab');assert.equal(feed.assignments[0].subject,'Science');
+ await as(admin);const daily=await rpc('daily',3);assert.equal(daily.publicationId,publication.publicationId);
+ await as(teacher);feed=await personal();assert.equal(feed.today[0].roomCode,'New room');assert.equal(feed.today[0].teacherName,'Cover teacher');assert.equal(feed.assignments[0].subject,'Science');assert.equal(JSON.stringify(feed).includes('PRIVATE'),false);
+ await as(cover);feed=await personal();assert.equal(feed.assignments.length,1);assert.equal(feed.today.length,2);assert.equal(feed.today.find(l=>l.id==='lesson').teacherId,'c');
+ await as('','anon');await denied('select public.school_timetable_context()');await denied('select public.school_timetable_personal($1)',[org]);await denied('select public.school_timetable_admin($1,$2)',[org,'load']);
+ await db.exec('reset role');assert.equal((await db.query("select relrowsecurity r from pg_class where oid='private.school_timetable_workspaces'::regclass")).rows[0].r,true);
+ await db.query('delete from school_organization_members where organization_id=$1 and user_id=$2',[org,teacher]);await as(teacher);await denied('select public.school_timetable_personal($1)',[org]);
+ console.log('Timetable PostgreSQL security passed: own allocations only, school isolation, private draft storage, anonymous denial, link validation, concurrency, explicit publication, daily cover/room sync, A/B dates, redaction and revoked membership.');
+ }finally{await db.close();}
+}
+run().catch(e=>{console.error(e);process.exitCode=1;});

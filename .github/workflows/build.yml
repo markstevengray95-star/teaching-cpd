@@ -26,3 +26,5 @@ jobs:
         run: npm run audit:navigation
       - name: Audit SEN workflows and database access isolation
         run: npm run audit:sen
+      - name: Audit timetable sync and school access isolation
+        run: npm run audit:timetable

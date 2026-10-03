@@ -3,6 +3,9 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { resolveStaffAccess } from "@/lib/rolePermissions";
+import { publicationLessons,mergePublishedLessons,timetableWeek,type SchoolTimetableFeed,type SchoolLesson } from "@/lib/timetableSync";
+import SchoolTimetableSync from './SchoolTimetableSync';
 import {
   ClassCurriculumProfile,
   getCourseLessonSequence,
@@ -46,7 +49,7 @@ import "./StaffTimetableHub.css";
 import "./StaffTimetableMediumTerm.css";
 
 type WeekKey = "W1" | "W2";
-type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 type WorkspaceTab = "today" | "weekly" | "timetable" | "planning" | "mediumterm" | "classes" | "progress" | "assessments" | "homework" | "workload" | "changes" | "tools";
 
 type LessonPlan = {
@@ -93,6 +96,7 @@ type GeneratedLessonPlan = Pick<LessonPlan,
 >;
 
 type Lesson = {
+  schoolManaged?: SchoolLesson['schoolManaged'];
   id: string;
   week: WeekKey;
   day: DayName;
@@ -159,6 +163,8 @@ type KeyDate = {
 };
 
 type WorkspaceData = {
+  schoolTimetable?: SchoolTimetableFeed;
+  archivedSchoolLessons?: Lesson[];
   lessons: Lesson[];
   homework: Homework[];
   prep: PrepItem[];
@@ -224,6 +230,7 @@ function createLesson(input: Omit<Lesson, "id" | "start" | "end" | "plan"> & { i
     room: input.room.trim(),
     notes: input.notes.trim(),
     plan: { ...blankPlan(), ...(input.plan || {}) },
+    schoolManaged: input.schoolManaged,
   };
 }
 function clean(value: unknown) { return String(value ?? "").trim(); }
@@ -413,6 +420,7 @@ const DEMO_WORKSPACE: WorkspaceData = (() => {
 })();
 
 export default function StaffTimetableHub() {
+  const [account,setAccount]=useState<{userId:string;organizationId:string|null;storageKey:string}|null>(null);
   const [week, setWeek] = useState<WeekKey>("W1");
   const [tab, setTab] = useState<WorkspaceTab>("today");
   const [workspace, setWorkspace] = useState<WorkspaceData>(blankWorkspace());
@@ -437,34 +445,50 @@ export default function StaffTimetableHub() {
   const backupRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { workspace?: Partial<WorkspaceData>; week?: WeekKey };
-        if (parsed.workspace) setWorkspace({ ...blankWorkspace(), ...parsed.workspace, lessons: (parsed.workspace.lessons || []).map((lesson) => createLesson({ ...lesson, plan: lesson.plan || blankPlan() })) });
-        if (parsed.week === "W1" || parsed.week === "W2") setWeek(parsed.week);
-      } else {
-        const oldRaw = window.localStorage.getItem(OLD_STORAGE_KEY);
-        if (oldRaw) {
-          const old = JSON.parse(oldRaw) as { lessons?: Lesson[]; week?: WeekKey };
-          setWorkspace((current) => ({ ...current, lessons: (old.lessons || []).map((lesson) => createLesson({ ...lesson, plan: lesson.plan || blankPlan() })) }));
-          if (old.week === "W1" || old.week === "W2") setWeek(old.week);
-        }
-      }
-    } catch (error) { console.warn("Could not restore staff timetable", error); }
-    finally { setLoaded(true); }
+    let active=true,request=0;const client=getSupabaseBrowserClient();let timer:ReturnType<typeof setTimeout>|undefined;
+    async function loadAccount(){const version=++request;setLoaded(false);setAccount(null);setWorkspace(blankWorkspace());setPlanLessonId(null);setDemo(false);
+      try{const {data,error}=await client.auth.getUser();if(error||!data.user){if(active)window.location.replace('/auth?next=%2Fstaff-timetable');return;}
+       const access=await resolveStaffAccess(client,data.user);if(!active||request!==version)return;
+       const storageKey=STORAGE_KEY+':'+(access.organizationId || 'personal')+':'+data.user.id;
+       const raw=window.localStorage.getItem(storageKey);if(raw){const parsed=JSON.parse(raw) as {workspace?:Partial<WorkspaceData>;week?:WeekKey};
+        if(parsed.workspace)setWorkspace({...blankWorkspace(),...parsed.workspace,lessons:(parsed.workspace.lessons || []).map(lesson=>createLesson({...lesson,plan:lesson.plan || blankPlan()}))});
+        if(parsed.week==='W1'||parsed.week==='W2')setWeek(parsed.week);
+       }setAccount({userId:data.user.id,organizationId:access.organizationId,storageKey});setLoaded(true);
+      }catch(error){if(active)setStatus(error instanceof Error?error.message:'Could not restore your planner.');}}
+    void loadAccount();const {data:listener}=client.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT'){request++;setLoaded(false);setAccount(null);setWorkspace(blankWorkspace());setPlanLessonId(null);setDemo(false);}else if(event==='SIGNED_IN'){clearTimeout(timer);timer=setTimeout(()=>void loadAccount(),0);}});
+    return()=>{active=false;request++;clearTimeout(timer);listener.subscription.unsubscribe();};
   }, []);
   useEffect(() => {
-    if (!loaded || demo) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ workspace, week }));
-  }, [workspace, week, loaded, demo]);
+    if (!loaded || demo || !account) return;
+    try{window.localStorage.setItem(account.storageKey, JSON.stringify({ workspace, week }));}catch{setStatus('Device storage is full. Export a planner backup before closing.');}
+  }, [workspace, week, loaded, demo,account]);
+
+  function syncSchool(feed:SchoolTimetableFeed){if(!account||feed.organizationId!==account.organizationId)return;
+   if(!feed.linked){setWorkspace(current=>{const merged=mergePublishedLessons(current.lessons,current.archivedSchoolLessons || [],[],feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived,schoolTimetable:undefined};});return;}
+   setStatus('School timetable synced. Click a school lesson to plan it; timetable allocations are managed by your school.');
+   const incoming=publicationLessons(feed,account.userId).map(l=>createLesson({...l,plan:blankPlan()}));
+   setWorkspace(current=>{const merged=mergePublishedLessons(current.lessons,current.archivedSchoolLessons || [],incoming,feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived,schoolTimetable:feed};});
+   if(!workspace.schoolTimetable || workspace.schoolTimetable.publicationId!==feed.publicationId)setWeek(timetableWeek(feed,feed.date || todayIso()));
+  }
+  function importPreviousDevicePlanner(){const raw=window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem(OLD_STORAGE_KEY);if(!raw){setStatus('No previous device planner was found.');return;}
+   if(!window.confirm('Import the previous planner stored on this device into your signed-in account? Only do this if it is your own planner. Its original copy will be kept.'))return;
+   try{const saved=JSON.parse(raw) as {workspace?:Partial<WorkspaceData>;lessons?:Lesson[]};const previous=saved.workspace || {lessons:saved.lessons || []};
+    setWorkspace(current=>{const imported={...blankWorkspace(),...previous,lessons:(previous.lessons || []).map(l=>createLesson({...l,plan:l.plan || blankPlan()}))};const feed=current.schoolTimetable;
+     if(feed?.linked&&account){const incoming=publicationLessons(feed,account.userId).map(l=>createLesson({...l,plan:blankPlan()}));const merged=mergePublishedLessons(imported.lessons,imported.archivedSchoolLessons || [],incoming,feed.organizationId,account.userId);return {...imported,lessons:merged.lessons,archivedSchoolLessons:merged.archived,schoolTimetable:feed};}return imported;});setStatus('Previous device planner imported. The original copy is retained.');
+   }catch{setStatus('The previous planner could not be read. Restore a backup instead.');}
+  }
 
   const active = demo ? DEMO_WORKSPACE : workspace;
+  const DAYS:DayName[]=active.schoolTimetable?.days?.filter(d=>d.enabled).map(d=>d.label as DayName) || ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  const basePeriods=active.schoolTimetable?.blocks?.filter(b=>b.type==='lesson').map((b,i)=>({period:i+1,start:b.start,end:b.end})) || [{period:1,start:'08:55',end:'09:50'},{period:2,start:'09:55',end:'10:50'},{period:3,start:'11:10',end:'12:05'},{period:4,start:'12:10',end:'13:05'},{period:5,start:'14:05',end:'15:00'},{period:6,start:'15:05',end:'16:00'}];
+  const dayKey:Record<DayName,string>={Monday:'mon',Tuesday:'tue',Wednesday:'wed',Thursday:'thu',Friday:'fri',Saturday:'sat',Sunday:'sun'};
+  function periodsForDay(day:DayName){return active.schoolTimetable?.dayOverrides?.[dayKey[day]]?.filter(b=>b.type==='lesson').map((b,i)=>({period:i+1,start:b.start,end:b.end})) || basePeriods;}
+  const PERIODS=DAYS.reduce((longest,day)=>periodsForDay(day).length>longest.length?periodsForDay(day):longest,basePeriods);
   const weekLessons = useMemo(() => active.lessons.filter((lesson) => lesson.week === week), [active.lessons, week]);
   const classes = useMemo(() => [...new Set(active.lessons.map((lesson) => lesson.className).filter(Boolean))].sort(), [active.lessons]);
   const subjects = useMemo(() => [...new Set(active.lessons.map((lesson) => lesson.subject).filter(Boolean))].sort(), [active.lessons]);
-  const teachingHours = (weekLessons.length * 55 / 60).toFixed(1).replace(".0", "");
-  const freePeriods = 30 - weekLessons.length;
+  const teachingHours = (weekLessons.reduce((n,l)=>{const minutes=(s:string)=>Number(s.split(':')[0])*60+Number(s.split(':')[1]);return n+Math.max(0,minutes(l.end)-minutes(l.start));},0)/60).toFixed(1).replace(".0", "");
+  const freePeriods = Math.max(0,DAYS.reduce((n,day)=>n+periodsForDay(day).length,0) - weekLessons.length);
   const visibleClass = classSelection || classes[0] || "";
   const today = todayIso();
   const openHomework = active.homework.filter(isOpenHomework);
@@ -477,16 +501,24 @@ export default function StaffTimetableHub() {
 
   function mutate(updater: (current: WorkspaceData) => WorkspaceData) { if (!demo) setWorkspace(updater); }
   function lessonFor(day: DayName, period: number) { return weekLessons.find((lesson) => lesson.day === day && lesson.period === period); }
-  function changeForLesson(lessonId: string) { return active.changes.filter((item) => item.lessonId === lessonId && (!item.date || item.date >= today)).sort((a, b) => a.date.localeCompare(b.date))[0]; }
+  function changeForLesson(lessonId: string) { const own=active.changes.find(item=>item.lessonId===lessonId&&item.date===today);if(own)return own;
+   const feed=active.schoolTimetable;if(feed?.date!==today||!account)return undefined;
+   const daily=publicationLessons(feed,account.userId,feed.today || []);const match=daily.find(l=>l.id===lessonId || (l.week===week&&l.day===active.lessons.find(a=>a.id===lessonId)?.day&&l.period===active.lessons.find(a=>a.id===lessonId)?.period));
+   if(!match)return undefined;const assignment=feed.today?.find(a=>a.groupName===match.className&&a.subject===match.subject&&(a.periodIndices || [a.periodIndex]).includes(match.period-1));
+   if(!assignment || (!assignment.cancelled&&!assignment.cover&&!assignment.roomChanged))return undefined;
+   return {id:'school-daily:'+lessonId,date:today,lessonId,type:assignment.cancelled?'Cancelled' as const:assignment.cover?'Cover' as const:'Room change' as const,room:match.room,detail:assignment.cover?assignment.teacherName || 'Cover arranged':'',notes:''};
+  }
   function openEditor(day: DayName, period: number) {
     if (demo) return;
-    const existing = lessonFor(day, period); setEditingId(existing?.id || null);
+    const existing = lessonFor(day, period);if(existing?.schoolManaged){setPlanLessonId(existing.id);setTab('planning');return;} setEditingId(existing?.id || null);
     setForm({ week, day, period, subject: existing?.subject || "", className: existing?.className || "", room: existing?.room || "", notes: existing?.notes || "" }); setEditorOpen(true);
   }
   function saveLesson() {
     if (!form.subject.trim() && !form.className.trim()) return;
     const existing = workspace.lessons.find((lesson) => lesson.id === editingId);
-    const next = createLesson({ ...form, id: editingId || undefined, plan: existing?.plan || blankPlan() });
+    const timing=periodsForDay(form.day).find(p=>p.period===form.period);
+    if(workspace.lessons.some(l=>l.schoolManaged&&l.week===form.week&&l.day===form.day&&l.period===form.period)){setStatus("School lessons are managed by your school timetabler.");return;}
+    const next = createLesson({ ...form, ...timing, id: editingId || undefined, plan: existing?.plan || blankPlan() });
     mutate((current) => ({ ...current, lessons: [...current.lessons.filter((lesson) => lesson.id !== editingId && !(lesson.week === next.week && lesson.day === next.day && lesson.period === next.period)), next] }));
     setEditorOpen(false); setStatus("Timetable saved on this device.");
   }
@@ -504,16 +536,21 @@ export default function StaffTimetableHub() {
   }
   function applyImport() {
     if (!pendingImport) return; const imported = pendingImport.lessons; setDemo(false);
-    setWorkspace((current) => ({ ...current, lessons: importMode === "replace" ? imported : dedupe([...current.lessons, ...imported]) }));
+    setWorkspace((current) => {
+      const lessons=importMode === "replace" ? imported : dedupe([...current.lessons,...imported]);
+      if(current.schoolTimetable?.linked&&account){const feed=current.schoolTimetable;const incoming=publicationLessons(feed,account.userId).map(l=>createLesson({...l,plan:blankPlan()}));const retained=[...(current.archivedSchoolLessons || []),...current.lessons.filter(l=>l.schoolManaged)];const merged=mergePublishedLessons(lessons,retained,incoming,feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived};}
+      return {...current,lessons};
+    });
     setPendingImport(null); setStatus(`Auto-filled ${imported.length} lessons from ${pendingImport.source}. You can click any lesson to correct it.`); setTab("timetable");
   }
   function clearTimetable() { if (demo) { setDemo(false); return; } if (!window.confirm("Clear your saved timetable and linked teacher-workspace data on this device?")) return; setWorkspace(blankWorkspace()); setPendingImport(null); setStatus("Blank workspace ready for an upload or manual entry."); }
   function printTimetable() { setTab("timetable"); window.setTimeout(() => window.print(), 50); }
   function nextFreeSlot() {
-    for (const day of DAYS) for (const period of PERIODS) if (!active.lessons.some((lesson) => lesson.week === week && lesson.day === day && lesson.period === period.period)) return `${week} · ${day} · P${period.period}`;
+    for (const day of DAYS) for (const period of periodsForDay(day)) if (!active.lessons.some((lesson) => lesson.week === week && lesson.day === day && lesson.period === period.period)) return `${week} · ${day} · P${period.period}`;
     return "No free period this week";
   }
   function todayLessons() {
+    if(active.schoolTimetable?.linked&&active.schoolTimetable.date===today&&account){return publicationLessons(active.schoolTimetable,account.userId,active.schoolTimetable.today || []).map(l=>{const own=active.lessons.find(a=>a.week===l.week&&a.day===l.day&&a.period===l.period&&a.className===l.className&&a.subject===l.subject);return createLesson({...l,id:own?.id || l.id,plan:own?.plan || blankPlan()});}).sort((a,b)=>a.period-b.period);}
     const jsDay = new Date().getDay(); const day = DAYS[jsDay - 1]; if (!day) return [];
     return active.lessons.filter((lesson) => lesson.week === week && lesson.day === day).sort((a, b) => a.period - b.period);
   }
@@ -744,7 +781,8 @@ export default function StaffTimetableHub() {
     finally { event.target.value = ""; }
   }
 
-  const activePlanLesson = active.lessons.find((lesson) => lesson.id === planLessonId) || null;
+  const archivedPlanLesson=active.archivedSchoolLessons?.find(l=>l.id===planLessonId);
+  const activePlanLesson = active.lessons.find((lesson) => lesson.id === planLessonId) || archivedPlanLesson || null;
   const selectedClassLessons = active.lessons.filter((lesson) => lesson.className === visibleClass).sort((a, b) => a.week.localeCompare(b.week) || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || a.period - b.period);
   const inferredClassProfile = inferClassCurriculumProfile(visibleClass, selectedClassLessons[0]?.subject || "Science");
   const currentClassProfile = active.classCurriculumProfiles[visibleClass] || inferredClassProfile;
@@ -760,13 +798,16 @@ export default function StaffTimetableHub() {
   const nowCard = currentOrNext();
   const filteredPlanning = active.lessons.filter((lesson) => !search || [lesson.subject, lesson.className, lesson.plan.topic, lesson.plan.curriculumUnit].join(" ").toLowerCase().includes(search.toLowerCase()));
 
+  if(!loaded)return <main className="staffTimetablePage"><h1>My timetable & planner</h1><p role="status">Loading your account and planner…</p><p>{status}</p></main>;
   return (
     <main className="staffTimetablePage">
-      <StaffTimetableLeadershipSync lessons={workspace.lessons} classCurriculumProfiles={workspace.classCurriculumProfiles} mediumTermPlans={workspace.mediumTermPlans} assessments={workspace.assessments} disabled={demo} />
+      <StaffTimetableLeadershipSync lessons={workspace.lessons} classCurriculumProfiles={workspace.classCurriculumProfiles} mediumTermPlans={workspace.mediumTermPlans} assessments={workspace.assessments} disabled={demo || !loaded} />
       <section className="staffTimetableHero">
         <div><div className="staffTimetableEyebrow">STAFF · PERSONAL WORKSPACE</div><h1>My timetable & planner</h1><p>Your timetable, lesson planning, class notes, homework, marking, practical prep and weekly workload in one place. The normal workspace starts blank and contains no preloaded staff names.</p></div>
         <div className="staffTimetableHeroActions noPrint"><StaffTimetableLeadershipLink /><button className={demo ? "ttButton demo active" : "ttButton demo"} onClick={() => { setDemo((value) => !value); setPendingImport(null); }}>{demo ? "Exit demo" : "View demo"}</button><button className="ttButton" onClick={printTimetable}>Print timetable</button><Link className="ttButton" href="/school">School tools</Link></div>
       </section>
+
+      {loaded&&account?.organizationId&&!demo&&<SchoolTimetableSync organizationId={account.organizationId} userId={account.userId} onSync={syncSchool}/>}
 
       {demo && <div className="ttDemoBanner"><strong>Demo mode</strong><span>A read-only example based on the original timetable, including example planning and workload data. Your own saved workspace has not changed.</span></div>}
 
@@ -788,7 +829,7 @@ export default function StaffTimetableHub() {
         <div className="ttDashboardGrid">
           <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Live lesson status</h2></div></div>{nowCard ? <div className="ttLiveCard"><span>{nowCard.label}</span><h3>{nowCard.lesson.subject} · {nowCard.lesson.className}</h3><p>P{nowCard.lesson.period} · {nowCard.lesson.start}–{nowCard.lesson.end} · {nowCard.lesson.room || "Room not set"}</p>{nowCard.lesson.plan.topic && <b>Planned topic: {nowCard.lesson.plan.topic}</b>}</div> : <div className="ttEmptyPreview"><strong>No more lessons today</strong><span>Use a free period for planning, marking or prep.</span></div>}</article>
           <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Today&apos;s agenda</h2></div></div><div className="ttStackList">{todayLessons().length ? todayLessons().map((lesson) => <button className="ttAgendaRow" key={lesson.id} onClick={() => { setPlanLessonId(lesson.id); setTab("planning"); }}><b>P{lesson.period} · {lesson.subject}</b><span>{lesson.className} · {lesson.room || "Room not set"}</span><small>{lesson.plan.topic || "No lesson topic planned yet"}</small></button>) : <div className="ttEmptyPreview"><span>No teaching lessons scheduled today.</span></div>}</div></article>
-          <article className="ttPanel widePanel"><div className="ttPanelHeader"><div><h2>Week overview</h2></div></div><div className="ttWeekOverview">{DAYS.map((day) => { const count = weekLessons.filter((lesson) => lesson.day === day).length; return <div key={day}><b>{day.slice(0,3)}</b><strong>{count}</strong><span>{6-count} free</span><i style={{ width: `${Math.round(count/6*100)}%` }} /></div>; })}</div></article>
+          <article className="ttPanel widePanel"><div className="ttPanelHeader"><div><h2>Week overview</h2></div></div><div className="ttWeekOverview">{DAYS.map((day) => { const count = weekLessons.filter((lesson) => lesson.day === day).length; return <div key={day}><b>{day.slice(0,3)}</b><strong>{count}</strong><span>{Math.max(0,periodsForDay(day).length-count)} free</span><i style={{ width: `${Math.round(count/Math.max(1,periodsForDay(day).length)*100)}%` }} /></div>; })}</div></article>
           <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Marking workload</h2></div><button className="ttMiniLink" onClick={() => setTab("homework")}>Open</button></div><div className="ttStackList">{markingQueue.slice(0,6).map((item) => <div className="ttListRow" key={item.id}><b>{item.title}</b><span>{item.className} · due {formatDate(item.dueDate)}</span></div>)}{!markingQueue.length && <div className="ttEmptyPreview"><span>No collected homework waiting to mark.</span></div>}</div></article>
           <article className="ttPanel"><div className="ttPanelHeader"><div><h2>Upcoming</h2></div></div><div className="ttStackList">{nextKeyDate && <div className="ttListRow"><b>{nextKeyDate.title}</b><span>{nextKeyDate.type} · {formatDate(nextKeyDate.date)}</span></div>}{openPrep.slice(0,3).map((item) => <div className="ttListRow" key={item.id}><b>{item.title}</b><span>{item.className} · needed {formatDate(item.neededBy)}</span></div>)}{!nextKeyDate && !openPrep.length && <div className="ttEmptyPreview"><span>No upcoming dates or prep items.</span></div>}</div></article>
         </div>
@@ -812,6 +853,7 @@ export default function StaffTimetableHub() {
           onAddTask={() => setItemEditor({ kind: "task" })}
         />
         <StaffTimetableSmartScheduler
+          schoolGrid={active.schoolTimetable?{days:DAYS,periods:Object.fromEntries(DAYS.map(day=>[day,periodsForDay(day)]))}:undefined}
           lessons={active.lessons}
           tasks={active.tasks}
           prep={active.prep}
@@ -878,7 +920,7 @@ export default function StaffTimetableHub() {
         <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TWO-WEEK VIEW</span><h2>{demo ? "Demo timetable" : active.lessons.length ? "Your timetable" : "Blank timetable"}</h2></div><div className="ttWorkspaceActions noPrint"><div className="ttWeekSwitch"><button className={week === "W1" ? "active" : ""} onClick={() => setWeek("W1")}>Week 1</button><button className={week === "W2" ? "active" : ""} onClick={() => setWeek("W2")}>Week 2</button></div>{!demo && <button className="ttButton" onClick={() => openEditor("Monday", 1)}>+ Add lesson</button>}<button className="ttButton danger" onClick={clearTimetable}>{demo ? "Return to personal" : "Clear workspace"}</button></div></div>
           <div className="ttStats"><div><small>Lessons</small><strong>{weekLessons.length}</strong></div><div><small>Teaching time</small><strong>{teachingHours}h</strong></div><div><small>Free periods</small><strong>{freePeriods}</strong></div><div><small>Subjects</small><strong>{new Set(weekLessons.map((lesson) => lesson.subject)).size}</strong></div></div>
           {!active.lessons.length && <div className="ttBlankState"><span>▦</span><h3>Your timetable is empty</h3><p>Upload a timetable above for automatic filling, or click a free period to add a lesson manually.</p></div>}
-          <div className="ttGridWrap"><div className="ttGrid"><div className="ttGridHead timeHead">Time</div>{DAYS.map((day) => <div className="ttGridHead" key={day}>{day}</div>)}{PERIODS.map((period, index) => <div className="ttGridRowContents" key={period.period}><div className="ttTimeCell"><strong>P{period.period}</strong><span>{period.start}</span><small>{period.end}</small></div>{DAYS.map((day) => { const lesson = lessonFor(day, period.period); const change = lesson ? changeForLesson(lesson.id) : undefined; return <button type="button" className={lesson ? `ttLessonCell ${subjectTone(lesson.subject)} ${change?.type === "Cancelled" ? "cancelled" : ""}` : "ttLessonCell free"} key={`${day}-${period.period}`} onClick={() => openEditor(day, period.period)} disabled={demo}>{lesson ? <><b>{lesson.subject}</b><span>{lesson.className || "Class"}</span><small>{change?.room || lesson.room || "Room not set"}</small>{lesson.plan.topic && <em>{lesson.plan.topic}</em>}{change && <i>{change.type}{change.detail ? ` · ${change.detail}` : ""}</i>}</> : <><b>Free</b><span>{demo ? "" : "Click to add"}</span></>}</button>; })}{index === 1 && <><div className="ttBreakLabel">Break · 10:50–11:10</div>{DAYS.map((day) => <div className="ttBreakCell" key={`break-${day}`}>20 min</div>)}</>}{index === 3 && <><div className="ttBreakLabel">Lunch · 13:05–14:05</div>{DAYS.map((day) => <div className="ttBreakCell" key={`lunch-${day}`}>60 min</div>)}</>}</div>)}</div></div>
+          <div className="ttGridWrap"><div className="ttGrid" style={{gridTemplateColumns:`86px repeat(${DAYS.length}, minmax(140px, 1fr))`}}><div className="ttGridHead timeHead">Time</div>{DAYS.map((day) => <div className="ttGridHead" key={day}>{day}</div>)}{PERIODS.map((period, index) => <div className="ttGridRowContents" key={period.period}><div className="ttTimeCell"><strong>P{period.period}</strong><span>{period.start}</span><small>{period.end}</small></div>{DAYS.map((day) => { const timing=periodsForDay(day).find(p=>p.period===period.period);const lesson = lessonFor(day, period.period); const change = lesson ? changeForLesson(lesson.id) : undefined; return <button type="button" className={lesson ? `ttLessonCell ${subjectTone(lesson.subject)} ${change?.type === "Cancelled" ? "cancelled" : ""}` : "ttLessonCell free"} key={`${day}-${period.period}`} onClick={() => openEditor(day, period.period)} disabled={demo || !timing}>{lesson ? <><b>{lesson.subject}</b><span>{lesson.className || "Class"}</span><small>{lesson.start}–{lesson.end}</small><small>{change?.room || lesson.room || "Room not set"}</small>{lesson.plan.topic && <em>{lesson.plan.topic}</em>}{change && <i>{change.type}{change.detail ? ` · ${change.detail}` : ""}</i>}</> : <><b>{timing?"Free":"No period"}</b><span>{!demo&&timing?`${timing.start}–${timing.end} · Click to add`:""}</span></>}</button>; })}{!active.schoolTimetable && index === 1 && <><div className="ttBreakLabel">Break · 10:50–11:10</div>{DAYS.map((day) => <div className="ttBreakCell" key={`break-${day}`}>20 min</div>)}</>}{!active.schoolTimetable && index === 3 && <><div className="ttBreakLabel">Lunch · 13:05–14:05</div>{DAYS.map((day) => <div className="ttBreakCell" key={`lunch-${day}`}>60 min</div>)}</>}</div>)}</div></div>
           <div className="ttActivitiesStrip"><div className="ttPanelHeader"><div><h2>Activities</h2></div>{!demo && <button className="ttMiniLink noPrint" onClick={() => setItemEditor({ kind: "activity" })}>+ Add</button>}</div>{active.activities.filter((item) => item.week === week).length ? active.activities.filter((item) => item.week === week).map((item) => <div className="ttListRow" key={item.id}><b>{item.day} · {item.start}–{item.end} · {item.title}</b><span>{item.group}{item.room ? ` · ${item.room}` : ""}</span></div>) : <p className="ttMuted">No activities added for this week.</p>}</div>
         </section>
       </>}
@@ -953,17 +995,17 @@ export default function StaffTimetableHub() {
 
       {tab === "changes" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">CHANGES & COVER</span><h2>Timetable changes</h2><p className="ttMuted">Record cancellations, room changes, cover and one-off notes without changing the normal timetable.</p></div>{!demo && <button className="ttButton primary" onClick={() => setItemEditor({ kind: "change" })}>+ Add change</button>}</div><div className="ttDataList">{active.changes.slice().sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")).map((item) => { const lesson = active.lessons.find((lesson) => lesson.id === item.lessonId); return <button className={`ttDataRow ${item.type === "Cancelled" ? "urgent" : ""}`} key={item.id} onClick={() => !demo && setItemEditor({ kind: "change", id: item.id })}><div><b>{formatDate(item.date)}</b><small>{item.type}</small></div><div><strong>{lesson ? `${lesson.week} · ${lesson.day} · P${lesson.period} · ${lesson.className}` : "Lesson"}</strong><span>{[item.room,item.detail,item.notes].filter(Boolean).join(" · ") || "No extra detail"}</span></div></button>; })}{!active.changes.length && <div className="ttEmptyPreview"><span>No timetable changes recorded.</span></div>}</div></section>}
 
-      {tab === "tools" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TOOLS & BACKUP</span><h2>Workspace tools</h2></div></div><div className="ttToolsGrid"><article className="ttPanel"><h2>Backup</h2><p>Export your full timetable workspace, including lesson plans, homework, prep, tasks and changes.</p><div className="ttButtonRow"><button className="ttButton primary" onClick={exportBackup}>Export backup</button><input ref={backupRef} className="ttFileInput" type="file" accept="application/json,.json" onChange={importBackup} /><button className="ttButton" disabled={demo} onClick={() => backupRef.current?.click()}>Restore backup</button></div></article><article className="ttPanel"><h2>Key dates</h2><p>{nextKeyDate ? `Next: ${nextKeyDate.title} · ${formatDate(nextKeyDate.date)}` : "Add half terms, training days, deadlines or events."}</p>{!demo && <button className="ttButton" onClick={() => setItemEditor({ kind: "keyDate" })}>+ Add key date</button>}<div className="ttStackList">{active.keyDates.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((item) => <button className="ttAgendaRow" key={item.id} onClick={() => !demo && setItemEditor({ kind: "keyDate", id: item.id })}><b>{item.title}</b><span>{formatDate(item.date)} · {item.type}</span></button>)}</div></article><article className="ttPanel"><h2>Connected CPD tools</h2><div className="ttIntegrationLinks"><Link href="/curriculum">Curriculum planning</Link><Link href="/resource-generator">Teaching resource generator</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/calendar">School calendar</Link><Link href="/integrations">Google integrations</Link></div></article><article className="ttPanel"><h2>Workspace status</h2><p>{status}</p><div className="ttButtonRow"><button className="ttButton" onClick={printTimetable}>Print timetable</button><button className="ttButton danger" onClick={clearTimetable}>{demo ? "Exit demo" : "Clear workspace"}</button></div></article></div></section>}
+      {tab === "tools" && <section className="ttWorkspace"><div className="ttWorkspaceTop"><div><span className="staffTimetableEyebrow">TOOLS & BACKUP</span><h2>Workspace tools</h2></div></div><div className="ttToolsGrid"><article className="ttPanel"><h2>Backup</h2><button className="ttButton" disabled={demo} onClick={importPreviousDevicePlanner}>Import previous device planner</button><p>Export your full timetable workspace, including lesson plans, homework, prep, tasks and changes.</p><div className="ttButtonRow"><button className="ttButton primary" onClick={exportBackup}>Export backup</button><input ref={backupRef} className="ttFileInput" type="file" accept="application/json,.json" onChange={importBackup} /><button className="ttButton" disabled={demo} onClick={() => backupRef.current?.click()}>Restore backup</button></div></article><article className="ttPanel"><h2>Key dates</h2><p>{nextKeyDate ? `Next: ${nextKeyDate.title} · ${formatDate(nextKeyDate.date)}` : "Add half terms, training days, deadlines or events."}</p>{!demo && <button className="ttButton" onClick={() => setItemEditor({ kind: "keyDate" })}>+ Add key date</button>}<div className="ttStackList">{active.keyDates.slice().sort((a,b)=>a.date.localeCompare(b.date)).map((item) => <button className="ttAgendaRow" key={item.id} onClick={() => !demo && setItemEditor({ kind: "keyDate", id: item.id })}><b>{item.title}</b><span>{formatDate(item.date)} · {item.type}</span></button>)}</div></article><article className="ttPanel"><h2>Connected CPD tools</h2><div className="ttIntegrationLinks"><Link href="/curriculum">Curriculum planning</Link><Link href="/resource-generator">Teaching resource generator</Link><Link href="/teaching-learning">Teaching & Learning Hub</Link><Link href="/calendar">School calendar</Link><Link href="/integrations">Google integrations</Link></div></article><article className="ttPanel"><h2>Workspace status</h2><p>{status}</p><details><summary>Archived school lessons ({active.archivedSchoolLessons?.length || 0})</summary><p>Superseded lessons and their plans are kept here and in your full backup.</p>{active.archivedSchoolLessons?.map(l=><div key={l.id}><b>{l.subject} · {l.className}</b><p>{l.week} · {l.day} · P{l.period} · {l.plan.topic || "No topic"}</p><button className="ttButton" onClick={()=>setPlanLessonId(l.id)}>View retained plan</button></div>)}</details><div className="ttButtonRow"><button className="ttButton" onClick={printTimetable}>Print timetable</button><button className="ttButton danger" onClick={clearTimetable}>{demo ? "Exit demo" : "Clear workspace"}</button></div></article></div></section>}
 
-      {editorOpen && <LessonEditor form={form} setForm={setForm} editing={Boolean(editingId)} onClose={() => setEditorOpen(false)} onDelete={deleteLesson} onSave={saveLesson} />}
-      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} inclusionProfile={active.classInclusionProfiles[activePlanLesson.className]} homework={active.homework} readOnly={demo} onHomeworkChange={(homework) => mutate((current) => ({ ...current, homework }))} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
+      {editorOpen && <LessonEditor days={DAYS} periods={periodsForDay(form.day)} form={form} setForm={setForm} editing={Boolean(editingId)} onClose={() => setEditorOpen(false)} onDelete={deleteLesson} onSave={saveLesson} />}
+      {activePlanLesson && <PlanEditor lesson={activePlanLesson} classProfile={active.classCurriculumProfiles[activePlanLesson.className]} inclusionProfile={active.classInclusionProfiles[activePlanLesson.className]} homework={active.homework} readOnly={demo || Boolean(archivedPlanLesson)} onHomeworkChange={(homework) => mutate((current) => ({ ...current, homework }))} onClose={() => setPlanLessonId(null)} onSave={savePlan} />}
       {itemEditor && <ItemEditor kind={itemEditor.kind} itemId={itemEditor.id} workspace={workspace} activeWorkspace={active} week={week} classes={classes} subjects={subjects} onClose={() => setItemEditor(null)} onChange={setWorkspace} />}
     </main>
   );
 }
 
-function LessonEditor({ form, setForm, editing, onClose, onDelete, onSave }: { form: { week: WeekKey; day: DayName; period: number; subject: string; className: string; room: string; notes: string }; setForm: React.Dispatch<React.SetStateAction<{ week: WeekKey; day: DayName; period: number; subject: string; className: string; room: string; notes: string }>>; editing: boolean; onClose: () => void; onDelete: () => void; onSave: () => void }) {
-  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{DAYS.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{PERIODS.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
+function LessonEditor({ days,periods,form, setForm, editing, onClose, onDelete, onSave }: { days:DayName[];periods:{period:number;start:string;end:string}[];form: { week: WeekKey; day: DayName; period: number; subject: string; className: string; room: string; notes: string }; setForm: React.Dispatch<React.SetStateAction<{ week: WeekKey; day: DayName; period: number; subject: string; className: string; room: string; notes: string }>>; editing: boolean; onClose: () => void; onDelete: () => void; onSave: () => void }) {
+  return <div className="ttModalBackdrop noPrint" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="ttModal"><div className="ttModalHeader"><div><span className="staffTimetableEyebrow">PERSONAL TIMETABLE</span><h2>{editing ? "Edit lesson" : "Add lesson"}</h2></div><button className="ttIconButton" onClick={onClose}>×</button></div><div className="ttFormGrid"><label><span>Week</span><select value={form.week} onChange={(event) => setForm((current) => ({ ...current, week: event.target.value as WeekKey }))}><option value="W1">Week 1</option><option value="W2">Week 2</option></select></label><label><span>Day</span><select value={form.day} onChange={(event) => setForm((current) => ({ ...current, day: event.target.value as DayName }))}>{days.map((day) => <option key={day}>{day}</option>)}</select></label><label><span>Period</span><select value={form.period} onChange={(event) => setForm((current) => ({ ...current, period: Number(event.target.value) }))}>{periods.map((period) => <option key={period.period} value={period.period}>P{period.period} · {period.start}–{period.end}</option>)}</select></label><label><span>Subject</span><input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} /></label><label><span>Class / group</span><input value={form.className} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} /></label><label><span>Room</span><input value={form.room} onChange={(event) => setForm((current) => ({ ...current, room: event.target.value }))} /></label><label className="wide"><span>Notes</span><textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} /></label></div><div className="ttModalActions">{editing && <button className="ttButton danger pushLeft" onClick={onDelete}>Delete</button>}<button className="ttButton" onClick={onClose}>Cancel</button><button className="ttButton primary" onClick={onSave}>Save lesson</button></div></section></div>;
 }
 
 function PlanEditor({ lesson, homework, readOnly, onHomeworkChange, onClose, onSave, classProfile, inclusionProfile }: { lesson: Lesson; homework: Homework[]; readOnly: boolean; onHomeworkChange: (homework: Homework[]) => void; onClose: () => void; onSave: (plan: LessonPlan) => void; classProfile?: ClassCurriculumProfile; inclusionProfile?: ClassInclusionProfile }) {
