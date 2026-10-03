@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
 import { claimSchoolAccess, safeNextPath } from "@/lib/schoolAccess";
+import { CURRENT_LEGAL_HASH, CURRENT_LEGAL_VERSION, hasCurrentLegalAcceptance, recordCurrentLegalAcceptance } from "@/lib/legal";
 
 type PasswordMode = "signin" | "signup";
 type UsernameSession = {
@@ -22,6 +24,8 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("");
+  const [legalSignedName, setLegalSignedName] = useState("");
+  const [legalAgreed, setLegalAgreed] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const finishingAccess = useRef(false);
@@ -29,7 +33,6 @@ export default function AuthPage() {
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
     let active = true;
-
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get("error_description") || params.get("error");
     if (oauthError) setMessage(formatOAuthError(oauthError));
@@ -37,30 +40,19 @@ export default function AuthPage() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active || !session) return;
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") {
-        void finishAccess();
-      }
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") void finishAccess();
     });
-
     supabase.auth.getSession().then(({ data, error }) => {
       if (!active) return;
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
+      if (error) { setMessage(error.message); return; }
       if (data.session) void finishAccess();
     });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
+    return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
   async function finishAccess() {
     if (finishingAccess.current) return;
     finishingAccess.current = true;
-
     const supabase = getSupabaseBrowserClient();
     try {
       const { data: auth } = await supabase.auth.getUser();
@@ -72,7 +64,6 @@ export default function AuthPage() {
           window.location.replace(target === "/" || target.startsWith("/access") ? "/owner-portal" : target);
           return;
         }
-
         const managed = auth.user.app_metadata?.platform_managed_user === true || auth.user.app_metadata?.platform_test_user === true;
         if (managed) {
           const managedAccess = String(auth.user.app_metadata?.platform_managed_access || "admin");
@@ -81,6 +72,11 @@ export default function AuthPage() {
             return;
           }
           window.location.replace(nextPath());
+          return;
+        }
+        const accepted = await hasCurrentLegalAcceptance(supabase, auth.user.id);
+        if (!accepted) {
+          window.location.replace(`/legal/accept?next=${encodeURIComponent(nextPath())}`);
           return;
         }
       }
@@ -105,30 +101,21 @@ export default function AuthPage() {
 
   async function schoolOAuth() {
     const supabase = getSupabaseBrowserClient();
-    setBusy(true);
-    setMessage("");
+    setBusy(true); setMessage("");
     try {
       const redirectTo = `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          queryParams: { prompt: "select_account" },
-        },
-      });
+      const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo, queryParams: { prompt: "select_account" } } });
       if (error) throw error;
     } catch (error) {
       const raw = error instanceof Error ? error.message : "Unable to start school sign-in.";
-      setMessage(formatOAuthError(raw));
-      setBusy(false);
+      setMessage(formatOAuthError(raw)); setBusy(false);
     }
   }
 
   async function passwordSubmit(e: FormEvent) {
     e.preventDefault();
     const supabase = getSupabaseBrowserClient();
-    setBusy(true);
-    setMessage("");
+    setBusy(true); setMessage("");
     try {
       if (passwordMode === "signin") {
         const value = identity.trim();
@@ -137,32 +124,38 @@ export default function AuthPage() {
           if (error) throw error;
         } else {
           const username = normaliseUsername(value);
-          const { data, error } = await supabase.functions.invoke<UsernameSession>("username-login", {
-            body: { username, password },
-          });
-          if (error || !data?.access_token || !data?.refresh_token) {
-            throw new Error("That email/username and password combination was not accepted.");
-          }
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-          });
+          const { data, error } = await supabase.functions.invoke<UsernameSession>("username-login", { body: { username, password } });
+          if (error || !data?.access_token || !data?.refresh_token) throw new Error("That email/username and password combination was not accepted.");
+          const { error: sessionError } = await supabase.auth.setSession({ access_token: data.access_token, refresh_token: data.refresh_token });
           if (sessionError) throw sessionError;
         }
         await finishAccess();
       } else {
+        if (!legalAgreed) throw new Error("Read and accept the school platform agreement before creating an account.");
+        if (legalSignedName.trim().length < 2) throw new Error("Enter your full name as your electronic signature.");
         const email = identity.trim();
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: name.trim(), department: department.trim(), username_setup_pending: true },
+            data: {
+              full_name: name.trim(),
+              department: department.trim(),
+              username_setup_pending: true,
+              legal_pending_signed_name: legalSignedName.trim(),
+              legal_pending_version: CURRENT_LEGAL_VERSION,
+              legal_pending_hash: CURRENT_LEGAL_HASH,
+            },
             emailRedirectTo: `${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`,
           },
         });
         if (error) throw error;
-        if (data.session) await finishAccess();
-        else setMessage("Account created. Confirm your school email, then sign in. After your first successful sign-in you can choose an optional username for quicker future access.");
+        if (data.session && data.user) {
+          await recordCurrentLegalAcceptance(supabase, data.user.id, legalSignedName);
+          await finishAccess();
+        } else {
+          setMessage("Account created. Confirm your school email, then sign in. Your signed agreement details are carried into the first-login confirmation before live school access is opened.");
+        }
       }
     } catch (error) {
       finishingAccess.current = false;
@@ -170,9 +163,7 @@ export default function AuthPage() {
       setMessage(raw.toLowerCase().includes("invalid login credentials")
         ? "That email/username and password combination was not accepted. You can still use an email sign-in link or reset your password with your email address."
         : raw);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   async function sendMagicLink(){
@@ -183,7 +174,7 @@ export default function AuthPage() {
       const redirectTo=`${appOrigin()}/auth?next=${encodeURIComponent(nextPath())}`;
       const {error}=await supabase.auth.signInWithOtp({email:value,options:{emailRedirectTo:redirectTo,shouldCreateUser:false}});
       if(error)throw error;
-      setMessage("Sign-in link sent. Open the email on this device and you’ll be returned to Teaching CPD. Platform Admin accounts then open the Owner Portal automatically.");
+      setMessage("Sign-in link sent. Open the email on this device and you’ll be returned to Teaching CPD.");
     }catch(error){setMessage(error instanceof Error?error.message:"Unable to send the sign-in link.");}
     finally{setBusy(false);}
   }
@@ -202,6 +193,7 @@ export default function AuthPage() {
   }
 
   function openAccountCreation(){setShowFallback(true);setPasswordMode("signup");setMessage("");}
+  function toggleMode(){const next=passwordMode==="signin"?"signup":"signin";setPasswordMode(next);setMessage("");if(next==="signup"&&!legalSignedName)setLegalSignedName(name);}
 
   return <main className="phasePage authPhasePage schoolAuthPage">
     <section className="phaseHero compactHero schoolAuthHero">
@@ -209,28 +201,26 @@ export default function AuthPage() {
       <h1>Welcome to Teaching CPD</h1>
       <p>Sign in to continue your professional development, save your progress and access your school’s training.</p>
     </section>
-
     <section className="phaseCard authCard schoolAuthCard">
       {!hasSupabaseConfig() && <div className="phaseNotice">The authentication service is not connected.</div>}
-      <div className="schoolAuthHeading"><span className="eyebrow">YOUR ACCOUNT</span><h2>Sign in</h2><p>Use Google or sign in with your email and password.</p></div>
-      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth()}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>Choose your Google account</small></span></button>
-
+      <div className="schoolAuthHeading"><span className="eyebrow">YOUR ACCOUNT</span><h2>{passwordMode==="signup"&&showFallback?"Create school account":"Sign in"}</h2><p>{passwordMode==="signup"&&showFallback?"Create an account with your school email and sign the current platform agreement.":"Use Google or sign in with your email and password."}</p></div>
+      <button type="button" className="schoolProviderButton google" disabled={busy} onClick={() => schoolOAuth()}><span className="providerMark">G</span><span><strong>Continue with Google</strong><small>New Google users sign the agreement before school access opens</small></span></button>
       <div className="schoolAccountActions"><button className="secondary" type="button" onClick={openAccountCreation}>Create account with school email</button><a className="textButton" href="/admin-login">School Admin sign in</a><a className="textButton" href="/owner-login">Platform Owner sign in</a></div>
       <button className="secondary schoolFallbackToggle" aria-expanded={showFallback} aria-controls="password-sign-in" type="button" onClick={() => { setShowFallback(v => !v); if(!showFallback)setPasswordMode("signin"); setMessage(""); }}>{showFallback ? "Hide password sign in" : "Sign in with email or username"}</button>
       {showFallback && <form id="password-sign-in" className="schoolFallbackForm" onSubmit={passwordSubmit}>
         {passwordMode === "signup" && <>
-          <label>Full name<input required value={name} onChange={e => setName(e.target.value)} /></label>
+          <label>Full name<input required value={name} onChange={e => {setName(e.target.value);if(!legalSignedName)setLegalSignedName(e.target.value);}} /></label>
           <label>Department<input required value={department} onChange={e => setDepartment(e.target.value)} placeholder="e.g. Science" /></label>
         </>}
         <label>{passwordMode === "signin" ? "Email or username" : "School email"}<input required type={passwordMode === "signin" ? "text" : "email"} autoComplete={passwordMode === "signin" ? "username" : "email"} autoCapitalize="none" autoCorrect="off" value={identity} onChange={e => setIdentity(e.target.value)} placeholder={passwordMode === "signin" ? "name@school.org or username" : "name@school.org"} /></label>
         <label>Password<input required minLength={8} type="password" autoComplete={passwordMode === "signin" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} /></label>
-        <button className="primary full" disabled={busy}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in" : "Create school account"}</button>
+        {passwordMode==="signup"&&<section className="stageCard" style={{padding:14,margin:0}}><span className="eyebrow">PLATFORM AGREEMENT · {CURRENT_LEGAL_VERSION}</span><p style={{margin:"6px 0 10px"}}>Review the <Link href="/legal/terms" target="_blank">Platform Terms & School Data Agreement</Link> and <Link href="/legal/privacy" target="_blank">privacy/data-protection summary</Link> before creating the account.</p><label>Electronic signature<input required minLength={2} maxLength={200} value={legalSignedName} onChange={e=>setLegalSignedName(e.target.value)} placeholder="Enter your full name"/></label><label style={{display:"flex",flexDirection:"row",gap:9,alignItems:"flex-start"}}><input type="checkbox" style={{width:"auto",marginTop:4}} checked={legalAgreed} onChange={e=>setLegalAgreed(e.target.checked)}/><span>I have read and accept the current agreement and understand I must only access school information I am authorised to see.</span></label></section>}
+        <button className="primary full" disabled={busy || (passwordMode==="signup"&&!legalAgreed)}>{busy ? "Checking access…" : passwordMode === "signin" ? "Sign in" : "Sign agreement & create account"}</button>
         {passwordMode==="signin"&&<div className="passwordHelpActions"><button type="button" className="secondary" disabled={busy} onClick={sendMagicLink}>Email me a sign-in link</button><button type="button" className="textButton" disabled={busy} onClick={resetPassword}>Reset password</button></div>}
-        <button className="textButton" type="button" onClick={() => { setPasswordMode(passwordMode === "signin" ? "signup" : "signin"); setMessage(""); }}>{passwordMode === "signin" ? "Create a new school account" : "Already have an account?"}</button>
+        <button className="textButton" type="button" onClick={toggleMode}>{passwordMode === "signin" ? "Create a new school account" : "Already have an account?"}</button>
       </form>}
-
       {message && <div className="feedback" role="status">{message}</div>}
-      <p className="schoolAuthFinePrint">Use your school email to connect to your school’s subscription.</p>
+      <p className="schoolAuthFinePrint">Use your school email to connect to your school’s subscription. <Link href="/legal/terms">Terms</Link> · <Link href="/legal/privacy">Privacy</Link></p>
     </section>
   </main>;
 }
@@ -238,27 +228,18 @@ export default function AuthPage() {
 function normaliseUsername(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "");
 }
-
 function nextPath() {
   if (typeof window === "undefined") return "/";
   return safeNextPath(new URLSearchParams(window.location.search).get("next"));
 }
-
 function appOrigin() {
-  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-    return window.location.origin;
-  }
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) return window.location.origin;
   return (process.env.NEXT_PUBLIC_APP_URL || STAFF_DEVELOPMENT_ORIGIN).replace(/\/+$/, "");
 }
-
 function formatOAuthError(raw: string) {
   const value = raw.replace(/\+/g, " ");
   const lower = value.toLowerCase();
-  if (lower.includes("provider") && (lower.includes("enabled") || lower.includes("unsupported"))) {
-    return "That school sign-in provider is not enabled yet. Enable the Google provider in the Staff Development Supabase Auth settings, then try again.";
-  }
-  if (lower.includes("redirect") || lower.includes("callback")) {
-    return "School sign-in could not return to Staff Development. Check that https://schoolcpd.vercel.app/auth is in the Supabase Auth redirect allow list and try again.";
-  }
+  if (lower.includes("provider") && (lower.includes("enabled") || lower.includes("unsupported"))) return "That school sign-in provider is not enabled yet. Enable the Google provider in the Staff Development Supabase Auth settings, then try again.";
+  if (lower.includes("redirect") || lower.includes("callback")) return "School sign-in could not return to Staff Development. Check that https://schoolcpd.vercel.app/auth is in the Supabase Auth redirect allow list and try again.";
   return value;
 }
