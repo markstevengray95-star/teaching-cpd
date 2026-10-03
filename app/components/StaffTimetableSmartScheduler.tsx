@@ -5,7 +5,7 @@ import { LessonLinkedHomework } from "./StaffTimetableLessonHomework";
 import "./StaffTimetableWorkloadExtensions.css";
 
 type WeekKey = "W1" | "W2";
-type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
 type SchedulerLesson = {
   id: string;
@@ -72,7 +72,7 @@ function iso(date: Date) { return `${date.getFullYear()}-${String(date.getMonth(
 function addDays(value: string, days: number) { const date = dateAtNoon(value); date.setDate(date.getDate() + days); return iso(date); }
 function mondayOf(value: string) { const date = dateAtNoon(value); const day = date.getDay(); date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day)); return iso(date); }
 function pretty(value: string) { const date = dateAtNoon(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); }
-function periodNumber(value: string) { const match = value.match(/(?:^|\s)P?([1-6])(?:\b|$)/i); return match ? Number(match[1]) : null; }
+function periodNumber(value: string) { const match = value.match(/(?:^|\s)P?([1-9][0-9]*)(?:\b|$)/i); return match ? Number(match[1]) : null; }
 function overlaps(startA: string, endA: string, startB: string, endB: string) { return startA < endB && endA > startB; }
 
 export default function StaffTimetableSmartScheduler({
@@ -84,6 +84,7 @@ export default function StaffTimetableSmartScheduler({
   week,
   today,
   readOnly,
+  schoolGrid,
   onScheduleTasks,
   onCreateTask,
   onMarkTaskDone,
@@ -96,6 +97,7 @@ export default function StaffTimetableSmartScheduler({
   week: WeekKey;
   today: string;
   readOnly: boolean;
+  schoolGrid?: {days:DayName[];periods:Partial<Record<DayName,{period:number;start:string;end:string}[]>>};
   onScheduleTasks: (assignments: SmartSchedulerAssignment[]) => void;
   onCreateTask: (task: SmartSchedulerNewTask) => void;
   onMarkTaskDone: (taskId: string) => void;
@@ -103,13 +105,15 @@ export default function StaffTimetableSmartScheduler({
   const [selectedSlots, setSelectedSlots] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const monday = mondayOf(today);
+  const enabledDays=schoolGrid?.days || DAYS;
 
   const slots = useMemo<Slot[]>(() => {
     const result: Slot[] = [];
-    DAYS.forEach((day, dayIndex) => {
+    enabledDays.forEach((day) => {
+      const dayIndex=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].indexOf(day);
       const date = addDays(monday, dayIndex);
       if (date < today) return;
-      PERIODS.forEach((period) => {
+      (schoolGrid?.periods[day] || PERIODS).forEach((period) => {
         const teaching = lessons.some((lesson) => lesson.week === week && lesson.day === day && lesson.period === period.period);
         const activity = activities.some((item) => item.week === week && item.day === day && overlaps(period.start, period.end, item.start, item.end));
         const allocated = tasks.some((task) => task.status !== "Done" && task.date === date && periodNumber(task.period) === period.period);
@@ -117,7 +121,7 @@ export default function StaffTimetableSmartScheduler({
       });
     });
     return result;
-  }, [lessons, tasks, activities, week, monday, today]);
+  }, [lessons, tasks, activities, week, monday, today, schoolGrid, enabledDays]);
 
   const queue = useMemo(() => tasks.filter((task) => task.status !== "Done" && !periodNumber(task.period)).slice().sort((a, b) => {
     const aDate = a.date || "9999-12-31";
@@ -200,7 +204,7 @@ export default function StaffTimetableSmartScheduler({
 
       <aside className="ttSchedulerSlots">
         <div className="ttExtensionSectionHead"><div><span>CAPACITY MAP</span><h4>Available free periods</h4></div></div>
-        {slots.length ? <div className="ttSlotGrid">{DAYS.map((day) => { const daySlots = slots.filter((slot) => slot.day === day); if (!daySlots.length) return null; return <section key={day}><header><strong>{day}</strong><span>{daySlots.length} free</span></header>{daySlots.map((slot) => <div key={slot.key}><b>P{slot.period}</b><span>{slot.start}–{slot.end}</span><small>{pretty(slot.date)}</small></div>)}</section>; })}</div> : <div className="ttExtensionEmpty compact"><span>No unallocated free periods remain this week.</span></div>}
+        {slots.length ? <div className="ttSlotGrid">{enabledDays.map((day) => { const daySlots = slots.filter((slot) => slot.day === day); if (!daySlots.length) return null; return <section key={day}><header><strong>{day}</strong><span>{daySlots.length} free</span></header>{daySlots.map((slot) => <div key={slot.key}><b>P{slot.period}</b><span>{slot.start}–{slot.end}</span><small>{pretty(slot.date)}</small></div>)}</section>; })}</div> : <div className="ttExtensionEmpty compact"><span>No unallocated free periods remain this week.</span></div>}
       </aside>
     </div>
 
