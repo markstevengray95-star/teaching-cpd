@@ -1,12 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { authenticatedFetch } from "@/lib/authenticatedFetch";
 import { buildCoachPlan } from "@/lib/smartCoach";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
 type Message={role:"user"|"assistant";content:string};
 type Conversation={id:string;title:string;goal:string;messages:Message[];updated_at:string};
-
 type Target={title:string;linked_course_id:string|null;review_date:string|null;status:string};
 type Action={title:string;review_date:string|null;status:string};
 type Assignment={title_snapshot:string;target_type:string;target_id:string;due_date:string|null;mandatory:boolean;status:string};
@@ -25,7 +25,7 @@ export default function AiCoachPage(){
   ]);const completed=(progress.data||[]).map((r:{course_id:string})=>r.course_id);const t=(targets.data||[]) as Target[];const a=(actions.data||[]) as Action[];const as=(assignments.data||[]) as Assignment[];const plan=buildCoachPlan({auditCourseIds:(audit.data?.recommended_courses||[]) as string[],completedCourseIds:completed,targets:t,actions:a,assignments:as});setContext({completedCount:completed.length,activeTargets:t.filter(x=>x.status==="active").length,openActions:a.filter(x=>!["completed","abandoned"].includes(x.status)).length,openAssignments:as.filter(x=>!["completed","waived"].includes(x.status)).length,planSummary:plan.summary,planActions:plan.recommendations.map(r=>`${r.title}: ${r.reason}`)});setHistory((conversations.data||[]) as Conversation[]);setLoading(false);})();},[]);
 
   const canSend=useMemo(()=>goal.trim().length>3&&!sending,[goal,sending]);
-  async function ask(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!canSend)return;const formEl=e.currentTarget;const form=new FormData(formEl);const text=String(form.get("prompt")||"").trim();if(!text)return;const next=[...messages,{role:"user",content:text} as Message];setMessages(next);setSending(true);const response=await fetch("/api/ai-coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({goal,context,messages:next})});const data=await response.json().catch(()=>({text:"Unable to generate a response right now.",mode:"smart-fallback"}));const reply={role:"assistant" as const,content:String(data.text||"Unable to generate a response right now.")};setMessages([...next,reply]);setMode(String(data.mode||"smart-fallback"));setSending(false);formEl.reset();}
+  async function ask(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!canSend)return;const formEl=e.currentTarget;const form=new FormData(formEl);const text=String(form.get("prompt")||"").trim();if(!text)return;const next=[...messages,{role:"user",content:text} as Message];setMessages(next);setSending(true);const response=await authenticatedFetch("/api/ai-coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({goal,context,messages:next})});const data=await response.json().catch(()=>({text:"Unable to generate a response right now.",mode:"smart-fallback"}));if(response.status===401){setSending(false);setMessage("Your sign-in session has expired. Please sign in again.");return;}const reply={role:"assistant" as const,content:String(data.text||"Unable to generate a response right now.")};setMessages([...next,reply]);setMode(String(data.mode||"smart-fallback"));setSending(false);formEl.reset();}
 
   async function saveConversation(){if(!userId||!goal.trim()||!messages.length)return;const supabase=getSupabaseBrowserClient();const payload={user_id:userId,title:goal.slice(0,70),goal,messages,context_snapshot:context,updated_at:new Date().toISOString()};const {data,error}=await supabase.from("cpd_coach_conversations").insert(payload).select("id,title,goal,messages,updated_at").single();if(error){setMessage(error.message);return;}setHistory(prev=>[data as Conversation,...prev].slice(0,8));setMessage("Coach conversation saved to your account.");}
 

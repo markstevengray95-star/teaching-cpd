@@ -1,3 +1,5 @@
+import { requireApiRoles } from "@/lib/apiAuth";
+import { untrustedBlock } from "@/lib/aiSecurity";
 import { generateGemini, parseGeminiJson } from "@/lib/geminiServer";
 
 export const runtime = "nodejs";
@@ -8,16 +10,25 @@ type Block = { block_type: "text"|"quiz"|"scenario"|"poll"|"reflection"|"action_
 type GeneratedCourse = { title: string; summary: string; objectives: string[]; recommended_for: string[]; blocks: Block[] };
 
 export async function POST(request: Request) {
+  const auth = await requireApiRoles(request, ["Admin", "CPD Lead"]);
+  if (!auth.ok) return auth.response;
   let body: Body;
   try { body = await request.json(); } catch { return Response.json({ error: "Invalid request." }, { status: 400 }); }
   const topic = String(body.topic || "").trim();
   if (topic.length < 4) return Response.json({ error: "Add a clear course topic or purpose." }, { status: 400 });
   const sources = Array.isArray(body.sources) ? body.sources.slice(0, 6) : [];
-  const sourceText = sources.map((source, index) => `[${index + 1}] ${source.title}\n${String(source.content || source.summary || "").slice(0, 6500)}`).join("\n\n");
+  const sourceText = sources.map((source, index) => untrustedBlock(`school_source_${index + 1}`, `${source.title}${source.category ? ` (${source.category})` : ""}\n${String(source.content || source.summary || "")}`, 7000)).join("\n\n");
   const duration = Math.max(15, Math.min(180, Number(body.duration || 60)));
+  const courseBrief = [
+    untrustedBlock("topic", topic, 1000),
+    untrustedBlock("audience", body.audience || "school staff", 500),
+    untrustedBlock("category", body.category || "Teaching & Learning", 300),
+    untrustedBlock("level", body.level || "Developing", 200),
+    untrustedBlock("additional_notes", body.notes || "none", 3000),
+  ].join("\n\n");
 
   const result = await generateGemini(
-    `Create a complete school CPD course draft about: ${topic}\nAudience: ${body.audience || "school staff"}\nCategory: ${body.category || "Teaching & Learning"}\nLevel: ${body.level || "Developing"}\nTarget duration: ${duration} minutes\nAdditional notes: ${body.notes || "none"}\n\n${sourceText ? `SCHOOL KNOWLEDGE SOURCES:\n${sourceText}\nUse these sources for school-specific content and do not invent policy requirements.\n\n` : ""}Return JSON only using this exact top-level shape: {"title":"...","summary":"...","objectives":["..."],"recommended_for":["..."],"blocks":[...]}.\n\nBuild a rigorous Phase 1-8 style journey with 16-24 blocks. Allowed block_type values are text, quiz, scenario, poll, reflection, action_plan. Every block must have title, content, required. Use these content shapes:\n- text: {"body":"substantive explanation"}\n- quiz: {"question":"...","options":[4 options],"answer":0,"feedback":"why the answer is correct"}\n- scenario: {"prompt":"...","options":[{"label":"...","feedback":"..."}, ...]}\n- poll: {"prompt":"...","options":["...","..."]}\n- reflection: {"prompt":"..."}\n- action_plan: {"prompt":"What will you try?","outcomePrompt":"What outcome/evidence will you review?"}\n\nThe sequence must include: orientation and outcomes; diagnostic baseline; deep knowledge; misconceptions/non-examples; worked application; inclusive/SEND/EAL access; evidence/implementation; advanced practice/scenario; retrieval/mastery checks; implementation action; follow-through prompts for 7/30/90 days; and a facilitator-ready closing recap. Make quizzes challenging rather than guessable by answer length. Keep safeguarding claims tied to current school policy/DSL guidance when relevant.`,
+    `Create a complete school CPD course draft from the reference data below.\n\n${courseBrief}\n\nTarget duration: ${duration} minutes\n\n${sourceText ? `SCHOOL KNOWLEDGE SOURCES:\n${sourceText}\nUse these sources only for school-specific content and do not invent policy requirements.\n\n` : ""}Return JSON only using this exact top-level shape: {"title":"...","summary":"...","objectives":["..."],"recommended_for":["..."],"blocks":[...]}.\n\nBuild a rigorous Phase 1-8 style journey with 16-24 blocks. Allowed block_type values are text, quiz, scenario, poll, reflection, action_plan. Every block must have title, content, required. Use these content shapes:\n- text: {"body":"substantive explanation"}\n- quiz: {"question":"...","options":[4 options],"answer":0,"feedback":"why the answer is correct"}\n- scenario: {"prompt":"...","options":[{"label":"...","feedback":"..."}, ...]}\n- poll: {"prompt":"...","options":["...","..."]}\n- reflection: {"prompt":"..."}\n- action_plan: {"prompt":"What will you try?","outcomePrompt":"What outcome/evidence will you review?"}\n\nThe sequence must include: orientation and outcomes; diagnostic baseline; deep knowledge; misconceptions/non-examples; worked application; inclusive/SEND/EAL access; evidence/implementation; advanced practice/scenario; retrieval/mastery checks; implementation action; follow-through prompts for 7/30/90 days; and a facilitator-ready closing recap. Make quizzes challenging rather than guessable by answer length. Keep safeguarding claims tied to current school policy/DSL guidance when relevant.`,
     {
       json: true,
       temperature: 0.25,
@@ -29,19 +40,7 @@ export async function POST(request: Request) {
   const parsed = parseGeminiJson<GeneratedCourse>(result.text);
   if (!parsed?.title || !Array.isArray(parsed.blocks) || parsed.blocks.length < 12) return Response.json({ error: "Gemini returned an incomplete course draft. Try again with a more specific topic." }, { status: 422 });
   const allowed = new Set(["text","quiz","scenario","poll","reflection","action_plan"]);
-  const blocks = parsed.blocks
-    .filter(block => block && allowed.has(block.block_type) && block.title && block.content)
-    .slice(0, 28)
-    .map(block => ({ ...block, required: block.required !== false }));
+  const blocks = parsed.blocks.filter(block => block && allowed.has(block.block_type) && block.title && block.content).slice(0, 28).map(block => ({ ...block, required: block.required !== false }));
   if (blocks.length < 12) return Response.json({ error: "The generated course did not contain enough usable learning blocks." }, { status: 422 });
-  return Response.json({
-    course: {
-      title: String(parsed.title).slice(0, 160),
-      summary: String(parsed.summary || "").slice(0, 2500),
-      objectives: Array.isArray(parsed.objectives) ? parsed.objectives.map(String).filter(Boolean).slice(0, 6) : [],
-      recommended_for: Array.isArray(parsed.recommended_for) ? parsed.recommended_for.map(String).filter(Boolean).slice(0, 8) : [],
-      blocks,
-    },
-    model: result.model,
-  });
+  return Response.json({ course: { title: String(parsed.title).slice(0, 160), summary: String(parsed.summary || "").slice(0, 2500), objectives: Array.isArray(parsed.objectives) ? parsed.objectives.map(String).filter(Boolean).slice(0, 6) : [], recommended_for: Array.isArray(parsed.recommended_for) ? parsed.recommended_for.map(String).filter(Boolean).slice(0, 8) : [], blocks }, model: result.model });
 }

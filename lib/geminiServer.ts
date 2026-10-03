@@ -1,3 +1,5 @@
+import { AI_INPUT_SECURITY_RULES } from "@/lib/aiSecurity";
+
 type GeminiPart = { text?: string; inlineData?: { mimeType: string; data: string } };
 
 type GeminiOptions = {
@@ -29,7 +31,8 @@ export async function generateGemini(prompt: string, options: GeminiOptions = {}
       ...(options.json ? { responseMimeType: "application/json" } : {}),
     },
   };
-  if (options.system) body.systemInstruction = { parts: [{ text: options.system }] };
+  const system = [AI_INPUT_SECURITY_RULES, options.system || ""].filter(Boolean).join("\n\n");
+  body.systemInstruction = { parts: [{ text: system }] };
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
