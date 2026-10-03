@@ -7,6 +7,7 @@ import { resolveStaffAccess } from "@/lib/rolePermissions";
 import { hideAppNavigation, NAVIGATION_EVENT, type NavigationAccess } from "@/lib/appNavigation";
 import NavigationMenu from "./NavigationMenu";
 import PlatformQuickAccess from "./PlatformQuickAccess";
+import LegalAcceptanceGuard from "./LegalAcceptanceGuard";
 
 const noAccess: NavigationAccess = { role: null, legacyRole: "", platformAdmin: false };
 export default function AppNavigation() {
@@ -14,7 +15,7 @@ export default function AppNavigation() {
   const params = useSearchParams();
   const [access, setAccess] = useState(noAccess);
   const [search, setSearch] = useState("");
-  const hidden = hideAppNavigation(pathname) || pathname === "/demo" || pathname.startsWith("/demo/");
+  const hidden = hideAppNavigation(pathname) || pathname === "/demo" || pathname.startsWith("/demo/") || pathname === "/legal" || pathname.startsWith("/legal/");
   useEffect(() => {
     const update = () => setSearch(window.location.search);
     update();
@@ -55,6 +56,7 @@ export default function AppNavigation() {
   }, [hidden]);
   if (hidden) return null;
   return <>
+    <LegalAcceptanceGuard />
     <NavigationMenu access={access} pathname={pathname} search={search}/>
     <PlatformQuickAccess />
   </>;
