@@ -465,6 +465,7 @@ export default function StaffTimetableHub() {
 
   function syncSchool(feed:SchoolTimetableFeed){if(!account||feed.organizationId!==account.organizationId)return;
    if(!feed.linked){setWorkspace(current=>{const merged=mergePublishedLessons(current.lessons,current.archivedSchoolLessons || [],[],feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived,schoolTimetable:undefined};});return;}
+   setStatus('School timetable synced. Click a school lesson to plan it; timetable allocations are managed by your school.');
    const incoming=publicationLessons(feed,account.userId).map(l=>createLesson({...l,plan:blankPlan()}));
    setWorkspace(current=>{const merged=mergePublishedLessons(current.lessons,current.archivedSchoolLessons || [],incoming,feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived,schoolTimetable:feed};});
    if(!workspace.schoolTimetable || workspace.schoolTimetable.publicationId!==feed.publicationId)setWeek(timetableWeek(feed,feed.date || todayIso()));
@@ -535,7 +536,11 @@ export default function StaffTimetableHub() {
   }
   function applyImport() {
     if (!pendingImport) return; const imported = pendingImport.lessons; setDemo(false);
-    setWorkspace((current) => ({ ...current, lessons: importMode === "replace" ? imported : dedupe([...current.lessons, ...imported]) }));
+    setWorkspace((current) => {
+      const lessons=importMode === "replace" ? imported : dedupe([...current.lessons,...imported]);
+      if(current.schoolTimetable?.linked&&account){const feed=current.schoolTimetable;const incoming=publicationLessons(feed,account.userId).map(l=>createLesson({...l,plan:blankPlan()}));const retained=[...(current.archivedSchoolLessons || []),...current.lessons.filter(l=>l.schoolManaged)];const merged=mergePublishedLessons(lessons,retained,incoming,feed.organizationId,account.userId);return {...current,lessons:merged.lessons,archivedSchoolLessons:merged.archived};}
+      return {...current,lessons};
+    });
     setPendingImport(null); setStatus(`Auto-filled ${imported.length} lessons from ${pendingImport.source}. You can click any lesson to correct it.`); setTab("timetable");
   }
   function clearTimetable() { if (demo) { setDemo(false); return; } if (!window.confirm("Clear your saved timetable and linked teacher-workspace data on this device?")) return; setWorkspace(blankWorkspace()); setPendingImport(null); setStatus("Blank workspace ready for an upload or manual entry."); }
