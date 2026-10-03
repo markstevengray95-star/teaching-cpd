@@ -36,16 +36,11 @@ export default function PlatformQuickAccess() {
     <aside className="platformQuickAccess" aria-label="Quick access tools">
       <div className="platformQuickAccessInner">
         <span className="platformQuickAccessLabel">QUICK ACCESS</span>
-        <a
-          className="platformQuickAccessLink timetable"
-          href="https://time-maker-psi.vercel.app"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <Link className="platformQuickAccessLink timetable" href="/timetable">
           <span className="platformQuickAccessIcon">▦</span>
-          <span><strong>Timetable Maker</strong><small>Build and test a whole-school timetable</small></span>
-          <span className="platformQuickAccessArrow">↗</span>
-        </a>
+          <span><strong>School Timetable</strong><small>Build, review, publish and sync the whole-school timetable</small></span>
+          <span className="platformQuickAccessArrow">→</span>
+        </Link>
         {isAdmin && (
           <Link className="platformQuickAccessLink demo" href="/demo-school">
             <span className="platformQuickAccessIcon">⌂</span>
